@@ -55,15 +55,18 @@ export default function InvoiceBuilderPage() {
     }
   };
 
-  const handleAddService = (service) => {
-    setLineItems([
-      ...lineItems,
-      {
-        service_id: service.id,
-        service_name: service.name,
-        amount: service.default_amount,
-      },
-    ]);
+  const handleAddService = (serviceId) => {
+    const service = services.find(s => s.id === parseInt(serviceId));
+    if (service) {
+      setLineItems([
+        ...lineItems,
+        {
+          service_id: service.id,
+          service_name: service.name,
+          amount: service.default_amount,
+        },
+      ]);
+    }
   };
 
   const handleSaveDraft = async () => {
@@ -146,23 +149,29 @@ export default function InvoiceBuilderPage() {
           <CardHeader>
             <CardTitle className="text-lg">Add Services</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+          <CardContent className="space-y-3">
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleAddService(e.target.value);
+                  e.target.value = '';
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              defaultValue=""
+            >
+              <option value="">Select a service to add...</option>
               {services && services.length > 0 ? (
                 services.map((service) => (
-                  <button
-                    key={service.id}
-                    onClick={() => handleAddService(service)}
-                    className="w-full text-left px-3 py-2 border border-gray-200 rounded hover:bg-gray-50 transition"
-                  >
-                    <div className="font-medium text-sm">{service.name}</div>
-                    <div className="text-xs text-gray-600">${service.default_amount}</div>
-                  </button>
+                  <option key={service.id} value={service.id}>
+                    {service.name} - ${service.default_amount.toFixed(2)}
+                  </option>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No services available</p>
+                <option disabled>No services available</option>
               )}
-            </div>
+            </select>
+            <p className="text-xs text-gray-500">Select a service and it will be added to your invoice</p>
           </CardContent>
         </Card>
 
@@ -172,19 +181,19 @@ export default function InvoiceBuilderPage() {
             <CardTitle className="text-lg">Invoice Summary</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="border rounded-lg p-3 bg-gray-50 space-y-2 max-h-48 overflow-y-auto">
               {lineItems.length > 0 ? (
                 lineItems.map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex justify-between text-sm border-b pb-2"
+                    className="flex justify-between text-sm border-b border-gray-200 pb-2 last:border-b-0"
                   >
-                    <span>{item.service_name || item.description || item.name || 'Unnamed Service'}</span>
-                    <span>${item.amount.toFixed(2)}</span>
+                    <span className="font-medium text-gray-700">{item.service_name || item.description || item.name || 'Unnamed Service'}</span>
+                    <span className="font-medium text-gray-900">${item.amount.toFixed(2)}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No line items</p>
+                <p className="text-sm text-gray-500 text-center py-4">No line items yet</p>
               )}
             </div>
 
