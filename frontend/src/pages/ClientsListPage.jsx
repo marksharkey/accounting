@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
+import AddClientModal from '../components/AddClientModal';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import Input from '../components/ui/Input';
@@ -10,6 +11,7 @@ import Button from '../components/ui/Button';
 
 export default function ClientsListPage() {
   const [search, setSearch] = useState('');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const { data: clientData, isLoading } = useQuery({
@@ -30,6 +32,7 @@ export default function ClientsListPage() {
 
   return (
     <Layout title="Clients">
+      <AddClientModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
       <div className="mb-6">
         <div className="flex gap-4">
           <div className="flex-1">
@@ -40,7 +43,7 @@ export default function ClientsListPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button>
+          <Button onClick={() => setIsAddModalOpen(true)}>
             + Add Client
           </Button>
         </div>
