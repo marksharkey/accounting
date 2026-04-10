@@ -1,0 +1,81 @@
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { useAuthStore } from './store/authStore';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import ClientsListPage from './pages/ClientsListPage';
+import ClientDetailPage from './pages/ClientDetailPage';
+import InvoiceBuilderPage from './pages/InvoiceBuilderPage';
+import './App.css';
+
+const queryClient = new QueryClient();
+
+function ProtectedRoute({ children }) {
+  const token = useAuthStore((state) => state.token);
+  const isLoading = useAuthStore((state) => state.isLoading);
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  return token ? children : <Navigate to="/login" replace />;
+}
+
+function App() {
+  const token = useAuthStore((state) => state.token);
+  const me = useAuthStore((state) => state.me);
+
+  useEffect(() => {
+    if (token) {
+      me().catch(() => {
+        // Token is invalid, will be cleared by the auth store
+      });
+    }
+  }, [token, me]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clients"
+            element={
+              <ProtectedRoute>
+                <ClientsListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/clients/:id"
+            element={
+              <ProtectedRoute>
+                <ClientDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invoices/new"
+            element={
+              <ProtectedRoute>
+                <InvoiceBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

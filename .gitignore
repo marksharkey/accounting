@@ -32,5 +32,8 @@ frontend/dist/
 # Logs
 *.log
 
+# Claude Code
+.claude/
+
 # Uploads (Phase 2)
 uploads/
