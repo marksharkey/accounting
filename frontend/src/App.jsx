@@ -7,6 +7,9 @@ import DashboardPage from './pages/DashboardPage';
 import ClientsListPage from './pages/ClientsListPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import InvoiceBuilderPage from './pages/InvoiceBuilderPage';
+import ServiceCatalogPage from './pages/ServiceCatalogPage';
+import ExpensesPage from './pages/ExpensesPage';
+import ReportsPage from './pages/ReportsPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -68,6 +71,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <InvoiceBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/service-catalog"
+            element={
+              <ProtectedRoute>
+                <ServiceCatalogPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <ProtectedRoute>
+                <ExpensesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ReportsPage />
               </ProtectedRoute>
             }
           />

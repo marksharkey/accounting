@@ -27,6 +27,18 @@ export default function Layout({ children, title }) {
                 <a href="/clients" className="text-gray-700 hover:text-gray-900">
                   Clients
                 </a>
+                <a href="/invoices/new" className="text-gray-700 hover:text-gray-900">
+                  Invoice Builder
+                </a>
+                <a href="/service-catalog" className="text-gray-700 hover:text-gray-900">
+                  Service Catalog
+                </a>
+                <a href="/expenses" className="text-gray-700 hover:text-gray-900">
+                  Expenses
+                </a>
+                <a href="/reports" className="text-gray-700 hover:text-gray-900">
+                  Reports
+                </a>
               </nav>
               <span className="text-sm text-gray-600">{user?.username}</span>
               <button
