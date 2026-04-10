@@ -5,8 +5,12 @@ import Layout from '../components/Layout';
 import { Card } from '../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import Button from '../components/ui/Button';
+import AddExpenseModal from '../components/AddExpenseModal';
 
 export default function ExpensesPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState(null);
+
   const { data: expensesData, isLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: async () => {
@@ -21,11 +25,28 @@ export default function ExpensesPage() {
     return <Layout title="Expenses">Loading...</Layout>;
   }
 
+  const handleAddClick = () => {
+    setSelectedExpense(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditClick = (expense) => {
+    setSelectedExpense(expense);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedExpense(null);
+  };
+
   return (
     <Layout title="Expenses">
       <div className="mb-6">
-        <Button>+ Add Expense</Button>
+        <Button onClick={handleAddClick}>+ Add Expense</Button>
       </div>
+
+      <AddExpenseModal isOpen={isModalOpen} onClose={handleCloseModal} expense={selectedExpense} />
 
       <Card>
         <Table>
@@ -49,7 +70,7 @@ export default function ExpensesPage() {
                   <TableCell>${parseFloat(expense.amount).toFixed(2)}</TableCell>
                   <TableCell>{expense.category?.name || '-'}</TableCell>
                   <TableCell>
-                    <Button size="sm" variant="ghost">
+                    <Button size="sm" variant="ghost" onClick={() => handleEditClick(expense)}>
                       Edit
                     </Button>
                   </TableCell>

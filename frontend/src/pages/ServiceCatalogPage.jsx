@@ -5,8 +5,12 @@ import Layout from '../components/Layout';
 import { Card } from '../components/ui/Card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import Button from '../components/ui/Button';
+import AddServiceModal from '../components/AddServiceModal';
 
 export default function ServiceCatalogPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
+
   const { data: servicesData, isLoading } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
@@ -21,11 +25,28 @@ export default function ServiceCatalogPage() {
     return <Layout title="Service Catalog">Loading...</Layout>;
   }
 
+  const handleAddClick = () => {
+    setSelectedService(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditClick = (service) => {
+    setSelectedService(service);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedService(null);
+  };
+
   return (
     <Layout title="Service Catalog">
       <div className="mb-6">
-        <Button>+ Add Service</Button>
+        <Button onClick={handleAddClick}>+ Add Service</Button>
       </div>
+
+      <AddServiceModal isOpen={isModalOpen} onClose={handleCloseModal} service={selectedService} />
 
       <Card>
         <Table>
@@ -47,7 +68,7 @@ export default function ServiceCatalogPage() {
                   <TableCell>${parseFloat(service.default_amount).toFixed(2)}</TableCell>
                   <TableCell>{service.default_cycle}</TableCell>
                   <TableCell>
-                    <Button size="sm" variant="ghost">
+                    <Button size="sm" variant="ghost" onClick={() => handleEditClick(service)}>
                       Edit
                     </Button>
                   </TableCell>
