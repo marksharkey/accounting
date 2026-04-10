@@ -4,6 +4,7 @@ import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import { formatBillingType } from '../utils/formatting';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
@@ -68,7 +69,7 @@ export default function ClientDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-gray-600 text-sm font-medium mb-2">Billing Type</p>
-            <p className="text-2xl font-bold">{client.billing_type}</p>
+            <p className="text-2xl font-bold">{formatBillingType(client.billing_type)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -89,7 +90,7 @@ export default function ClientDetailPage() {
               <ul className="space-y-2">
                 {schedules.map((schedule) => (
                   <li key={schedule.id} className="text-sm text-gray-600 border-b pb-2">
-                    {schedule.service_name} - ${schedule.amount} / {schedule.billing_cycle}
+                    {schedule.description || schedule.service_name} — ${schedule.amount} / {schedule.cycle || schedule.billing_cycle}
                   </li>
                 ))}
               </ul>
@@ -108,7 +109,7 @@ export default function ClientDetailPage() {
               <ul className="space-y-2">
                 {invoices.slice(0, 5).map((invoice) => (
                   <li key={invoice.id} className="text-sm text-gray-600 border-b pb-2">
-                    {invoice.number} - ${invoice.total} ({invoice.status})
+                    {invoice.invoice_number || invoice.number} — ${invoice.total} ({invoice.status})
                   </li>
                 ))}
               </ul>
