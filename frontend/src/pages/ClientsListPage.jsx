@@ -8,7 +8,7 @@ export default function ClientsListPage() {
   const [search, setSearch] = useState('');
   const navigate = useNavigate();
 
-  const { data: clients, isLoading } = useQuery({
+  const { data: clientData, isLoading } = useQuery({
     queryKey: ['clients', search],
     queryFn: async () => {
       const response = await apiClient.get('/clients/', {
@@ -17,6 +17,8 @@ export default function ClientsListPage() {
       return response.data;
     },
   });
+
+  const clients = clientData?.items || [];
 
   if (isLoading) {
     return <Layout title="Clients">Loading...</Layout>;

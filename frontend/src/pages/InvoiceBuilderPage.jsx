@@ -8,7 +8,7 @@ export default function InvoiceBuilderPage() {
   const [lineItems, setLineItems] = useState([]);
   const [isAuthNetVerified, setIsAuthNetVerified] = useState(false);
 
-  const { data: clients } = useQuery({
+  const { data: clientData } = useQuery({
     queryKey: ['clients'],
     queryFn: async () => {
       const response = await apiClient.get('/clients/');
@@ -16,13 +16,17 @@ export default function InvoiceBuilderPage() {
     },
   });
 
-  const { data: services } = useQuery({
+  const clients = clientData?.items || [];
+
+  const { data: serviceData } = useQuery({
     queryKey: ['services'],
     queryFn: async () => {
       const response = await apiClient.get('/services/');
       return response.data;
     },
   });
+
+  const services = Array.isArray(serviceData) ? serviceData : serviceData?.items || [];
 
   const { data: prefilled } = useQuery({
     queryKey: ['invoices', 'prefill', selectedClient],
