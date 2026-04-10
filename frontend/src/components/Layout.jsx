@@ -20,23 +20,23 @@ export default function Layout({ children, title }) {
               <h1 className="text-xl font-bold">PrecisionPros</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <nav className="space-x-4">
-                <a href="/dashboard" className="text-gray-700 hover:text-gray-900">
+              <nav className="flex flex-wrap gap-3 items-center">
+                <a href="/dashboard" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Dashboard
                 </a>
-                <a href="/clients" className="text-gray-700 hover:text-gray-900">
+                <a href="/clients" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Clients
                 </a>
-                <a href="/invoices/new" className="text-gray-700 hover:text-gray-900">
+                <a href="/invoices/new" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Invoice Builder
                 </a>
                 <a href="/service-catalog" className="text-gray-700 hover:text-gray-900">
                   Service Catalog
                 </a>
-                <a href="/expenses" className="text-gray-700 hover:text-gray-900">
+                <a href="/expenses" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Expenses
                 </a>
-                <a href="/reports" className="text-gray-700 hover:text-gray-900">
+                <a href="/reports" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Reports
                 </a>
               </nav>
