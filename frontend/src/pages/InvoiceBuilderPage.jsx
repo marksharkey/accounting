@@ -179,7 +179,7 @@ export default function InvoiceBuilderPage() {
                     key={idx}
                     className="flex justify-between text-sm border-b pb-2"
                   >
-                    <span>{item.service_name}</span>
+                    <span>{item.service_name || item.description || item.name || 'Unnamed Service'}</span>
                     <span>${item.amount.toFixed(2)}</span>
                   </div>
                 ))
