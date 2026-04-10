@@ -67,9 +67,36 @@ export default function AddClientModal({ isOpen, onClose }) {
     onClose();
   };
 
+  const footerContent = (
+    <div className="space-y-2">
+      {createMutation.isError && (
+        <div className="text-red-600 text-sm">
+          Error: {createMutation.error?.response?.data?.detail || 'Failed to create client'}
+        </div>
+      )}
+      <div className="flex gap-3 justify-end">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleClose}
+          disabled={createMutation.isPending}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={createMutation.isPending}
+          form="client-form"
+        >
+          {createMutation.isPending ? 'Creating...' : 'Create Client'}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add New Client">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add New Client" footer={footerContent}>
+      <form id="client-form" onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Company Name *
@@ -211,29 +238,6 @@ export default function AddClientModal({ isOpen, onClose }) {
             className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-
-        <div className="flex gap-3 justify-end pt-4">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleClose}
-            disabled={createMutation.isPending}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={createMutation.isPending}
-          >
-            {createMutation.isPending ? 'Creating...' : 'Create Client'}
-          </Button>
-        </div>
-
-        {createMutation.isError && (
-          <div className="text-red-600 text-sm mt-2">
-            Error: {createMutation.error?.response?.data?.detail || 'Failed to create client'}
-          </div>
-        )}
       </form>
     </Modal>
   );

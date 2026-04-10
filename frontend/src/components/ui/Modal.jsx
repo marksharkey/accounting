@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, footer }) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -29,6 +29,11 @@ export default function Modal({ isOpen, onClose, title, children }) {
         <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>
+        {footer && (
+          <div className="border-t border-gray-200 p-6 bg-white flex-shrink-0">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
