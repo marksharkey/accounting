@@ -64,7 +64,7 @@ export default function ClientsListPage() {
             {clients && clients.length > 0 ? (
               clients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell className="font-medium">{client.company_name}</TableCell>
                   <TableCell>{client.billing_type}</TableCell>
                   <TableCell>
                     <span
