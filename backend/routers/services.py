@@ -32,7 +32,8 @@ def list_services(
         query = query.filter_by(is_active=True)
     if category:
         query = query.filter_by(category=category)
-    return query.order_by(models.ServiceCatalog.category, models.ServiceCatalog.name).all()
+    services = query.order_by(models.ServiceCatalog.category, models.ServiceCatalog.name).all()
+    return {"total": len(services), "items": services}
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
