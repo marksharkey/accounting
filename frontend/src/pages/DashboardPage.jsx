@@ -122,9 +122,9 @@ export default function DashboardPage() {
           <CardContent>
             {dueBilling && dueBilling.length > 0 ? (
               <ul className="space-y-2">
-                {dueBilling.slice(0, 5).map((client) => (
-                  <li key={client.id} className="text-sm text-gray-600 border-b pb-2">
-                    {client.name} - {client.billing_type}
+                {dueBilling.slice(0, 5).map((item) => (
+                  <li key={item.client.id} className="text-sm text-gray-600 border-b pb-2">
+                    {item.client.company_name} - {item.client.billing_type}
                   </li>
                 ))}
               </ul>
