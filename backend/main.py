@@ -81,8 +81,8 @@ def health_check():
 def init_users(db: Session = Depends(get_db)):
     """One-time setup only — remove after first run."""
     users_data = [
-        {"username": "mark", "full_name": "Mark Sharkey", "email": "mark@precisionpros.com", "password": "changeme123"},
-        {"username": "wife", "full_name": "Co-Owner", "email": "wife@precisionpros.com", "password": "changeme123"},
+        {"username": "mark", "full_name": "Mark Sharkey", "email": "mark@precisionpros.com", "password": "mark"},
+        {"username": "candace", "full_name": "Candace Sharkey", "email": "candace@precisionpros.com", "password": "candace"},
     ]
     created = []
     for u in users_data:
