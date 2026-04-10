@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import { formatBillingType } from '../utils/formatting';
 
 export default function ClientsListPage() {
   const [search, setSearch] = useState('');
@@ -65,7 +66,7 @@ export default function ClientsListPage() {
               clients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.company_name}</TableCell>
-                  <TableCell>{client.billing_type}</TableCell>
+                  <TableCell>{formatBillingType(client.billing_type)}</TableCell>
                   <TableCell>
                     <span
                       className={
