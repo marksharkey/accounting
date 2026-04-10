@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 
 export default function ClientsListPage() {
   const [search, setSearch] = useState('');
@@ -27,82 +31,75 @@ export default function ClientsListPage() {
   return (
     <Layout title="Clients">
       <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search clients..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Search clients..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Button>
+            + Add Client
+          </Button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                Billing Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                Balance
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Billing Type</TableHead>
+              <TableHead>Balance</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {clients && clients.length > 0 ? (
               clients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {client.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {client.billing_type}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <TableRow key={client.id}>
+                  <TableCell className="font-medium">{client.name}</TableCell>
+                  <TableCell>{client.billing_type}</TableCell>
+                  <TableCell>
                     <span
                       className={
                         client.account_balance < 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
+                          ? 'text-green-600 font-medium'
+                          : 'text-red-600 font-medium'
                       }
                     >
                       ${Math.abs(client.account_balance).toFixed(2)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded">
+                  </TableCell>
+                  <TableCell>
+                    <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
                       {client.account_status || 'Active'}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => navigate(`/clients/${client.id}`)}
-                      className="text-blue-600 hover:text-blue-900"
                     >
                       View
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))
             ) : (
-              <tr>
-                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+              <TableRow>
+                <TableCell colSpan="5" className="text-center py-8 text-gray-500">
                   No clients found
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </Layout>
   );
 }
