@@ -47,7 +47,7 @@ export default function ExpensesPage() {
                   <TableCell>{expense.vendor}</TableCell>
                   <TableCell>{expense.description || '-'}</TableCell>
                   <TableCell>${parseFloat(expense.amount).toFixed(2)}</TableCell>
-                  <TableCell>{expense.category_id || '-'}</TableCell>
+                  <TableCell>{expense.category?.name || '-'}</TableCell>
                   <TableCell>
                     <Button size="sm" variant="ghost">
                       Edit

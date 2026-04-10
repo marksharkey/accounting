@@ -21,6 +21,29 @@ class ExpenseIn(BaseModel):
     notes: Optional[str] = None
 
 
+class CategoryInfo(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
+class ExpenseOut(BaseModel):
+    id: int
+    expense_date: date
+    vendor: str
+    description: Optional[str] = None
+    amount: float
+    category_id: Optional[int] = None
+    category: Optional[CategoryInfo] = None
+    reference_number: Optional[str] = None
+    notes: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 @router.get("/")
 def list_expenses(
     from_date: Optional[date] = None,
@@ -40,7 +63,7 @@ def list_expenses(
         query = query.filter_by(category_id=category_id)
     total = query.count()
     expenses = query.order_by(models.Expense.expense_date.desc()).offset(skip).limit(limit).all()
-    return {"total": total, "items": expenses}
+    return {"total": total, "items": [ExpenseOut.from_orm(e) for e in expenses]}
 
 
 @router.post("/", status_code=201)
