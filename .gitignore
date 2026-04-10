@@ -1,0 +1,36 @@
+# Environment - never commit these
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Alembic cache
+migrations/__pycache__/
+
+# Node / React
+node_modules/
+frontend/dist/
+.npm
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Uploads (Phase 2)
+uploads/
