@@ -360,13 +360,9 @@
             width: 18%;
         }
 
-        /* Account Summary Section */
-        .account-summary-section {
-            background-color: #f8f9fa;
-            padding: 8px;
-            border-left: 3px solid #1a3a52;
-            margin-top: 10px;
-            margin-bottom: 12px;
+        /* Account Summary Section (inline with totals) */
+        .account-summary-inline {
+            margin-top: 3px;
             font-size: 11px;
         }
 
@@ -504,7 +500,7 @@
             </tbody>
         </table>
 
-        <!-- Totals -->
+        <!-- Totals and Account Summary -->
         <div class="totals-section">
             <div class="totals-spacer"></div>
             <div class="totals-block">
@@ -524,51 +520,44 @@
                             <td class="total-label">Total</td>
                             <td class="total-value">{{ total }}</td>
                         </tr>
-                        {% if amount_paid != '$0.00' %}
-                        <tr class="total-row-separator">
-                            <td class="total-label">Amount Paid</td>
-                            <td class="total-value">{{ amount_paid }}</td>
-                        </tr>
-                        {% endif %}
                     </tbody>
                 </table>
+
+                <!-- Account Summary (right below Total) -->
+                {% if show_account_summary %}
+                <div class="account-summary-inline">
+                    <table style="width: 100%; margin-bottom: 8px; border-collapse: collapse;">
+                        <tbody>
+                            {% if previous_balance != '$0.00' %}
+                            <tr>
+                                <td class="account-summary-label">
+                                    {% if previous_balance[0] == '-' %}
+                                    Previous Credit
+                                    {% else %}
+                                    Previous Balance Due
+                                    {% endif %}
+                                </td>
+                                <td class="account-summary-value {% if previous_balance[0] == '-' %}account-credit{% else %}account-due{% endif %}">
+                                    {{ previous_balance }}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if payments_on_account != '$0.00' %}
+                            <tr>
+                                <td class="account-summary-label">Payments/Credits</td>
+                                <td class="account-summary-value account-payment">{{ payments_on_account }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr class="account-summary-total">
+                                <td class="account-summary-label">Total Amount Due</td>
+                                <td class="account-summary-value">{{ total_amount_due }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
             </div>
         </div>
-
-        <!-- Account Summary -->
-        {% if show_account_summary %}
-        <div class="account-summary-section">
-            <div class="section-label">Account Summary</div>
-            <table style="width: 100%; margin-bottom: 8px; border-collapse: collapse;">
-                <tbody>
-                    {% if previous_balance != '$0.00' %}
-                    <tr>
-                        <td class="account-summary-label">
-                            {% if previous_balance[0] == '-' %}
-                            Previous Credit
-                            {% else %}
-                            Previous Balance Due
-                            {% endif %}
-                        </td>
-                        <td class="account-summary-value {% if previous_balance[0] == '-' %}account-credit{% else %}account-due{% endif %}">
-                            {{ previous_balance }}
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% if payments_on_account != '$0.00' %}
-                    <tr>
-                        <td class="account-summary-label">Payments/Credits</td>
-                        <td class="account-summary-value account-payment">{{ payments_on_account }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr class="account-summary-total">
-                        <td class="account-summary-label">Total Amount Due</td>
-                        <td class="account-summary-value">{{ total_amount_due }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
 
         <!-- Notes -->
         {% if notes %}
