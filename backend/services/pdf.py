@@ -28,9 +28,9 @@ def generate_invoice_pdf(invoice, client):
         # PrecisionPros company info
         company_info = {
             'name': 'PrecisionPros',
-            'address1': '123 Tech Boulevard',
-            'address2': 'San Francisco, CA 94105',
-            'phone': '+1 (415) 123-4567',
+            'address1': '6543 East Omega Street',
+            'address2': 'Mesa, AZ 85215',
+            'phone': '480-329-6176',
             'email': 'billing@precisionpros.com',
         }
 
