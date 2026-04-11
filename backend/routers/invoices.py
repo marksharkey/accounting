@@ -75,6 +75,7 @@ class InvoiceOut(BaseModel):
     total: float
     amount_paid: float
     balance_due: float
+    previous_balance: float
     notes: Optional[str]
     internal_notes: Optional[str]
     voided_reason: Optional[str]
@@ -94,6 +95,7 @@ class InvoiceCreate(BaseModel):
     status: models.InvoiceStatus = models.InvoiceStatus.draft
     authnet_verified: bool = False
     authnet_transaction_id: Optional[str] = None
+    previous_balance: float = 0.0
     notes: Optional[str] = None
     internal_notes: Optional[str] = None
 
@@ -182,6 +184,7 @@ async def create_invoice(
         raise HTTPException(status_code=404, detail="Client not found")
 
     invoice_number = next_invoice_number(db)
+    previous_balance = float(client.account_balance) if client.account_balance else 0.0
     invoice = models.Invoice(
         invoice_number=invoice_number,
         client_id=data.client_id,
@@ -190,6 +193,7 @@ async def create_invoice(
         status=data.status,
         authnet_verified=data.authnet_verified,
         authnet_transaction_id=data.authnet_transaction_id,
+        previous_balance=previous_balance,
         notes=data.notes,
         internal_notes=data.internal_notes,
         created_by_id=current_user.id,

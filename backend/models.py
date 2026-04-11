@@ -243,6 +243,7 @@ class Invoice(Base):
     total = Column(Numeric(10, 2), nullable=False, default=0.00)
     amount_paid = Column(Numeric(10, 2), default=0.00)
     balance_due = Column(Numeric(10, 2), default=0.00)
+    previous_balance = Column(Numeric(10, 2), default=0.00, nullable=False)
 
     notes = Column(Text, nullable=True)
     internal_notes = Column(Text, nullable=True)
