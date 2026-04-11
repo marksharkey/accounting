@@ -158,13 +158,20 @@ def prefill_invoice(
     schedules = db.query(models.BillingSchedule).filter_by(
         client_id=client_id, is_active=True
     ).all()
-    line_items = [{
-        "description": s.description,
-        "quantity": 1.0,
-        "unit_amount": float(s.amount),
-        "amount": float(s.amount),
-        "service_id": s.service_id,
-    } for s in schedules]
+    # Extract line items from all active billing schedules
+    line_items = []
+    for schedule in schedules:
+        for item in schedule.line_items:
+            line_items.append({
+                "description": item.description,
+                "quantity": float(item.quantity),
+                "unit_amount": float(item.unit_amount),
+                "amount": float(item.amount),
+                "service_id": item.service_id,
+            })
+
+    # Sort by schedule creation order (earliest first)
+    line_items = sorted(line_items, key=lambda x: x["description"])
     today = date.today()
     if today.month == 12:
         due_date = today.replace(year=today.year + 1, month=1, day=1)
