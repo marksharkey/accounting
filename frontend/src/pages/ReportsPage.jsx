@@ -47,6 +47,15 @@ export default function ReportsPage() {
     },
   });
 
+  // Collections Queue
+  const { data: collectionsData, isLoading: collectionsLoading } = useQuery({
+    queryKey: ['collections', 'daily-queue'],
+    queryFn: async () => {
+      const response = await apiClient.get('/collections/daily-queue');
+      return response.data;
+    },
+  });
+
   const closeDetail = () => setSelectedReport(null);
 
   return (
@@ -332,10 +341,96 @@ export default function ReportsPage() {
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>Collections Report</CardTitle>
+              <CardTitle>Collections Report - {collectionsData?.date ? new Date(collectionsData.date).toLocaleDateString() : 'Today'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">Collections data will be displayed here</p>
+              {collectionsLoading ? (
+                <p>Loading...</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* Overdue Summary */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-red-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Total Overdue</p>
+                      <p className="text-2xl font-bold text-red-600">{collectionsData?.overdue_count || 0}</p>
+                    </div>
+                    <div className="p-4 bg-orange-50 rounded-lg">
+                      <p className="text-sm text-gray-600">Late Fee Candidates</p>
+                      <p className="text-2xl font-bold text-orange-600">{collectionsData?.late_fee_candidates?.length || 0}</p>
+                    </div>
+                    <div className="p-4 bg-red-100 rounded-lg">
+                      <p className="text-sm text-gray-600">Suspension Candidates</p>
+                      <p className="text-2xl font-bold text-red-700">{collectionsData?.suspension_candidates?.length || 0}</p>
+                    </div>
+                  </div>
+
+                  {/* Late Fee Candidates */}
+                  {collectionsData?.late_fee_candidates && collectionsData.late_fee_candidates.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Late Fee Candidates (10+ days overdue)</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Invoice</TableHead>
+                            <TableHead>Client</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead>Days Overdue</TableHead>
+                            <TableHead>Balance</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {collectionsData.late_fee_candidates.map((inv, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell>{inv.invoice_number}</TableCell>
+                              <TableCell>{inv.client_name}</TableCell>
+                              <TableCell>{new Date(inv.due_date).toLocaleDateString()}</TableCell>
+                              <TableCell>{inv.days_overdue}</TableCell>
+                              <TableCell>${inv.balance_due.toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Suspension Candidates */}
+                  {collectionsData?.suspension_candidates && collectionsData.suspension_candidates.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3">Suspension Candidates (20+ days overdue)</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Invoice</TableHead>
+                            <TableHead>Client</TableHead>
+                            <TableHead>Due Date</TableHead>
+                            <TableHead>Days Overdue</TableHead>
+                            <TableHead>Balance</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {collectionsData.suspension_candidates.map((inv, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell>{inv.invoice_number}</TableCell>
+                              <TableCell>{inv.client_name}</TableCell>
+                              <TableCell>{new Date(inv.due_date).toLocaleDateString()}</TableCell>
+                              <TableCell>{inv.days_overdue}</TableCell>
+                              <TableCell>${inv.balance_due.toFixed(2)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* No action needed message */}
+                  {(!collectionsData?.late_fee_candidates || collectionsData.late_fee_candidates.length === 0) &&
+                    (!collectionsData?.suspension_candidates || collectionsData.suspension_candidates.length === 0) && (
+                    <div className="p-4 bg-green-50 rounded-lg text-center">
+                      <p className="text-green-700 font-medium">✓ No collections actions needed today</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
