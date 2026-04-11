@@ -363,9 +363,10 @@
         /* Account Summary Section */
         .account-summary-section {
             background-color: #f8f9fa;
-            padding: 6px 8px;
+            padding: 8px;
             border-left: 3px solid #1a3a52;
-            margin-bottom: 8px;
+            margin-top: 10px;
+            margin-bottom: 12px;
             font-size: 11px;
         }
 
@@ -509,11 +510,11 @@
             <div class="totals-block">
                 <table>
                     <tbody>
+                        {% if late_fee %}
                         <tr>
                             <td class="total-label">Subtotal</td>
                             <td class="total-value">{{ subtotal }}</td>
                         </tr>
-                        {% if late_fee %}
                         <tr>
                             <td class="total-label">Late Fee</td>
                             <td class="total-value">{{ late_fee }}</td>
@@ -523,16 +524,12 @@
                             <td class="total-label">Total</td>
                             <td class="total-value">{{ total }}</td>
                         </tr>
-                        {% if amount_paid != '0.00' %}
+                        {% if amount_paid != '$0.00' %}
                         <tr class="total-row-separator">
                             <td class="total-label">Amount Paid</td>
                             <td class="total-value">{{ amount_paid }}</td>
                         </tr>
                         {% endif %}
-                        <tr class="total-row-due">
-                            <td class="total-label">Balance Due</td>
-                            <td class="total-value">{{ balance_due }}</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -544,10 +541,7 @@
             <div class="section-label">Account Summary</div>
             <table style="width: 100%; margin-bottom: 8px; border-collapse: collapse;">
                 <tbody>
-                    <tr>
-                        <td class="account-summary-label">This Invoice</td>
-                        <td class="account-summary-value">{{ total }}</td>
-                    </tr>
+                    {% if previous_balance != '$0.00' %}
                     <tr>
                         <td class="account-summary-label">
                             {% if previous_balance[0] == '-' %}
@@ -560,6 +554,7 @@
                             {{ previous_balance }}
                         </td>
                     </tr>
+                    {% endif %}
                     {% if payments_on_account != '$0.00' %}
                     <tr>
                         <td class="account-summary-label">Payments/Credits</td>
