@@ -45,6 +45,9 @@ export default function Layout({ children, title }) {
                 <a href="/reports" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Reports
                 </a>
+                <a href="/settings/company" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
+                  Settings
+                </a>
               </nav>
               <span className="text-sm text-gray-600">{user?.username}</span>
               <button

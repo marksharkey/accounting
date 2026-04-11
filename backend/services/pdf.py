@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from decimal import Decimal
 import re
+from sqlalchemy.orm import Session
 
 
 # Setup Jinja2
@@ -22,10 +23,10 @@ def format_phone(phone):
     return phone
 
 
-def generate_invoice_pdf(invoice, client):
+def generate_invoice_pdf(invoice, client, db: Session = None):
     """Generate PDF for an invoice using WeasyPrint"""
     try:
-        # PrecisionPros company info
+        # Get company info from database, fallback to defaults if not set
         company_info = {
             'name': 'PrecisionPros',
             'address1': '6543 East Omega Street',
@@ -33,6 +34,21 @@ def generate_invoice_pdf(invoice, client):
             'phone': '480-329-6176',
             'email': 'billing@precisionpros.com',
         }
+
+        if db:
+            import models
+            company = db.query(models.CompanyInfo).first()
+            if company:
+                company_info['name'] = company.company_name
+                company_info['address1'] = company.address_line1 or ''
+                company_info['address2'] = (
+                    f"{company.city or ''}, {company.state or ''} {company.zip_code or ''}".strip()
+                    if company.city or company.state or company.zip_code else ''
+                )
+                if company.address_line2:
+                    company_info['address1'] = f"{company_info['address1']}\n{company.address_line2}".strip()
+                company_info['phone'] = company.phone or company_info['phone']
+                company_info['email'] = company.email or company_info['email']
 
         # Prepare line items
         line_items = []

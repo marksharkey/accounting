@@ -464,7 +464,7 @@ def download_invoice_pdf(
         raise HTTPException(status_code=404, detail="Client not found")
 
     try:
-        pdf_buffer = generate_invoice_pdf(invoice, client)
+        pdf_buffer = generate_invoice_pdf(invoice, client, db)
         return StreamingResponse(
             iter([pdf_buffer.getvalue()]),
             media_type="application/pdf",

@@ -1,14 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
+from pathlib import Path
 
 from config import get_settings
 from database import get_db, engine
 import models
 from auth import authenticate_user, create_access_token, get_current_user, get_password_hash
-from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos
+from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos, company_info
 
 settings = get_settings()
 
@@ -63,14 +65,20 @@ async def get_me(current_user: models.User = Depends(get_current_user)):
     }
 
 
-app.include_router(clients.router,       prefix="/api/clients",       tags=["Clients"])
-app.include_router(services.router,      prefix="/api/services",      tags=["Service Catalog"])
-app.include_router(invoices.router,      prefix="/api/invoices",      tags=["Invoices"])
-app.include_router(credit_memos.router,  prefix="/api/credit-memos",  tags=["Credit Memos"])
-app.include_router(payments.router,      prefix="/api/payments",      tags=["Payments"])
-app.include_router(expenses.router,      prefix="/api/expenses",      tags=["Expenses"])
-app.include_router(reports.router,       prefix="/api/reports",       tags=["Reports"])
-app.include_router(collections.router,   prefix="/api/collections",   tags=["Collections"])
+app.include_router(clients.router,        prefix="/api/clients",        tags=["Clients"])
+app.include_router(services.router,       prefix="/api/services",       tags=["Service Catalog"])
+app.include_router(invoices.router,       prefix="/api/invoices",       tags=["Invoices"])
+app.include_router(credit_memos.router,   prefix="/api/credit-memos",   tags=["Credit Memos"])
+app.include_router(payments.router,       prefix="/api/payments",       tags=["Payments"])
+app.include_router(expenses.router,       prefix="/api/expenses",       tags=["Expenses"])
+app.include_router(reports.router,        prefix="/api/reports",        tags=["Reports"])
+app.include_router(collections.router,    prefix="/api/collections",    tags=["Collections"])
+app.include_router(company_info.router,   prefix="/api/company-info",   tags=["Company Info"])
+
+# Mount static files for uploads
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 @app.get("/api/health")

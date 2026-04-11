@@ -13,6 +13,7 @@ import CreditMemoBuilderPage from './pages/CreditMemoBuilderPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
+import CompanySettingsPage from './pages/CompanySettingsPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -122,6 +123,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/company"
+            element={
+              <ProtectedRoute>
+                <CompanySettingsPage />
               </ProtectedRoute>
             }
           />

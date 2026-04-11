@@ -500,6 +500,27 @@ class InvoiceSequence(Base):
 
 
 # ─────────────────────────────────────────────
+# Company Info (Settings)
+# ─────────────────────────────────────────────
+
+class CompanyInfo(Base):
+    __tablename__ = "company_info"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_name = Column(String(150), nullable=False)
+    address_line1 = Column(String(150), nullable=True)
+    address_line2 = Column(String(150), nullable=True)
+    city = Column(String(100), nullable=True)
+    state = Column(String(50), nullable=True)
+    zip_code = Column(String(20), nullable=True)
+    phone = Column(String(20), nullable=True)
+    email = Column(String(150), nullable=True)
+    website_url = Column(String(255), nullable=True)
+    logo_filename = Column(String(255), nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+# ─────────────────────────────────────────────
 # Phase 2 — Bank Reconciliation
 # ─────────────────────────────────────────────
 

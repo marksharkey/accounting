@@ -29,6 +29,18 @@ export default function InvoiceBuilderPage() {
     },
   });
 
+  const { data: companyInfo } = useQuery({
+    queryKey: ['company-info'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/company-info/');
+        return response.data;
+      } catch {
+        return null;
+      }
+    },
+  });
+
   const clients = clientData?.items || [];
   const selectedClientObj = clients.find(c => c.id === parseInt(selectedClient));
 
@@ -226,6 +238,39 @@ export default function InvoiceBuilderPage() {
 
   return (
     <Layout>
+      {/* Company Info Header Preview */}
+      {companyInfo && (
+        <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
+          <div className="flex gap-4">
+            {companyInfo.logo_url && (
+              <div className="flex-shrink-0">
+                <img
+                  src={companyInfo.logo_url}
+                  alt="Company Logo"
+                  className="h-16 w-auto object-contain"
+                />
+              </div>
+            )}
+            <div className="flex-1">
+              <h3 className="font-bold text-lg">{companyInfo.company_name}</h3>
+              {(companyInfo.address_line1 || companyInfo.city) && (
+                <p className="text-sm text-gray-600">
+                  {[companyInfo.address_line1, companyInfo.address_line2].filter(Boolean).join(', ')}
+                  {companyInfo.city && ` ${companyInfo.city}`}
+                  {companyInfo.state && `, ${companyInfo.state}`}
+                  {companyInfo.zip_code && ` ${companyInfo.zip_code}`}
+                </p>
+              )}
+              {(companyInfo.phone || companyInfo.email || companyInfo.website_url) && (
+                <p className="text-sm text-gray-600">
+                  {[companyInfo.phone, companyInfo.email, companyInfo.website_url].filter(Boolean).join(' | ')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sticky Toolbar */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 -mx-4 sm:-mx-6 lg:-mx-8 mb-6">
         <div className="flex flex-wrap gap-3 items-center">
