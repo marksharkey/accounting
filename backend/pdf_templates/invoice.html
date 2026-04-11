@@ -550,13 +550,13 @@
                     </tr>
                     <tr>
                         <td class="account-summary-label">
-                            {% if previous_balance[1] == '-' %}
+                            {% if previous_balance[0] == '-' %}
                             Previous Credit
                             {% else %}
                             Previous Balance Due
                             {% endif %}
                         </td>
-                        <td class="account-summary-value {% if previous_balance[1] == '-' %}account-credit{% else %}account-due{% endif %}">
+                        <td class="account-summary-value {% if previous_balance[0] == '-' %}account-credit{% else %}account-due{% endif %}">
                             {{ previous_balance }}
                         </td>
                     </tr>
