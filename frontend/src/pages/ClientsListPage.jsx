@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import AddClientModal from '../components/AddClientModal';
@@ -65,7 +65,14 @@ export default function ClientsListPage() {
             {clients && clients.length > 0 ? (
               clients.map((client) => (
                 <TableRow key={client.id}>
-                  <TableCell className="font-medium">{client.company_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      to={`/clients/${client.id}`}
+                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {client.company_name}
+                    </Link>
+                  </TableCell>
                   <TableCell>{formatBillingType(client.billing_type)}</TableCell>
                   <TableCell>
                     <span
