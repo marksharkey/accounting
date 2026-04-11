@@ -262,3 +262,9 @@ Pages to build:
 - `a97a9b7` — Phase 1A: Add backend foundation — config, database, auth, requirements
 - `f482bf7` — Phase 1A: Add models (full schema) and billing service
 - (pending) — Phase 1A: Complete — all routers, main.py, pin bcrypt==4.0.1
+
+Phase 1A ✅ COMPLETE - Backend, all 17 tables, JWT auth
+Phase 1B ✅ COMPLETE - Full React frontend, all pages working
+Phase 1C ✅ COMPLETE - Email templates, SMTP via Gmail, all triggers working
+Phase 1D - NEXT - PDF generation (WeasyPrint), downloadable invoices
+Phase 2  - Bank reconciliation
