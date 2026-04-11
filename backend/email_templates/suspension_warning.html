@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #c0392b; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; border: 1px solid #ddd; }
+        .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; }
+        .warning { color: #c0392b; font-weight: bold; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠ ACCOUNT SUSPENSION WARNING</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ client_name }},</p>
+            <p><span class="warning">IMPORTANT: Your account is scheduled for suspension due to overdue payments.</span></p>
+            <p>Your account has exceeded our payment terms and is at risk of suspension. <strong>Immediate action is required</strong> to prevent service interruption.</p>
+            <p>To avoid suspension, please remit full payment of all overdue amounts immediately.</p>
+            <p>If you are experiencing financial difficulties or have extenuating circumstances, please contact us right away to discuss payment arrangements or a resolution plan.</p>
+            <p><strong>Time is critical. Do not ignore this notice.</strong></p>
+            <p>Contact us immediately:<br>PrecisionPros Billing</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply directly to this message.</p>
+        </div>
+    </div>
+</body>
+</html>

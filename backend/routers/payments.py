@@ -4,10 +4,12 @@ from typing import Optional
 from pydantic import BaseModel
 from datetime import date
 from decimal import Decimal
+import asyncio
 
 import models
 from database import get_db
 from auth import get_current_user
+from services.email import send_receipt_email
 
 router = APIRouter()
 
@@ -67,6 +69,19 @@ def record_payment(
     db.add(log)
     db.commit()
     db.refresh(payment)
+
+    # Send receipt email
+    if client.email:
+        try:
+            asyncio.create_task(send_receipt_email(
+                client_email=client.email,
+                client_name=client.company_name,
+                invoice_number=invoice.invoice_number,
+                amount_paid=data.amount
+            ))
+        except Exception as e:
+            print(f"Error sending receipt email: {e}")
+
     return payment
 
 

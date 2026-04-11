@@ -5,11 +5,13 @@ from typing import Optional, List
 from pydantic import BaseModel
 from datetime import date, timedelta
 from decimal import Decimal
+import asyncio
 
 import models
 from database import get_db
 from auth import get_current_user
 from services.billing import next_invoice_number
+from services.email import send_invoice_email
 from config import get_settings
 
 settings = get_settings()
@@ -31,6 +33,7 @@ class InvoiceCreate(BaseModel):
     created_date: date
     due_date: date
     line_items: List[LineItemIn]
+    status: models.InvoiceStatus = models.InvoiceStatus.draft
     authnet_verified: bool = False
     authnet_transaction_id: Optional[str] = None
     notes: Optional[str] = None
@@ -126,7 +129,7 @@ def create_invoice(
         client_id=data.client_id,
         created_date=data.created_date,
         due_date=data.due_date,
-        status=models.InvoiceStatus.draft,
+        status=data.status,
         authnet_verified=data.authnet_verified,
         authnet_transaction_id=data.authnet_transaction_id,
         notes=data.notes,
@@ -166,6 +169,20 @@ def create_invoice(
     db.add(log)
     db.commit()
     db.refresh(invoice)
+
+    # Send email if invoice is marked as ready
+    if invoice.status == models.InvoiceStatus.ready and client.email:
+        # Run async email sending in background
+        try:
+            asyncio.create_task(send_invoice_email(
+                client_email=client.email,
+                client_name=client.company_name,
+                invoice_number=invoice_number,
+                total=float(invoice.total)
+            ))
+        except Exception as e:
+            print(f"Error sending invoice email: {e}")
+
     return invoice
 
 
@@ -201,6 +218,21 @@ def update_invoice_status(
     )
     db.add(log)
     db.commit()
+
+    # Send email if transitioning to ready
+    if old_status != models.InvoiceStatus.ready and new_status == models.InvoiceStatus.ready:
+        client = invoice.client
+        if client and client.email:
+            try:
+                asyncio.create_task(send_invoice_email(
+                    client_email=client.email,
+                    client_name=client.company_name,
+                    invoice_number=invoice.invoice_number,
+                    total=float(invoice.total)
+                ))
+            except Exception as e:
+                print(f"Error sending invoice email: {e}")
+
     return {"invoice_id": invoice_id, "status": new_status}
 
 

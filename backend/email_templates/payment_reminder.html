@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f39c12; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; border: 1px solid #ddd; }
+        .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; }
+        .amount { font-size: 18px; font-weight: bold; color: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Payment Reminder</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ client_name }},</p>
+            <p>This is a friendly reminder that payment is due for the following invoice:</p>
+            <p><strong>Invoice Number:</strong> {{ invoice_number }}</p>
+            <p><strong>Amount Due:</strong> <span class="amount">{{ balance_due }}</span></p>
+            <p><strong>Due Date:</strong> {{ due_date }}</p>
+            <p>Please submit payment as soon as possible to avoid any service interruptions.</p>
+            <p>If you've already sent payment, please disregard this notice and thank you!</p>
+            <p>Best regards,<br>PrecisionPros Billing</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply directly to this message.</p>
+        </div>
+    </div>
+</body>
+</html>

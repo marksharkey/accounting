@@ -96,6 +96,7 @@ export default function InvoiceBuilderPage() {
         created_date: new Date().toISOString().split('T')[0],
         due_date: dueDate,
         line_items: formattedItems,
+        status: 'draft',
       });
       alert('Invoice saved as draft');
     } catch (error) {
@@ -122,6 +123,7 @@ export default function InvoiceBuilderPage() {
         created_date: new Date().toISOString().split('T')[0],
         due_date: dueDate,
         line_items: formattedItems,
+        status: 'ready',
         authnet_verified: isAuthNetVerified,
       });
       alert('Invoice marked as ready');

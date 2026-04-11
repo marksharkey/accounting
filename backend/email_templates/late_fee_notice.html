@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #e74c3c; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; border: 1px solid #ddd; }
+        .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; }
+        .amount { font-size: 18px; font-weight: bold; color: #e74c3c; }
+        .warning { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠ Late Fee Applied</h1>
+        </div>
+        <div class="content">
+            <p>Hello {{ client_name }},</p>
+            <p><span class="warning">Your account has overdue payments and a late fee has been applied.</span></p>
+            <p><strong>Invoice Number:</strong> {{ invoice_number }}</p>
+            <p><strong>Late Fee:</strong> <span class="amount">{{ late_fee }}</span></p>
+            <p><strong>New Balance Due:</strong> <span class="amount">{{ balance_due }}</span></p>
+            <p><strong>Applied Date:</strong> {{ date }}</p>
+            <p>Please remit payment immediately to bring your account current and avoid further actions.</p>
+            <p>If you have questions or need to discuss payment arrangements, please contact us right away.</p>
+            <p>Best regards,<br>PrecisionPros Billing</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated email. Please do not reply directly to this message.</p>
+        </div>
+    </div>
+</body>
+</html>
