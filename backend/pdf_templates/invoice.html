@@ -359,6 +359,66 @@
         .amount-col {
             width: 18%;
         }
+
+        /* Account Summary Section */
+        .account-summary-section {
+            background-color: #f8f9fa;
+            padding: 6px 8px;
+            border-left: 3px solid #1a3a52;
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+
+        .account-summary-label {
+            text-align: left;
+            font-weight: 500;
+            color: #666;
+            width: 60%;
+            padding: 3px 8px;
+            border: none;
+            background: none;
+        }
+
+        .account-summary-value {
+            text-align: right;
+            font-weight: 500;
+            color: #333;
+            width: 40%;
+            padding: 3px 8px;
+            border: none;
+            background: none;
+        }
+
+        .account-due {
+            color: #c41e3a;
+            font-weight: 600;
+        }
+
+        .account-credit {
+            color: #0b5345;
+            font-weight: 600;
+        }
+
+        .account-payment {
+            color: #0b5345;
+        }
+
+        .account-summary-total {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+
+        .account-summary-total .account-summary-label {
+            font-weight: 700;
+            color: #1a3a52;
+        }
+
+        .account-summary-total .account-summary-value {
+            font-weight: 700;
+            color: #1a3a52;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -477,6 +537,43 @@
                 </table>
             </div>
         </div>
+
+        <!-- Account Summary -->
+        {% if show_account_summary %}
+        <div class="account-summary-section">
+            <div class="section-label">Account Summary</div>
+            <table style="width: 100%; margin-bottom: 8px; border-collapse: collapse;">
+                <tbody>
+                    <tr>
+                        <td class="account-summary-label">This Invoice</td>
+                        <td class="account-summary-value">{{ total }}</td>
+                    </tr>
+                    <tr>
+                        <td class="account-summary-label">
+                            {% if previous_balance[1] == '-' %}
+                            Previous Credit
+                            {% else %}
+                            Previous Balance Due
+                            {% endif %}
+                        </td>
+                        <td class="account-summary-value {% if previous_balance[1] == '-' %}account-credit{% else %}account-due{% endif %}">
+                            {{ previous_balance }}
+                        </td>
+                    </tr>
+                    {% if payments_on_account != '$0.00' %}
+                    <tr>
+                        <td class="account-summary-label">Payments/Credits</td>
+                        <td class="account-summary-value account-payment">{{ payments_on_account }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="account-summary-total">
+                        <td class="account-summary-label">Total Amount Due</td>
+                        <td class="account-summary-value">{{ total_amount_due }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
 
         <!-- Notes -->
         {% if notes %}
