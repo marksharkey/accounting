@@ -4,108 +4,171 @@
     <meta charset="UTF-8">
     <title>Invoice {{ invoice_number }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
+        * {
             margin: 0;
-            padding: 40px;
+            padding: 0;
+            box-sizing: border-box;
         }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            background: white;
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        .page {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+        }
+
+        /* Header */
         .header {
+            display: table;
+            width: 100%;
             margin-bottom: 40px;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 20px;
-            display: block;
+            padding-bottom: 30px;
+            border-bottom: 4px solid #1a3a52;
+        }
+
+        .header-left {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+        }
+
+        .header-right {
+            display: table-cell;
+            width: 50%;
+            vertical-align: top;
+            text-align: right;
         }
 
         .company-name {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 0 0 5px 0;
+            font-size: 32px;
+            font-weight: 700;
+            color: #1a3a52;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
 
-        .company-tag {
+        .company-tagline {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .company-details {
             font-size: 12px;
             color: #666;
+            line-height: 1.8;
+        }
+
+        .company-details p {
+            margin: 2px 0;
+        }
+
+        .invoice-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a3a52;
             margin-bottom: 20px;
         }
 
-        .invoice-header-right {
-            text-align: right;
-            margin-top: -50px;
-        }
-
-        .invoice-number {
-            font-size: 20px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 0 0 5px 0;
-        }
-
         .invoice-meta {
-            font-size: 12px;
+            font-size: 13px;
             color: #666;
+            line-height: 2;
         }
 
-        .invoice-meta-row {
-            margin-bottom: 3px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-top: 8px;
-        }
-
-        .status-draft { background-color: #95a5a6; color: white; }
-        .status-sent { background-color: #3498db; color: white; }
-        .status-partially-paid { background-color: #f39c12; color: white; }
-        .status-paid { background-color: #27ae60; color: white; }
-        .status-voided { background-color: #e74c3c; color: white; }
-
-        .client-section {
-            margin-bottom: 40px;
-            display: block;
-        }
-
-        .section-title {
-            font-size: 12px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #666;
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
             margin-bottom: 8px;
         }
 
-        .client-details {
-            font-size: 13px;
-            line-height: 1.6;
-            margin-bottom: 30px;
+        .meta-label {
+            font-weight: 600;
+            color: #333;
+            min-width: 70px;
+        }
+
+        .meta-value {
+            color: #666;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 15px;
+        }
+
+        .status-draft {
+            background-color: #e8eef7;
+            color: #4a5f8f;
+        }
+
+        .status-sent {
+            background-color: #d4e6f1;
+            color: #1a5276;
+        }
+
+        .status-partially-paid {
+            background-color: #fef5e7;
+            color: #a04000;
+        }
+
+        .status-paid {
+            background-color: #d5f4e6;
+            color: #0b5345;
+            font-weight: 700;
+        }
+
+        .status-voided {
+            background-color: #fadbd8;
+            color: #78281f;
+        }
+
+        /* Bill To Section */
+        .bill-to {
+            margin-bottom: 40px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #999;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .bill-to-content {
+            font-size: 14px;
+            line-height: 1.8;
         }
 
         .client-name {
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 5px;
+            font-weight: 600;
+            color: #1a3a52;
+            font-size: 15px;
+            margin-bottom: 6px;
         }
 
-        .payment-info {
-            background-color: #f8f9fa;
-            padding: 12px;
-            border-left: 3px solid #2c3e50;
-            font-size: 12px;
-            margin-bottom: 30px;
+        .bill-to-content p {
+            margin: 2px 0;
+            color: #666;
         }
 
-        .payment-info p {
-            margin: 5px 0;
-        }
-
-        /* Table */
+        /* Line Items Table */
         table {
             width: 100%;
             margin-bottom: 30px;
@@ -113,24 +176,169 @@
         }
 
         thead {
-            background-color: #2c3e50;
+            background-color: #1a3a52;
             color: white;
         }
 
         th {
-            padding: 10px;
+            padding: 14px 12px;
             text-align: left;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th.amount-col {
+            text-align: right;
         }
 
         td {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #fafbfc;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: white;
+        }
+
+        td.amount-col {
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .description {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .prorate-note {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        /* Totals Section */
+        .totals-section {
+            display: table;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .totals-spacer {
+            display: table-cell;
+            width: 60%;
+        }
+
+        .totals-block {
+            display: table-cell;
+            width: 40%;
+        }
+
+        .totals-block table {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .totals-block th {
+            display: none;
+        }
+
+        .totals-block td {
+            padding: 10px 12px;
+            border: none;
+            background: none;
+        }
+
+        .totals-block tr:nth-child(odd) {
+            background-color: transparent;
+        }
+
+        .totals-block tr:nth-child(even) {
+            background-color: transparent;
+        }
+
+        .total-label {
+            text-align: left;
+            font-weight: 500;
+            color: #666;
+            width: 60%;
+        }
+
+        .total-value {
+            text-align: right;
+            font-weight: 500;
+            color: #333;
+            width: 40%;
+        }
+
+        .total-row-separator {
+            border-top: 2px solid #e0e0e0;
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        .total-row-main {
+            border-top: 3px solid #1a3a52;
+            border-bottom: 3px solid #1a3a52;
+            background-color: #f8f9fa;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a3a52;
+        }
+
+        .total-row-due {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0b5345;
+            padding-top: 15px;
+        }
+
+        /* Notes Section */
+        .notes-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #1a3a52;
+            margin-bottom: 40px;
             font-size: 12px;
         }
 
+        .notes-title {
+            font-weight: 700;
+            color: #1a3a52;
+            margin-bottom: 8px;
+        }
+
+        .notes-content {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Footer */
+        .footer {
+            border-top: 1px solid #e0e0e0;
+            padding-top: 20px;
+            font-size: 11px;
+            color: #999;
+            text-align: center;
+        }
+
+        .footer p {
+            margin: 4px 0;
+        }
+
+        .footer-primary {
+            color: #333;
+            font-weight: 600;
+        }
+
+        /* Utility Classes */
         .text-right {
             text-align: right;
         }
@@ -139,195 +347,151 @@
             text-align: center;
         }
 
-        .prorate-note {
-            font-size: 10px;
-            color: #999;
-            font-style: italic;
-            margin-top: 3px;
-        }
-
-        /* Summary */
-        .summary-section {
-            text-align: right;
-            margin-bottom: 30px;
-        }
-
-        .summary-box {
-            display: inline-block;
-            width: 300px;
-            text-align: right;
-        }
-
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid #ddd;
-            font-size: 12px;
-        }
-
-        .summary-label {
-            font-weight: bold;
-            color: #666;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-top: 2px solid #2c3e50;
-            border-bottom: 2px solid #2c3e50;
-            font-size: 14px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-top: 5px;
-        }
-
-        .due-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            font-size: 13px;
-            font-weight: bold;
-            color: #27ae60;
-        }
-
-        .notes {
-            background-color: #f8f9fa;
-            padding: 12px;
-            margin-bottom: 20px;
-            border-left: 3px solid #2c3e50;
-            font-size: 12px;
-        }
-
-        .notes-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #2c3e50;
-        }
-
-        .footer {
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
-            font-size: 11px;
-            color: #999;
+        .qty-col {
+            width: 12%;
             text-align: center;
-            margin-top: 40px;
+        }
+
+        .price-col {
+            width: 18%;
+        }
+
+        .amount-col {
+            width: 18%;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="header">
-        <div class="company-name">PrecisionPros</div>
-        <div class="company-tag">Professional Web Hosting & IT Services</div>
-        <div class="invoice-header-right">
-            <div class="invoice-number">{{ invoice_number }}</div>
-            <div class="invoice-meta">
-                <div class="invoice-meta-row"><strong>Date:</strong> {{ created_date }}</div>
-                <div class="invoice-meta-row"><strong>Due:</strong> {{ due_date }}</div>
-                <div style="margin-top: 8px;">
-                    <span class="status-badge status-{{ status.replace('_', '-') }}">
-                        {{ status.replace('_', ' ').title() }}
-                    </span>
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="company-name">{{ company_name }}</div>
+                <div class="company-tagline">Professional Web Hosting & IT Services</div>
+                <div class="company-details">
+                    <p>{{ company_address1 }}</p>
+                    <p>{{ company_address2 }}</p>
+                    <p>{{ company_phone }} | {{ company_email }}</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="invoice-title">INVOICE</div>
+                <div class="invoice-meta">
+                    <div class="meta-row">
+                        <span class="meta-label">Invoice #:</span>
+                        <span class="meta-value">{{ invoice_number }}</span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Date:</span>
+                        <span class="meta-value">{{ created_date }}</span>
+                    </div>
+                    <div class="meta-row">
+                        <span class="meta-label">Due:</span>
+                        <span class="meta-value">{{ due_date }}</span>
+                    </div>
+                </div>
+                <div class="status-badge status-{{ status.replace('_', '-') }}">
+                    {{ status_display }}
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Bill To Section -->
-    <div class="client-section">
-        <div class="section-title">Bill To</div>
-        <div class="client-details">
-            <div class="client-name">{{ company_name }}</div>
-            {% if contact_name %}<div>{{ contact_name }}</div>{% endif %}
-            {% if address_line1 %}<div>{{ address_line1 }}</div>{% endif %}
-            {% if address_line2 %}<div>{{ address_line2 }}</div>{% endif %}
-            {% if city or state or zip_code %}
-            <div>
-                {% if city %}{{ city }}{% if state %}, {% endif %}{% endif %}
-                {% if state %}{{ state }}{% endif %}
-                {% if zip_code %}{{ zip_code }}{% endif %}
-            </div>
-            {% endif %}
-            {% if email %}<div style="margin-top: 8px;">{{ email }}</div>{% endif %}
-            {% if phone %}<div>{{ phone }}</div>{% endif %}
-        </div>
-    </div>
-
-    <!-- Payment Terms -->
-    <div class="client-section">
-        <div class="section-title">Payment Terms</div>
-        <div class="payment-info">
-            <p><strong>Invoice Due:</strong> {{ due_date }}</p>
-            <p><strong>Payment Method:</strong> Check, ACH, or Credit Card</p>
-        </div>
-    </div>
-
-    <!-- Line Items -->
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 50%;">Description</th>
-                <th style="width: 10%;" class="text-center">Qty</th>
-                <th style="width: 20%;" class="text-right">Unit Price</th>
-                <th style="width: 20%;" class="text-right">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in line_items %}
-            <tr>
-                <td>
-                    <div>{{ item.description }}</div>
-                    {% if item.is_prorated and item.prorate_note %}
-                    <div class="prorate-note">{{ item.prorate_note }}</div>
-                    {% endif %}
-                </td>
-                <td class="text-center">{{ "%.4f" | format(item.quantity) }}</td>
-                <td class="text-right">${{ "%.2f" | format(item.unit_amount) }}</td>
-                <td class="text-right">${{ "%.2f" | format(item.amount) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Summary -->
-    <div class="summary-section">
-        <div class="summary-box">
-            <div class="summary-row">
-                <span>Subtotal:</span>
-                <span>{{ subtotal }}</span>
-            </div>
-            {% if late_fee %}
-            <div class="summary-row">
-                <span>Late Fee:</span>
-                <span>{{ late_fee }}</span>
-            </div>
-            {% endif %}
-            <div class="total-row">
-                <span>Total Amount Due:</span>
-                <span>{{ total }}</span>
-            </div>
-            <div class="due-row">
-                <span>Balance Due:</span>
-                <span>{{ balance_due }}</span>
+        <!-- Bill To -->
+        <div class="bill-to">
+            <div class="section-label">Bill To</div>
+            <div class="bill-to-content">
+                <div class="client-name">{{ client_name }}</div>
+                {% if contact_name %}<p>{{ contact_name }}</p>{% endif %}
+                {% if address_line1 %}<p>{{ address_line1 }}</p>{% endif %}
+                {% if address_line2 %}<p>{{ address_line2 }}</p>{% endif %}
+                {% if city or state or zip_code %}
+                <p>
+                    {% if city %}{{ city }}{% if state %}, {% endif %}{% endif %}
+                    {% if state %}{{ state }}{% endif %}
+                    {% if zip_code %}{{ zip_code }}{% endif %}
+                </p>
+                {% endif %}
+                {% if email %}<p>{{ email }}</p>{% endif %}
+                {% if phone %}<p>{{ phone }}</p>{% endif %}
             </div>
         </div>
-    </div>
 
-    <!-- Notes -->
-    {% if notes %}
-    <div class="notes">
-        <div class="notes-title">Notes</div>
-        <div>{{ notes }}</div>
-    </div>
-    {% endif %}
+        <!-- Line Items -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th class="qty-col">Qty</th>
+                    <th class="price-col amount-col">Unit Price</th>
+                    <th class="amount-col">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in line_items %}
+                <tr>
+                    <td>
+                        <div class="description">{{ item.description }}</div>
+                        {% if item.is_prorated and item.prorate_note %}
+                        <div class="prorate-note">{{ item.prorate_note }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="qty-col">{{ "%.2f" | format(item.quantity) }}</td>
+                    <td class="amount-col">${{ "%.2f" | format(item.unit_amount) }}</td>
+                    <td class="amount-col">${{ "%.2f" | format(item.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <!-- Footer -->
-    <div class="footer">
-        <p>Thank you for your business!</p>
-        <p>PrecisionPros • Professional Web Hosting & IT Services</p>
-        <p style="margin-top: 8px; color: #ccc;">This invoice was generated on {{ created_date }}</p>
+        <!-- Totals -->
+        <div class="totals-section">
+            <div class="totals-spacer"></div>
+            <div class="totals-block">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td class="total-label">Subtotal</td>
+                            <td class="total-value">{{ subtotal }}</td>
+                        </tr>
+                        {% if late_fee %}
+                        <tr>
+                            <td class="total-label">Late Fee</td>
+                            <td class="total-value">{{ late_fee }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="total-row-main">
+                            <td class="total-label">Total</td>
+                            <td class="total-value">{{ total }}</td>
+                        </tr>
+                        {% if amount_paid != '0.00' %}
+                        <tr class="total-row-separator">
+                            <td class="total-label">Amount Paid</td>
+                            <td class="total-value">{{ amount_paid }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="total-row-due">
+                            <td class="total-label">Balance Due</td>
+                            <td class="total-value">{{ balance_due }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        {% if notes %}
+        <div class="notes-section">
+            <div class="notes-title">Notes</div>
+            <div class="notes-content">{{ notes }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <p class="footer-primary">Thank you for your business!</p>
+            <p>PrecisionPros • Professional Web Hosting & IT Services</p>
+            <p>Questions? Contact us at {{ company_email }} or {{ company_phone }}</p>
+        </div>
     </div>
 </body>
 </html>
