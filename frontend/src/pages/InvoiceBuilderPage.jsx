@@ -17,6 +17,7 @@ export default function InvoiceBuilderPage() {
   const [previousBalance, setPreviousBalance] = useState(0.0);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [billingScheduleIds, setBillingScheduleIds] = useState([]);
 
   // Queries
   const { data: clientData } = useQuery({
@@ -41,13 +42,13 @@ export default function InvoiceBuilderPage() {
   const services = Array.isArray(serviceData) ? serviceData : serviceData?.items || [];
 
   const { data: prefilled, isLoading: isPrefillLoading } = useQuery({
-    queryKey: ['invoices', 'prefill', selectedClient],
+    queryKey: ['invoices', 'prefill', selectedClient, dueDate],
     queryFn: async () => {
-      if (!selectedClient) return null;
-      const response = await apiClient.post(`/invoices/prefill/${selectedClient}`);
+      if (!selectedClient || !dueDate) return null;
+      const response = await apiClient.post(`/invoices/prefill/${selectedClient}?due_date=${dueDate}`);
       return response.data;
     },
-    enabled: !!selectedClient,
+    enabled: !!selectedClient && !!dueDate,
   });
 
   // Populate previousBalance when prefilled data arrives or client changes
@@ -73,6 +74,7 @@ export default function InvoiceBuilderPage() {
       setNotesToClient('');
       setInternalNotes('');
       setPreviousBalance(0.0);
+      setBillingScheduleIds([]);
     },
     onError: (error) => {
       setErrorMessage(error.response?.data?.detail || error.message);
@@ -133,6 +135,7 @@ export default function InvoiceBuilderPage() {
         unitPrice: item.unit_amount || 0,
       })));
       setDueDate(prefilled.suggested_due_date);
+      setBillingScheduleIds(prefilled.billing_schedule_ids || []);
     }
   };
 
@@ -164,6 +167,7 @@ export default function InvoiceBuilderPage() {
       notes: notesToClient || null,
       internal_notes: internalNotes || null,
       status: 'draft',
+      billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
     });
   };
 
@@ -193,6 +197,7 @@ export default function InvoiceBuilderPage() {
       internal_notes: internalNotes || null,
       status: 'ready',
       authnet_verified: isAuthNetVerified,
+      billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
     });
   };
 

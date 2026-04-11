@@ -98,6 +98,7 @@ class InvoiceCreate(BaseModel):
     previous_balance: float = 0.0
     notes: Optional[str] = None
     internal_notes: Optional[str] = None
+    billing_schedule_ids: Optional[List[int]] = None
 
 
 @router.get("/")
@@ -149,18 +150,34 @@ def clients_due_for_billing(
 @router.post("/prefill/{client_id}")
 def prefill_invoice(
     client_id: int,
+    due_date: Optional[date] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     client = db.query(models.Client).filter_by(id=client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    schedules = db.query(models.BillingSchedule).filter_by(
-        client_id=client_id, is_active=True
+
+    # Compute default due_date (first of next month) if not provided
+    if not due_date:
+        today = date.today()
+        if today.month == 12:
+            due_date = today.replace(year=today.year + 1, month=1, day=1)
+        else:
+            due_date = today.replace(month=today.month + 1, day=1)
+
+    # Filter schedules by due date - only include those due by the invoice due date
+    schedules = db.query(models.BillingSchedule).filter(
+        models.BillingSchedule.client_id == client_id,
+        models.BillingSchedule.is_active == True,
+        models.BillingSchedule.next_bill_date <= due_date
     ).all()
-    # Extract line items from all active billing schedules
+
+    # Extract line items from matching billing schedules
     line_items = []
+    schedule_ids = []
     for schedule in schedules:
+        schedule_ids.append(schedule.id)
         for item in schedule.line_items:
             line_items.append({
                 "description": item.description,
@@ -170,14 +187,14 @@ def prefill_invoice(
                 "service_id": item.service_id,
             })
 
-    # Sort by schedule creation order (earliest first)
+    # Sort by description
     line_items = sorted(line_items, key=lambda x: x["description"])
-    today = date.today()
-    if today.month == 12:
-        due_date = today.replace(year=today.year + 1, month=1, day=1)
-    else:
-        due_date = today.replace(month=today.month + 1, day=1)
-    return {"client": client, "suggested_due_date": due_date, "line_items": line_items}
+    return {
+        "client": client,
+        "suggested_due_date": due_date,
+        "line_items": line_items,
+        "billing_schedule_ids": schedule_ids,
+    }
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -238,6 +255,16 @@ async def create_invoice(
     db.add(log)
     db.commit()
     db.refresh(invoice)
+
+    # Advance billing schedule dates for any schedules that were included in this invoice
+    if data.billing_schedule_ids and len(data.billing_schedule_ids) > 0:
+        from services.billing import advance_billing_date
+        schedules = db.query(models.BillingSchedule).filter(
+            models.BillingSchedule.id.in_(data.billing_schedule_ids)
+        ).all()
+        for schedule in schedules:
+            schedule.next_bill_date = advance_billing_date(schedule.next_bill_date, schedule.cycle)
+        db.commit()
 
     # Send email if invoice is marked as ready or authnet verified
     if (invoice.status == models.InvoiceStatus.ready or invoice.authnet_verified) and client.email:
