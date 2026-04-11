@@ -146,7 +146,6 @@ class ServiceCatalog(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     income_account = relationship("ChartOfAccount", back_populates="service_catalog")
-    billing_schedules = relationship("BillingSchedule", back_populates="service")
 
 
 # ─────────────────────────────────────────────
