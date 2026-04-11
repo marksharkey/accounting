@@ -53,94 +53,94 @@ async def send_email(
         return False
 
 
-async def send_invoice_email(client_email: str, client_name: str, invoice_number: str, total: float):
+async def send_invoice_email(invoice, client):
     """Send invoice email"""
     return await send_email(
-        to_email=client_email,
-        subject=f"Invoice {invoice_number} from PrecisionPros",
+        to_email=client.email,
+        subject=f"Invoice {invoice.invoice_number} from PrecisionPros",
         template_name="invoice.html",
         context={
-            "client_name": client_name,
-            "invoice_number": invoice_number,
-            "total": f"${total:.2f}",
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "total": f"${invoice.total:.2f}",
             "date": datetime.now().strftime("%B %d, %Y"),
         },
-        to_name=client_name,
+        to_name=client.company_name,
     )
 
 
-async def send_receipt_email(client_email: str, client_name: str, invoice_number: str, amount_paid: float):
+async def send_receipt_email(payment, invoice, client):
     """Send payment receipt email"""
     return await send_email(
-        to_email=client_email,
-        subject=f"Payment Receipt for Invoice {invoice_number}",
+        to_email=client.email,
+        subject=f"Payment Receipt for Invoice {invoice.invoice_number}",
         template_name="receipt.html",
         context={
-            "client_name": client_name,
-            "invoice_number": invoice_number,
-            "amount": f"${amount_paid:.2f}",
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "amount": f"${payment.amount:.2f}",
             "date": datetime.now().strftime("%B %d, %Y"),
         },
-        to_name=client_name,
+        to_name=client.company_name,
     )
 
 
-async def send_payment_reminder_email(client_email: str, client_name: str, invoice_number: str, balance_due: float, due_date: str):
+async def send_payment_reminder_email(invoice, client):
     """Send payment reminder email"""
     return await send_email(
-        to_email=client_email,
-        subject=f"Payment Reminder: Invoice {invoice_number} is Due",
+        to_email=client.email,
+        subject=f"Payment Reminder: Invoice {invoice.invoice_number} is Due",
         template_name="payment_reminder.html",
         context={
-            "client_name": client_name,
-            "invoice_number": invoice_number,
-            "balance_due": f"${balance_due:.2f}",
-            "due_date": due_date,
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "balance_due": f"${invoice.balance_due:.2f}",
+            "due_date": invoice.due_date.strftime("%B %d, %Y"),
         },
-        to_name=client_name,
+        to_name=client.company_name,
     )
 
 
-async def send_late_fee_notice_email(client_email: str, client_name: str, invoice_number: str, late_fee: float, balance_due: float):
+async def send_late_fee_notice_email(invoice, client):
     """Send late fee notice email"""
     return await send_email(
-        to_email=client_email,
-        subject=f"Late Fee Applied to Invoice {invoice_number}",
+        to_email=client.email,
+        subject=f"Late Fee Applied to Invoice {invoice.invoice_number}",
         template_name="late_fee_notice.html",
         context={
-            "client_name": client_name,
-            "invoice_number": invoice_number,
-            "late_fee": f"${late_fee:.2f}",
-            "balance_due": f"${balance_due:.2f}",
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "late_fee": f"${invoice.late_fee_amount:.2f}",
+            "balance_due": f"${invoice.balance_due:.2f}",
             "date": datetime.now().strftime("%B %d, %Y"),
         },
-        to_name=client_name,
+        to_name=client.company_name,
     )
 
 
-async def send_suspension_warning_email(client_email: str, client_name: str):
+async def send_suspension_warning_email(client):
     """Send account suspension warning email"""
     return await send_email(
-        to_email=client_email,
+        to_email=client.email,
         subject="Account Suspension Warning - Immediate Action Required",
         template_name="suspension_warning.html",
         context={
-            "client_name": client_name,
+            "client_name": client.company_name,
             "date": datetime.now().strftime("%B %d, %Y"),
         },
-        to_name=client_name,
+        to_name=client.company_name,
     )
 
 
-async def send_deletion_warning_email(client_email: str, client_name: str):
+async def send_deletion_warning_email(client):
     """Send account deletion warning email"""
     return await send_email(
-        to_email=client_email,
+        to_email=client.email,
         subject="Final Notice - Account Deletion Pending",
         template_name="deletion_warning.html",
         context={
-            "client_name": client_name,
+            "client_name": client.company_name,
             "date": datetime.now().strftime("%B %d, %Y"),
         },
-        to_name=client_name,
+        to_name=client.company_name,
     )

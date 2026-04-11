@@ -125,13 +125,7 @@ async def apply_late_fee(
     # Send late fee notice email
     if client.email:
         try:
-            asyncio.create_task(send_late_fee_notice_email(
-                client_email=client.email,
-                client_name=client.company_name,
-                invoice_number=invoice.invoice_number,
-                late_fee=float(fee),
-                balance_due=float(invoice.balance_due)
-            ))
+            asyncio.create_task(send_late_fee_notice_email(invoice, client))
         except Exception as e:
             print(f"Error sending late fee email: {e}")
 
@@ -178,15 +172,9 @@ async def update_account_status(
     if client.email:
         try:
             if new_status == models.AccountStatus.suspended and old_status != models.AccountStatus.suspended:
-                asyncio.create_task(send_suspension_warning_email(
-                    client_email=client.email,
-                    client_name=client.company_name
-                ))
+                asyncio.create_task(send_suspension_warning_email(client))
             elif new_status == models.AccountStatus.deleted and old_status != models.AccountStatus.deleted:
-                asyncio.create_task(send_deletion_warning_email(
-                    client_email=client.email,
-                    client_name=client.company_name
-                ))
+                asyncio.create_task(send_deletion_warning_email(client))
         except Exception as e:
             print(f"Error sending status change email: {e}")
 

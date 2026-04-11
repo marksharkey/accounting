@@ -73,12 +73,7 @@ async def record_payment(
     # Send receipt email
     if client.email:
         try:
-            asyncio.create_task(send_receipt_email(
-                client_email=client.email,
-                client_name=client.company_name,
-                invoice_number=invoice.invoice_number,
-                amount_paid=data.amount
-            ))
+            asyncio.create_task(send_receipt_email(payment, invoice, client))
         except Exception as e:
             print(f"Error sending receipt email: {e}")
 

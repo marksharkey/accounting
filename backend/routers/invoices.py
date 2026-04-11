@@ -173,12 +173,7 @@ async def create_invoice(
     # Send email if invoice is marked as ready or authnet verified
     if (invoice.status == models.InvoiceStatus.ready or invoice.authnet_verified) and client.email:
         try:
-            asyncio.create_task(send_invoice_email(
-                client_email=client.email,
-                client_name=client.company_name,
-                invoice_number=invoice_number,
-                total=float(invoice.total)
-            ))
+            asyncio.create_task(send_invoice_email(invoice, client))
         except Exception as e:
             print(f"Error sending invoice email: {e}")
 
@@ -223,12 +218,7 @@ async def update_invoice_status(
         client = invoice.client
         if client and client.email:
             try:
-                asyncio.create_task(send_invoice_email(
-                    client_email=client.email,
-                    client_name=client.company_name,
-                    invoice_number=invoice.invoice_number,
-                    total=float(invoice.total)
-                ))
+                asyncio.create_task(send_invoice_email(invoice, client))
             except Exception as e:
                 print(f"Error sending invoice email: {e}")
 
