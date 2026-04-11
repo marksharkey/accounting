@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
@@ -14,6 +14,7 @@ export default function InvoiceBuilderPage() {
   const [notesToClient, setNotesToClient] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
   const [catalogSelectOpen, setCatalogSelectOpen] = useState(false);
+  const [previousBalance, setPreviousBalance] = useState(0.0);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -49,6 +50,15 @@ export default function InvoiceBuilderPage() {
     enabled: !!selectedClient,
   });
 
+  // Populate previousBalance when prefilled data arrives or client changes
+  useEffect(() => {
+    if (selectedClient && prefilled?.client) {
+      setPreviousBalance(prefilled.client.account_balance || 0.0);
+    } else {
+      setPreviousBalance(0.0);
+    }
+  }, [selectedClient, prefilled]);
+
   const createInvoice = useMutation({
     mutationFn: async (invoiceData) => {
       return apiClient.post('/invoices/', invoiceData);
@@ -62,6 +72,7 @@ export default function InvoiceBuilderPage() {
       setDueDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
       setNotesToClient('');
       setInternalNotes('');
+      setPreviousBalance(0.0);
     },
     onError: (error) => {
       setErrorMessage(error.response?.data?.detail || error.message);
@@ -149,6 +160,7 @@ export default function InvoiceBuilderPage() {
       created_date: new Date().toISOString().split('T')[0],
       due_date: dueDate,
       line_items: formattedItems,
+      previous_balance: previousBalance,
       notes: notesToClient || null,
       internal_notes: internalNotes || null,
       status: 'draft',
@@ -176,6 +188,7 @@ export default function InvoiceBuilderPage() {
       created_date: new Date().toISOString().split('T')[0],
       due_date: dueDate,
       line_items: formattedItems,
+      previous_balance: previousBalance,
       notes: notesToClient || null,
       internal_notes: internalNotes || null,
       status: 'ready',
@@ -430,6 +443,17 @@ export default function InvoiceBuilderPage() {
               </Button>
             </div>
           </div>
+
+          {/* Account Balance Banner */}
+          {previousBalance !== 0 && (
+            <div className={`p-3 rounded-lg text-sm ${previousBalance > 0 ? 'bg-amber-50 border border-amber-200 text-amber-900' : 'bg-green-50 border border-green-200 text-green-900'}`}>
+              {previousBalance > 0 ? (
+                <span>ℹ️ Previous balance due: <strong>${previousBalance.toFixed(2)}</strong></span>
+              ) : (
+                <span>✓ Client has a credit balance: <strong>${Math.abs(previousBalance).toFixed(2)}</strong></span>
+              )}
+            </div>
+          )}
 
           {/* Totals */}
           {lineItems.length > 0 && (
