@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import Optional, List
 from pydantic import BaseModel
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 import asyncio
 
@@ -28,6 +28,62 @@ class LineItemIn(BaseModel):
     is_prorated: bool = False
     prorate_note: Optional[str] = None
     sort_order: int = 0
+
+
+class LineItemOut(BaseModel):
+    id: int
+    description: str
+    quantity: float
+    unit_amount: float
+    amount: float
+    is_prorated: bool
+    prorate_note: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ClientOut(BaseModel):
+    id: int
+    company_name: str
+    contact_name: Optional[str]
+    email: str
+    phone: Optional[str]
+    address_line1: Optional[str]
+    address_line2: Optional[str]
+    city: Optional[str]
+    state: Optional[str]
+    zip_code: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class InvoiceOut(BaseModel):
+    id: int
+    invoice_number: str
+    client_id: int
+    client: Optional[ClientOut]
+    created_date: date
+    due_date: date
+    sent_date: Optional[datetime] = None
+    status: models.InvoiceStatus
+    authnet_verified: bool
+    authnet_transaction_id: Optional[str]
+    subtotal: float
+    late_fee_amount: float
+    total: float
+    amount_paid: float
+    balance_due: float
+    notes: Optional[str]
+    internal_notes: Optional[str]
+    voided_reason: Optional[str]
+    line_items: List[LineItemOut]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class InvoiceCreate(BaseModel):
@@ -182,7 +238,7 @@ async def create_invoice(
     return invoice
 
 
-@router.get("/{invoice_id}")
+@router.get("/{invoice_id}", response_model=InvoiceOut)
 def get_invoice(
     invoice_id: int,
     db: Session = Depends(get_db),
