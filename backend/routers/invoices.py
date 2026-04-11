@@ -170,8 +170,8 @@ async def create_invoice(
     db.commit()
     db.refresh(invoice)
 
-    # Send email if invoice is marked as ready
-    if invoice.status == models.InvoiceStatus.ready and client.email:
+    # Send email if invoice is marked as ready or authnet verified
+    if (invoice.status == models.InvoiceStatus.ready or invoice.authnet_verified) and client.email:
         try:
             asyncio.create_task(send_invoice_email(
                 client_email=client.email,
