@@ -10,6 +10,7 @@ export default function InvoiceBuilderPage() {
   const [selectedClient, setSelectedClient] = useState('');
   const [lineItems, setLineItems] = useState([]);
   const [isAuthNetVerified, setIsAuthNetVerified] = useState(false);
+  const [dueDate, setDueDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
 
   const { data: clientData } = useQuery({
     queryKey: ['clients'],
@@ -31,7 +32,7 @@ export default function InvoiceBuilderPage() {
 
   const services = Array.isArray(serviceData) ? serviceData : serviceData?.items || [];
 
-  const { data: prefilled } = useQuery({
+  const { data: prefilled, isLoading: isPrefillLoading } = useQuery({
     queryKey: ['invoices', 'prefill', selectedClient],
     queryFn: async () => {
       if (!selectedClient) return null;
@@ -47,11 +48,18 @@ export default function InvoiceBuilderPage() {
     mutationFn: async (invoiceData) => {
       return apiClient.post('/invoices/', invoiceData);
     },
+    onSuccess: () => {
+      setSelectedClient('');
+      setLineItems([]);
+      setIsAuthNetVerified(false);
+      setDueDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
+    },
   });
 
   const handlePrefillClick = () => {
     if (prefilled && prefilled.line_items) {
       setLineItems(prefilled.line_items);
+      setDueDate(prefilled.suggested_due_date);
     }
   };
 
@@ -76,16 +84,22 @@ export default function InvoiceBuilderPage() {
     }
 
     try {
+      const formattedItems = lineItems.map(item => ({
+        description: item.service_name || item.description || 'Service',
+        quantity: 1.0,
+        unit_amount: item.amount || 0,
+        service_id: item.service_id || null,
+      }));
+
       await createInvoice.mutateAsync({
         client_id: parseInt(selectedClient),
-        line_items: lineItems,
-        status: 'draft',
+        created_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate,
+        line_items: formattedItems,
       });
       alert('Invoice saved as draft');
-      setSelectedClient('');
-      setLineItems([]);
     } catch (error) {
-      alert('Error saving invoice');
+      alert('Error saving invoice: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -96,17 +110,23 @@ export default function InvoiceBuilderPage() {
     }
 
     try {
+      const formattedItems = lineItems.map(item => ({
+        description: item.service_name || item.description || 'Service',
+        quantity: 1.0,
+        unit_amount: item.amount || 0,
+        service_id: item.service_id || null,
+      }));
+
       await createInvoice.mutateAsync({
         client_id: parseInt(selectedClient),
-        line_items: lineItems,
-        status: 'ready',
+        created_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate,
+        line_items: formattedItems,
         authnet_verified: isAuthNetVerified,
       });
       alert('Invoice marked as ready');
-      setSelectedClient('');
-      setLineItems([]);
     } catch (error) {
-      alert('Error creating invoice');
+      alert('Error creating invoice: ' + (error.response?.data?.detail || error.message));
     }
   };
 
@@ -133,12 +153,24 @@ export default function InvoiceBuilderPage() {
                 ))}
             </select>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Due Date
+              </label>
+              <Input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </div>
+
             {selectedClient && (
               <Button
                 onClick={handlePrefillClick}
                 className="w-full"
+                disabled={isPrefillLoading}
               >
-                Prefill from Schedules
+                {isPrefillLoading ? 'Loading...' : 'Prefill from Schedules'}
               </Button>
             )}
           </CardContent>
@@ -186,10 +218,18 @@ export default function InvoiceBuilderPage() {
                 lineItems.map((item, idx) => (
                   <div
                     key={idx}
-                    className="flex justify-between text-sm border-b border-gray-200 pb-2 last:border-b-0"
+                    className="flex justify-between items-center text-sm border-b border-gray-200 pb-2 last:border-b-0"
                   >
-                    <span className="font-medium text-gray-700">{item.service_name || item.description || item.name || 'Unnamed Service'}</span>
-                    <span className="font-medium text-gray-900">${item.amount.toFixed(2)}</span>
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-700">{item.service_name || item.description || item.name || 'Unnamed Service'}</span>
+                      <span className="font-medium text-gray-900 ml-2">${item.amount.toFixed(2)}</span>
+                    </div>
+                    <button
+                      onClick={() => setLineItems(lineItems.filter((_, i) => i !== idx))}
+                      className="ml-2 text-red-600 hover:text-red-800 text-xs font-medium"
+                    >
+                      Remove
+                    </button>
                   </div>
                 ))
               ) : (
