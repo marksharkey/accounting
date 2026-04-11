@@ -8,6 +8,11 @@ import ClientsListPage from './pages/ClientsListPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import InvoiceBuilderPage from './pages/InvoiceBuilderPage';
 import InvoiceDetailPage from './pages/InvoiceDetailPage';
+import InvoiceListPage from './pages/InvoiceListPage';
+import CreditMemoBuilderPage from './pages/CreditMemoBuilderPage';
+import EstimateBuilderPage from './pages/EstimateBuilderPage';
+import EstimateDetailPage from './pages/EstimateDetailPage';
+import EstimateListPage from './pages/EstimateListPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -68,6 +73,14 @@ function App() {
             }
           />
           <Route
+            path="/invoices"
+            element={
+              <ProtectedRoute>
+                <InvoiceListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/invoices/new"
             element={
               <ProtectedRoute>
@@ -80,6 +93,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <InvoiceDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-memos/new"
+            element={
+              <ProtectedRoute>
+                <CreditMemoBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/estimates"
+            element={
+              <ProtectedRoute>
+                <EstimateListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/estimates/new"
+            element={
+              <ProtectedRoute>
+                <EstimateBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/estimates/:id"
+            element={
+              <ProtectedRoute>
+                <EstimateDetailPage />
               </ProtectedRoute>
             }
           />

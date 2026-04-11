@@ -1,14 +1,18 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import RecordPaymentModal from '../components/RecordPaymentModal';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
-  const { data: invoice, isLoading } = useQuery({
+  const { data: invoice, isLoading, refetch } = useQuery({
     queryKey: ['invoices', id],
     queryFn: async () => {
       const response = await apiClient.get(`/invoices/${id}`);
@@ -60,13 +64,37 @@ export default function InvoiceDetailPage() {
             </span>
           </p>
         </div>
-        <Button
-          onClick={handleDownloadPDF}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          Download PDF
-        </Button>
+        <div className="flex gap-2">
+          {invoice.status !== 'paid' && invoice.balance_due > 0 && (
+            <Button
+              onClick={() => setIsPaymentModalOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Record Payment
+            </Button>
+          )}
+          <Button
+            onClick={() => navigate('/credit-memos/new')}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            Create Credit Memo
+          </Button>
+          <Button
+            onClick={handleDownloadPDF}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Download PDF
+          </Button>
+        </div>
       </div>
+
+      <RecordPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        invoiceId={invoice.id}
+        balanceDue={invoice.balance_due}
+        onSuccess={() => refetch()}
+      />
 
       <div className="grid grid-cols-3 gap-6 mb-8">
         <Card>
