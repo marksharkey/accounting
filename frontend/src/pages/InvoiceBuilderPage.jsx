@@ -118,7 +118,7 @@ export default function InvoiceBuilderPage() {
 
   const handleApplyPrefilled = () => {
     if (prefilled && prefilled.line_items) {
-      setLineItems(prefilled.line_items.map((item, idx) => ({
+      setLineItems(prefilled.line_items.map((item) => ({
         id: crypto.randomUUID(),
         service_id: item.service_id || null,
         description: item.description,
