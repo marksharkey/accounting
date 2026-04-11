@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import Optional, List
@@ -12,6 +13,7 @@ from database import get_db
 from auth import get_current_user
 from services.billing import next_invoice_number
 from services.email import send_invoice_email
+from services.pdf import generate_invoice_pdf
 from config import get_settings
 
 settings = get_settings()
@@ -271,3 +273,30 @@ def void_invoice(
     db.add(log)
     db.commit()
     return {"voided": True, "reason": reason}
+
+
+@router.get("/{invoice_id}/pdf")
+def download_invoice_pdf(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    client = invoice.client
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    try:
+        pdf_buffer = generate_invoice_pdf(invoice, client)
+        return StreamingResponse(
+            iter([pdf_buffer.getvalue()]),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"{invoice.invoice_number}.pdf\""
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")

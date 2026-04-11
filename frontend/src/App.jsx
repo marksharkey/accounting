@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import ClientsListPage from './pages/ClientsListPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import InvoiceBuilderPage from './pages/InvoiceBuilderPage';
+import InvoiceDetailPage from './pages/InvoiceDetailPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
@@ -71,6 +72,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <InvoiceBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/invoices/:id"
+            element={
+              <ProtectedRoute>
+                <InvoiceDetailPage />
               </ProtectedRoute>
             }
           />

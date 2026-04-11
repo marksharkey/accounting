@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
@@ -109,7 +109,13 @@ export default function ClientDetailPage() {
               <ul className="space-y-2">
                 {invoices.slice(0, 5).map((invoice) => (
                   <li key={invoice.id} className="text-sm text-gray-600 border-b pb-2">
-                    {invoice.invoice_number || invoice.number} — ${invoice.total} ({invoice.status})
+                    <Link
+                      to={`/invoices/${invoice.id}`}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {invoice.invoice_number || invoice.number}
+                    </Link>
+                    {' '} — ${invoice.total} ({invoice.status})
                   </li>
                 ))}
               </ul>
