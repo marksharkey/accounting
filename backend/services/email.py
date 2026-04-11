@@ -1,10 +1,13 @@
 import aiosmtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from jinja2 import Environment, FileSystemLoader
 import os
 from datetime import datetime
 from config import get_settings
+from io import BytesIO
 
 settings = get_settings()
 
@@ -18,9 +21,11 @@ async def send_email(
     subject: str,
     template_name: str,
     context: dict,
-    to_name: str = None
+    to_name: str = None,
+    attachment_bytes: BytesIO = None,
+    attachment_filename: str = None
 ):
-    """Send email with Jinja2 template rendering"""
+    """Send email with Jinja2 template rendering and optional attachment"""
     if not settings.smtp_host or not settings.smtp_user:
         print(f"Email not configured. Skipping: {subject} to {to_email}")
         return False
@@ -31,13 +36,23 @@ async def send_email(
         html_content = template.render(**context)
 
         # Create email
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('mixed')
         msg['Subject'] = subject
         msg['From'] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
         msg['To'] = f"{to_name} <{to_email}>" if to_name else to_email
 
         # Attach HTML content
-        msg.attach(MIMEText(html_content, 'html'))
+        msg_alternative = MIMEMultipart('alternative')
+        msg_alternative.attach(MIMEText(html_content, 'html'))
+        msg.attach(msg_alternative)
+
+        # Attach file if provided
+        if attachment_bytes and attachment_filename:
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(attachment_bytes.getvalue())
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', f'attachment; filename= {attachment_filename}')
+            msg.attach(part)
 
         # Send via SMTP
         async with aiosmtplib.SMTP(
@@ -54,19 +69,41 @@ async def send_email(
 
 
 async def send_invoice_email(invoice, client):
-    """Send invoice email"""
-    return await send_email(
-        to_email=client.email,
-        subject=f"Invoice {invoice.invoice_number} from PrecisionPros",
-        template_name="invoice.html",
-        context={
-            "client_name": client.company_name,
-            "invoice_number": invoice.invoice_number,
-            "total": f"${invoice.total:.2f}",
-            "date": datetime.now().strftime("%B %d, %Y"),
-        },
-        to_name=client.company_name,
-    )
+    """Send invoice email with PDF attachment"""
+    try:
+        from services.pdf import generate_invoice_pdf
+        # Generate PDF
+        pdf_bytes = generate_invoice_pdf(invoice, client)
+
+        return await send_email(
+            to_email=client.email,
+            subject=f"Invoice {invoice.invoice_number} from PrecisionPros",
+            template_name="invoice.html",
+            context={
+                "client_name": client.company_name,
+                "invoice_number": invoice.invoice_number,
+                "total": f"${invoice.total:.2f}",
+                "date": datetime.now().strftime("%B %d, %Y"),
+            },
+            to_name=client.company_name,
+            attachment_bytes=pdf_bytes,
+            attachment_filename=f"{invoice.invoice_number}.pdf"
+        )
+    except Exception as e:
+        print(f"Error sending invoice email with PDF: {e}")
+        # Fall back to sending email without attachment
+        return await send_email(
+            to_email=client.email,
+            subject=f"Invoice {invoice.invoice_number} from PrecisionPros",
+            template_name="invoice.html",
+            context={
+                "client_name": client.company_name,
+                "invoice_number": invoice.invoice_number,
+                "total": f"${invoice.total:.2f}",
+                "date": datetime.now().strftime("%B %d, %Y"),
+            },
+            to_name=client.company_name,
+        )
 
 
 async def send_receipt_email(payment, invoice, client):
