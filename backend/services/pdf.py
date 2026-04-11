@@ -52,6 +52,12 @@ def generate_invoice_pdf(invoice, client):
         late_fee = float(invoice.late_fee_amount) if invoice.late_fee_amount else 0.0
         total = float(invoice.total)
         balance_due = float(invoice.balance_due)
+        previous_balance = float(invoice.previous_balance) if invoice.previous_balance else 0.0
+
+        # Calculate account summary variables
+        payments_on_account = sum(float(p.amount) for p in invoice.payments) if invoice.payments else 0.0
+        total_amount_due = previous_balance + total - payments_on_account
+        show_account_summary = previous_balance != 0.0 or payments_on_account != 0.0
 
         # Render template
         template = env.get_template('invoice.html')
@@ -89,6 +95,12 @@ def generate_invoice_pdf(invoice, client):
             total=f"${total:.2f}",
             balance_due=f"${balance_due:.2f}",
             notes=invoice.notes or '',
+
+            # Account summary
+            previous_balance=f"${previous_balance:.2f}",
+            payments_on_account=f"${payments_on_account:.2f}",
+            total_amount_due=f"${total_amount_due:.2f}",
+            show_account_summary=show_account_summary,
         )
 
         # Convert HTML to PDF
