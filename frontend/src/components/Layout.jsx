@@ -36,9 +36,6 @@ export default function Layout({ children, title }) {
                 <a href="/credit-memos/new" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
                   Credit Memo
                 </a>
-                <a href="/estimates" className="text-gray-700 hover:text-gray-900 whitespace-nowrap">
-                  Estimates
-                </a>
                 <a href="/service-catalog" className="text-gray-700 hover:text-gray-900">
                   Service Catalog
                 </a>
