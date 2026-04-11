@@ -114,7 +114,7 @@ def prefill_invoice(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_invoice(
+async def create_invoice(
     data: InvoiceCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -172,7 +172,6 @@ def create_invoice(
 
     # Send email if invoice is marked as ready
     if invoice.status == models.InvoiceStatus.ready and client.email:
-        # Run async email sending in background
         try:
             asyncio.create_task(send_invoice_email(
                 client_email=client.email,
@@ -199,7 +198,7 @@ def get_invoice(
 
 
 @router.put("/{invoice_id}/status")
-def update_invoice_status(
+async def update_invoice_status(
     invoice_id: int,
     new_status: models.InvoiceStatus,
     db: Session = Depends(get_db),

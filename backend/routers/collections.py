@@ -74,7 +74,7 @@ def daily_action_queue(
 
 
 @router.post("/apply-late-fee/{invoice_id}")
-def apply_late_fee(
+async def apply_late_fee(
     invoice_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -139,7 +139,7 @@ def apply_late_fee(
 
 
 @router.post("/update-account-status/{client_id}")
-def update_account_status(
+async def update_account_status(
     client_id: int,
     new_status: models.AccountStatus,
     notes: str = "",

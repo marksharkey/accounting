@@ -24,7 +24,7 @@ class PaymentIn(BaseModel):
 
 
 @router.post("/", status_code=201)
-def record_payment(
+async def record_payment(
     data: PaymentIn,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
