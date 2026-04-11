@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime, date
+from decimal import Decimal
 
 import models
 from database import get_db
@@ -41,20 +42,49 @@ class ClientUpdate(ClientBase):
     pass
 
 
-class BillingScheduleCreate(BaseModel):
+class LineItemIn(BaseModel):
     description: str
+    quantity: float = 1.0
+    unit_amount: float
+    service_id: Optional[int] = None
+    sort_order: int = 0
+
+
+class LineItemResponse(LineItemIn):
+    id: int
+    billing_schedule_id: int
     amount: float
+
+    class Config:
+        from_attributes = True
+
+
+class BillingScheduleCreate(BaseModel):
     cycle: models.BillingCycle
     next_bill_date: date
     authnet_recurring: bool = False
-    service_id: Optional[int] = None
     notes: Optional[str] = None
+    line_items: List[LineItemIn]
 
 
-class BillingScheduleResponse(BillingScheduleCreate):
+class BillingScheduleUpdate(BaseModel):
+    cycle: models.BillingCycle
+    next_bill_date: date
+    authnet_recurring: bool = False
+    notes: Optional[str] = None
+    line_items: List[LineItemIn]
+
+
+class BillingScheduleResponse(BaseModel):
     id: int
     client_id: int
+    amount: float
+    cycle: models.BillingCycle
+    next_bill_date: date
+    authnet_recurring: bool
     is_active: bool
+    notes: Optional[str]
+    line_items: List[LineItemResponse]
     created_at: datetime
     updated_at: datetime
 
@@ -177,7 +207,7 @@ def deactivate_client(
     return {"message": "Client deactivated"}
 
 
-@router.get("/{client_id}/billing-schedules")
+@router.get("/{client_id}/billing-schedules", response_model=List[BillingScheduleResponse])
 def get_billing_schedules(
     client_id: int,
     db: Session = Depends(get_db),
@@ -185,7 +215,7 @@ def get_billing_schedules(
 ):
     return db.query(models.BillingSchedule).filter_by(
         client_id=client_id, is_active=True
-    ).all()
+    ).order_by(models.BillingSchedule.next_bill_date).all()
 
 
 @router.post("/{client_id}/billing-schedules", response_model=BillingScheduleResponse, status_code=status.HTTP_201_CREATED)
@@ -198,9 +228,38 @@ def create_billing_schedule(
     client = db.query(models.Client).filter_by(id=client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    schedule = models.BillingSchedule(client_id=client_id, **data.model_dump())
+
+    # Calculate total amount from line items
+    total_amount = sum(
+        Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
+        for item in data.line_items
+    )
+
+    schedule = models.BillingSchedule(
+        client_id=client_id,
+        cycle=data.cycle,
+        next_bill_date=data.next_bill_date,
+        authnet_recurring=data.authnet_recurring,
+        notes=data.notes,
+        amount=total_amount
+    )
     db.add(schedule)
     db.flush()
+
+    # Create line items
+    for idx, item in enumerate(data.line_items):
+        line_amount = Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
+        line_item = models.BillingScheduleLineItem(
+            billing_schedule_id=schedule.id,
+            description=item.description,
+            quantity=item.quantity,
+            unit_amount=item.unit_amount,
+            amount=line_amount,
+            service_id=item.service_id,
+            sort_order=item.sort_order if item.sort_order else idx
+        )
+        db.add(line_item)
+
     log = models.ActivityLog(
         entity_type="billing_schedule", entity_id=schedule.id, client_id=client_id,
         action="created", performed_by_id=current_user.id,
@@ -210,6 +269,86 @@ def create_billing_schedule(
     db.commit()
     db.refresh(schedule)
     return schedule
+
+
+@router.put("/{client_id}/billing-schedules/{schedule_id}", response_model=BillingScheduleResponse)
+def update_billing_schedule(
+    client_id: int,
+    schedule_id: int,
+    data: BillingScheduleUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    schedule = db.query(models.BillingSchedule).filter_by(
+        id=schedule_id, client_id=client_id
+    ).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Billing schedule not found")
+
+    # Calculate total amount from line items
+    total_amount = sum(
+        Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
+        for item in data.line_items
+    )
+
+    # Update schedule header
+    schedule.cycle = data.cycle
+    schedule.next_bill_date = data.next_bill_date
+    schedule.authnet_recurring = data.authnet_recurring
+    schedule.notes = data.notes
+    schedule.amount = total_amount
+
+    # Delete existing line items and recreate
+    db.query(models.BillingScheduleLineItem).filter_by(billing_schedule_id=schedule_id).delete()
+
+    # Create new line items
+    for idx, item in enumerate(data.line_items):
+        line_amount = Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
+        line_item = models.BillingScheduleLineItem(
+            billing_schedule_id=schedule_id,
+            description=item.description,
+            quantity=item.quantity,
+            unit_amount=item.unit_amount,
+            amount=line_amount,
+            service_id=item.service_id,
+            sort_order=item.sort_order if item.sort_order else idx
+        )
+        db.add(line_item)
+
+    log = models.ActivityLog(
+        entity_type="billing_schedule", entity_id=schedule_id, client_id=client_id,
+        action="updated", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(schedule)
+    return schedule
+
+
+@router.delete("/{client_id}/billing-schedules/{schedule_id}")
+def delete_billing_schedule(
+    client_id: int,
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    schedule = db.query(models.BillingSchedule).filter_by(
+        id=schedule_id, client_id=client_id
+    ).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Billing schedule not found")
+
+    schedule.is_active = False
+
+    log = models.ActivityLog(
+        entity_type="billing_schedule", entity_id=schedule_id, client_id=client_id,
+        action="deactivated", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
+    db.add(log)
+    db.commit()
+    return {"message": "Billing schedule deactivated"}
 
 
 @router.get("/{client_id}/invoices")

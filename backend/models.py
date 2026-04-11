@@ -203,10 +203,8 @@ class BillingSchedule(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=False)
-    service_id = Column(Integer, ForeignKey("service_catalog.id"), nullable=True)
 
-    description = Column(String(255), nullable=False)
-    amount = Column(Numeric(10, 2), nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False, default=0.00)
     cycle = Column(Enum(BillingCycle), nullable=False)
     next_bill_date = Column(Date, nullable=False)
     authnet_recurring = Column(Boolean, default=False)
@@ -216,7 +214,24 @@ class BillingSchedule(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     client = relationship("Client", back_populates="billing_schedules")
-    service = relationship("ServiceCatalog", back_populates="billing_schedules")
+    line_items = relationship("BillingScheduleLineItem", back_populates="billing_schedule", cascade="all, delete-orphan")
+
+
+class BillingScheduleLineItem(Base):
+    __tablename__ = "billing_schedule_line_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    billing_schedule_id = Column(Integer, ForeignKey("billing_schedules.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("service_catalog.id"), nullable=True)
+
+    description = Column(String(255), nullable=False)
+    quantity = Column(Numeric(10, 4), default=1.0000)
+    unit_amount = Column(Numeric(10, 2), nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+    sort_order = Column(SmallInteger, default=0)
+
+    billing_schedule = relationship("BillingSchedule", back_populates="line_items")
+    service = relationship("ServiceCatalog")
 
 
 # ─────────────────────────────────────────────

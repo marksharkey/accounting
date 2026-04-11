@@ -91,13 +91,28 @@ export default function ClientDetailPage() {
           </CardHeader>
           <CardContent>
             {schedules && schedules.length > 0 ? (
-              <ul className="space-y-2">
+              <div className="space-y-4">
                 {schedules.map((schedule) => (
-                  <li key={schedule.id} className="text-sm text-gray-600 border-b pb-2">
-                    {schedule.description || schedule.service_name} — ${schedule.amount} / {schedule.cycle || schedule.billing_cycle}
-                  </li>
+                  <div key={schedule.id} className="border-b pb-3 last:border-b-0">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium text-gray-900">{schedule.cycle.replace('_', '-').toUpperCase()}</p>
+                        <p className="text-xs text-gray-500">Next: {new Date(schedule.next_bill_date).toLocaleDateString()}</p>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900">${parseFloat(schedule.amount).toFixed(2)}</p>
+                    </div>
+                    {schedule.line_items && schedule.line_items.length > 0 && (
+                      <ul className="space-y-1 ml-2">
+                        {schedule.line_items.map((item) => (
+                          <li key={item.id} className="text-xs text-gray-600">
+                            {item.description} × {parseFloat(item.quantity).toFixed(2)} = ${parseFloat(item.amount).toFixed(2)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 ))}
-              </ul>
+              </div>
             ) : (
               <p className="text-sm text-gray-500">No billing schedules</p>
             )}
