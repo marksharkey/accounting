@@ -64,23 +64,41 @@ export default function InvoiceBuilderPage() {
     mutationFn: async (invoiceData) => {
       return apiClient.post('/invoices/', invoiceData);
     },
+    onSuccess: (response) => {
+      return response.data;
+    },
+    onError: (error) => {
+      setErrorMessage(error.response?.data?.detail || error.message);
+      setTimeout(() => setErrorMessage(''), 5000);
+      throw error;
+    },
+  });
+
+  const sendInvoice = useMutation({
+    mutationFn: async (invoiceId) => {
+      return apiClient.post(`/invoices/${invoiceId}/send`);
+    },
     onSuccess: () => {
-      setSuccessMessage('Invoice saved successfully!');
+      setSuccessMessage('Invoice sent successfully!');
       setTimeout(() => setSuccessMessage(''), 3000);
-      setSelectedClient('');
-      setLineItems([]);
-      setIsAuthNetVerified(false);
-      setDueDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
-      setNotesToClient('');
-      setInternalNotes('');
-      setPreviousBalance(0.0);
-      setBillingScheduleIds([]);
+      resetForm();
     },
     onError: (error) => {
       setErrorMessage(error.response?.data?.detail || error.message);
       setTimeout(() => setErrorMessage(''), 5000);
     },
   });
+
+  const resetForm = () => {
+    setSelectedClient('');
+    setLineItems([]);
+    setIsAuthNetVerified(false);
+    setDueDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
+    setNotesToClient('');
+    setInternalNotes('');
+    setPreviousBalance(0.0);
+    setBillingScheduleIds([]);
+  };
 
   // Handlers
   const handleAddService = (serviceId) => {
@@ -158,20 +176,29 @@ export default function InvoiceBuilderPage() {
       sort_order: idx,
     }));
 
-    createInvoice.mutate({
-      client_id: parseInt(selectedClient),
-      created_date: new Date().toISOString().split('T')[0],
-      due_date: dueDate,
-      line_items: formattedItems,
-      previous_balance: previousBalance,
-      notes: notesToClient || null,
-      internal_notes: internalNotes || null,
-      status: 'draft',
-      billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
-    });
+    createInvoice.mutate(
+      {
+        client_id: parseInt(selectedClient),
+        created_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate,
+        line_items: formattedItems,
+        previous_balance: previousBalance,
+        notes: notesToClient || null,
+        internal_notes: internalNotes || null,
+        status: 'draft',
+        billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
+      },
+      {
+        onSuccess: () => {
+          setSuccessMessage('Invoice saved as draft!');
+          setTimeout(() => setSuccessMessage(''), 3000);
+          resetForm();
+        },
+      }
+    );
   };
 
-  const handleMarkReady = async () => {
+  const handleSend = async () => {
     if (!selectedClient || lineItems.length === 0) {
       setErrorMessage('Select a client and add line items');
       setTimeout(() => setErrorMessage(''), 3000);
@@ -187,18 +214,25 @@ export default function InvoiceBuilderPage() {
       sort_order: idx,
     }));
 
-    createInvoice.mutate({
-      client_id: parseInt(selectedClient),
-      created_date: new Date().toISOString().split('T')[0],
-      due_date: dueDate,
-      line_items: formattedItems,
-      previous_balance: previousBalance,
-      notes: notesToClient || null,
-      internal_notes: internalNotes || null,
-      status: 'ready',
-      authnet_verified: isAuthNetVerified,
-      billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
-    });
+    createInvoice.mutate(
+      {
+        client_id: parseInt(selectedClient),
+        created_date: new Date().toISOString().split('T')[0],
+        due_date: dueDate,
+        line_items: formattedItems,
+        previous_balance: previousBalance,
+        notes: notesToClient || null,
+        internal_notes: internalNotes || null,
+        status: 'draft',
+        authnet_verified: isAuthNetVerified,
+        billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
+      },
+      {
+        onSuccess: (invoice) => {
+          sendInvoice.mutate(invoice.id);
+        },
+      }
+    );
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -256,11 +290,11 @@ export default function InvoiceBuilderPage() {
               {createInvoice.isPending ? 'Saving...' : 'Draft'}
             </Button>
             <Button
-              onClick={handleMarkReady}
-              disabled={createInvoice.isPending}
+              onClick={handleSend}
+              disabled={createInvoice.isPending || sendInvoice.isPending}
               className="flex-1 sm:flex-none text-sm"
             >
-              {createInvoice.isPending ? 'Sending...' : 'Ready'}
+              {createInvoice.isPending || sendInvoice.isPending ? 'Sending...' : 'Send'}
             </Button>
           </div>
         </div>

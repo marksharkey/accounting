@@ -100,6 +100,9 @@ class InvoiceCreate(BaseModel):
     internal_notes: Optional[str] = None
     billing_schedule_ids: Optional[List[int]] = None
 
+    class Config:
+        use_enum_values = False
+
 
 @router.get("/")
 def list_invoices(
@@ -266,13 +269,6 @@ async def create_invoice(
             schedule.next_bill_date = advance_billing_date(schedule.next_bill_date, schedule.cycle)
         db.commit()
 
-    # Send email if invoice is marked as ready or authnet verified
-    if (invoice.status == models.InvoiceStatus.ready or invoice.authnet_verified) and client.email:
-        try:
-            asyncio.create_task(send_invoice_email(invoice, client))
-        except Exception as e:
-            print(f"Error sending invoice email: {e}")
-
     return invoice
 
 
@@ -309,15 +305,6 @@ async def update_invoice_status(
     db.add(log)
     db.commit()
 
-    # Send email if transitioning to ready
-    if old_status != models.InvoiceStatus.ready and new_status == models.InvoiceStatus.ready:
-        client = invoice.client
-        if client and client.email:
-            try:
-                asyncio.create_task(send_invoice_email(invoice, client))
-            except Exception as e:
-                print(f"Error sending invoice email: {e}")
-
     return {"invoice_id": invoice_id, "status": new_status}
 
 
@@ -345,10 +332,103 @@ def verify_authnet(
     return {"verified": True, "transaction_id": transaction_id}
 
 
+@router.post("/{invoice_id}/send")
+async def send_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    client = invoice.client
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    old_status = invoice.status
+    invoice.status = models.InvoiceStatus.sent
+    invoice.sent_date = datetime.utcnow()
+
+    log = models.ActivityLog(
+        entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
+        action="sent", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes=f"Invoice sent to {client.email}"
+    )
+    db.add(log)
+    db.commit()
+
+    if client.email:
+        try:
+            asyncio.create_task(send_invoice_email(invoice, client))
+        except Exception as e:
+            print(f"Error sending invoice email: {e}")
+
+    return {"invoice_id": invoice_id, "status": models.InvoiceStatus.sent}
+
+
+@router.post("/{invoice_id}/mark-sent")
+def mark_invoice_sent(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    invoice.status = models.InvoiceStatus.sent
+    invoice.sent_date = datetime.utcnow()
+
+    log = models.ActivityLog(
+        entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
+        action="marked_sent", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes="Invoice marked as sent without email"
+    )
+    db.add(log)
+    db.commit()
+
+    return {"invoice_id": invoice_id, "status": models.InvoiceStatus.sent}
+
+
+@router.post("/{invoice_id}/resend")
+async def resend_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    client = invoice.client
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    log = models.ActivityLog(
+        entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
+        action="resent", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes=f"Invoice resent to {client.email}"
+    )
+    db.add(log)
+    db.commit()
+
+    if client.email:
+        try:
+            asyncio.create_task(send_invoice_email(invoice, client))
+        except Exception as e:
+            print(f"Error sending invoice email: {e}")
+
+    return {"invoice_id": invoice_id, "resent": True}
+
+
 @router.post("/{invoice_id}/void")
 def void_invoice(
     invoice_id: int,
-    reason: str,
+    reason: str = "",
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
