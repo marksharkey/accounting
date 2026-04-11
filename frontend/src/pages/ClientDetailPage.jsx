@@ -1,13 +1,16 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import AddBillingScheduleModal from '../components/AddBillingScheduleModal';
 import { formatBillingType } from '../utils/formatting';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
+  const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
 
   const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ['clients', id],
@@ -82,8 +85,9 @@ export default function ClientDetailPage() {
 
       <div className="grid grid-cols-2 gap-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Billing Schedules</CardTitle>
+            <Button size="sm" onClick={() => setIsAddScheduleOpen(true)}>Add</Button>
           </CardHeader>
           <CardContent>
             {schedules && schedules.length > 0 ? (
@@ -144,6 +148,12 @@ export default function ClientDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <AddBillingScheduleModal
+        isOpen={isAddScheduleOpen}
+        onClose={() => setIsAddScheduleOpen(false)}
+        clientId={id}
+      />
     </Layout>
   );
 }

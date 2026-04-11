@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import Optional
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 
 import models
 from database import get_db
@@ -39,6 +39,27 @@ class ClientCreate(ClientBase):
 
 class ClientUpdate(ClientBase):
     pass
+
+
+class BillingScheduleCreate(BaseModel):
+    description: str
+    amount: float
+    cycle: models.BillingCycle
+    next_bill_date: date
+    authnet_recurring: bool = False
+    service_id: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class BillingScheduleResponse(BillingScheduleCreate):
+    id: int
+    client_id: int
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class ClientResponse(ClientBase):
@@ -167,18 +188,25 @@ def get_billing_schedules(
     ).all()
 
 
-@router.post("/{client_id}/billing-schedules")
+@router.post("/{client_id}/billing-schedules", response_model=BillingScheduleResponse, status_code=status.HTTP_201_CREATED)
 def create_billing_schedule(
     client_id: int,
-    data: dict,
+    data: BillingScheduleCreate,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     client = db.query(models.Client).filter_by(id=client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
-    schedule = models.BillingSchedule(client_id=client_id, **data)
+    schedule = models.BillingSchedule(client_id=client_id, **data.model_dump())
     db.add(schedule)
+    db.flush()
+    log = models.ActivityLog(
+        entity_type="billing_schedule", entity_id=schedule.id, client_id=client_id,
+        action="created", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
+    db.add(log)
     db.commit()
     db.refresh(schedule)
     return schedule
