@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import Button from '../components/ui/Button';
@@ -18,6 +18,7 @@ export default function InvoiceBuilderPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [billingScheduleIds, setBillingScheduleIds] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Queries
   const { data: clientData } = useQuery({
@@ -60,34 +61,6 @@ export default function InvoiceBuilderPage() {
     }
   }, [selectedClient, prefilled]);
 
-  const createInvoice = useMutation({
-    mutationFn: async (invoiceData) => {
-      return apiClient.post('/invoices/', invoiceData);
-    },
-    onSuccess: (response) => {
-      return response.data;
-    },
-    onError: (error) => {
-      setErrorMessage(error.response?.data?.detail || error.message);
-      setTimeout(() => setErrorMessage(''), 5000);
-      throw error;
-    },
-  });
-
-  const sendInvoice = useMutation({
-    mutationFn: async (invoiceId) => {
-      return apiClient.post(`/invoices/${invoiceId}/send`);
-    },
-    onSuccess: () => {
-      setSuccessMessage('Invoice sent successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      resetForm();
-    },
-    onError: (error) => {
-      setErrorMessage(error.response?.data?.detail || error.message);
-      setTimeout(() => setErrorMessage(''), 5000);
-    },
-  });
 
   const resetForm = () => {
     setSelectedClient('');
@@ -176,26 +149,30 @@ export default function InvoiceBuilderPage() {
       sort_order: idx,
     }));
 
-    createInvoice.mutate(
-      {
-        client_id: parseInt(selectedClient),
-        created_date: new Date().toISOString().split('T')[0],
-        due_date: dueDate,
-        line_items: formattedItems,
-        previous_balance: previousBalance,
-        notes: notesToClient || null,
-        internal_notes: internalNotes || null,
-        status: 'draft',
-        billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
-      },
-      {
-        onSuccess: () => {
-          setSuccessMessage('Invoice saved as draft!');
-          setTimeout(() => setSuccessMessage(''), 3000);
-          resetForm();
-        },
-      }
-    );
+    const invoiceData = {
+      client_id: parseInt(selectedClient),
+      created_date: new Date().toISOString().split('T')[0],
+      due_date: dueDate,
+      line_items: formattedItems,
+      previous_balance: previousBalance,
+      notes: notesToClient || null,
+      internal_notes: internalNotes || null,
+      status: 'draft',
+      billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
+    };
+
+    setIsLoading(true);
+    try {
+      await apiClient.post('/invoices/', invoiceData);
+      setSuccessMessage('Invoice saved as draft!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      resetForm();
+    } catch (error) {
+      setErrorMessage(error.response?.data?.detail || error.message);
+      setTimeout(() => setErrorMessage(''), 5000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSend = async () => {
@@ -214,25 +191,35 @@ export default function InvoiceBuilderPage() {
       sort_order: idx,
     }));
 
-    createInvoice.mutate(
-      {
-        client_id: parseInt(selectedClient),
-        created_date: new Date().toISOString().split('T')[0],
-        due_date: dueDate,
-        line_items: formattedItems,
-        previous_balance: previousBalance,
-        notes: notesToClient || null,
-        internal_notes: internalNotes || null,
-        status: 'draft',
-        authnet_verified: isAuthNetVerified,
-        billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
-      },
-      {
-        onSuccess: (invoice) => {
-          sendInvoice.mutate(invoice.id);
-        },
-      }
-    );
+    const invoiceData = {
+      client_id: parseInt(selectedClient),
+      created_date: new Date().toISOString().split('T')[0],
+      due_date: dueDate,
+      line_items: formattedItems,
+      previous_balance: previousBalance,
+      notes: notesToClient || null,
+      internal_notes: internalNotes || null,
+      status: 'draft',
+      authnet_verified: isAuthNetVerified,
+      billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
+    };
+
+    setIsLoading(true);
+    try {
+      const createResponse = await apiClient.post('/invoices/', invoiceData);
+      const invoiceId = createResponse.data.id;
+
+      // Now send the invoice
+      await apiClient.post(`/invoices/${invoiceId}/send`);
+      setSuccessMessage('Invoice sent successfully!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      resetForm();
+    } catch (error) {
+      setErrorMessage(error.response?.data?.detail || error.message);
+      setTimeout(() => setErrorMessage(''), 5000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -283,18 +270,18 @@ export default function InvoiceBuilderPage() {
           <div className="w-full sm:w-auto flex gap-2">
             <Button
               onClick={handleSaveDraft}
-              disabled={createInvoice.isPending}
+              disabled={isLoading}
               variant="secondary"
               className="flex-1 sm:flex-none text-sm"
             >
-              {createInvoice.isPending ? 'Saving...' : 'Draft'}
+              {isLoading ? 'Saving...' : 'Draft'}
             </Button>
             <Button
               onClick={handleSend}
-              disabled={createInvoice.isPending || sendInvoice.isPending}
+              disabled={isLoading}
               className="flex-1 sm:flex-none text-sm"
             >
-              {createInvoice.isPending || sendInvoice.isPending ? 'Sending...' : 'Send'}
+              {isLoading ? 'Sending...' : 'Send'}
             </Button>
           </div>
         </div>
