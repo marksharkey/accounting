@@ -164,110 +164,225 @@ export default function ClientDetailPage() {
 
   return (
     <Layout title={client.company_name}>
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-sm font-medium text-gray-700">
-            Client: <span className="font-semibold text-gray-900">{client?.company_name}</span>
-          </span>
-          <Button
-            size="sm"
-            onClick={() => setIsEditClientOpen(true)}
+      {/* Client Search Bar */}
+      <div className="mb-6 relative">
+        <div className="flex gap-2 mb-2">
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search clients..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-sm"
+            autoComplete="off"
+          />
+          <button
+            onClick={handleSearch}
+            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm flex items-center gap-1"
           >
-            Edit
-          </Button>
-        </div>
-
-        <div className="relative">
-          <div className="flex gap-2">
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search by name, email, address..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-              autoComplete="off"
-            />
-            <button
-              onClick={handleSearch}
-              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm flex items-center gap-1"
-            >
-              <Search className="w-4 h-4" />
-              Search
-            </button>
-            {isSearching && (
-              <button
-                onClick={handleClearSearch}
-                className="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md text-sm flex items-center gap-1"
-              >
-                <X className="w-4 h-4" />
-                Clear
-              </button>
-            )}
-          </div>
-
+            <Search className="w-4 h-4" />
+            Search
+          </button>
           {isSearching && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
-              {searchResults.length > 0 ? (
-                searchResults.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => handleSelectClient(c.id)}
-                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-blue-50 transition-colors ${
-                      c.id === parseInt(id) ? 'bg-blue-100 font-medium' : ''
-                    }`}
-                  >
-                    <div className="font-medium">{c.company_name}</div>
-                    <div className="text-xs text-gray-600">
-                      {c.contact_name && <div>{c.contact_name}</div>}
-                      {c.email && <div>{c.email}</div>}
-                      {c.city && <div>{c.city}, {c.state}</div>}
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <div className="px-4 py-3 text-sm text-gray-500">No clients found</div>
-              )}
-            </div>
+            <button
+              onClick={handleClearSearch}
+              className="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md text-sm flex items-center gap-1"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
           )}
         </div>
+
+        {isSearching && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+            {searchResults.length > 0 ? (
+              searchResults.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleSelectClient(c.id)}
+                  className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-blue-50 transition-colors ${
+                    c.id === parseInt(id) ? 'bg-blue-100 font-medium' : ''
+                  }`}
+                >
+                  <div className="font-medium">{c.company_name}</div>
+                  <div className="text-xs text-gray-600">
+                    {c.contact_name && <div>{c.contact_name}</div>}
+                    {c.email && <div>{c.email}</div>}
+                    {c.city && <div>{c.city}, {c.state}</div>}
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="px-4 py-3 text-sm text-gray-500">No clients found</div>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-gray-600 text-sm font-medium mb-2">Account Balance</p>
-            <p
-              className={`text-3xl font-bold ${
-                client.account_balance < 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              ${Math.abs(client.account_balance).toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-gray-600 text-sm font-medium mb-2">Status</p>
-            <p className="text-2xl font-bold">{client.account_status || 'Active'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-gray-600 text-sm font-medium mb-2">AutoCC Recurring</p>
-            <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold">{client.autocc_recurring ? 'Yes' : 'No'}</p>
-              <Toggle
-                checked={client.autocc_recurring}
-                onChange={handleToggleAutocc}
-                disabled={toggleAutoccMutation.isPending}
-              />
+      {/* Client Profile Header */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-3 gap-8">
+            {/* Left Column - Client Identity & Contact Info */}
+            <div className="col-span-2 space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{client.company_name}</h1>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                {/* Row 1 */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact Name</p>
+                  <p className="text-sm text-gray-900">{client.contact_name || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</p>
+                  <p className="text-sm">
+                    {client.email ? (
+                      <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800">
+                        {client.email}
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                  </p>
+                </div>
+
+                {/* Row 2 */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">CC Email</p>
+                  <p className="text-sm text-gray-900">{client.email_cc || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Phone</p>
+                  <p className="text-sm text-gray-900">{client.phone || '—'}</p>
+                </div>
+
+                {/* Row 3 - Address */}
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Address</p>
+                  <p className="text-sm text-gray-900">
+                    {client.address_line1 ? (
+                      <>
+                        {client.address_line1}
+                        {client.address_line2 && <>, {client.address_line2}</>}
+                        {client.city && <>, {client.city}, {client.state} {client.zip_code}</>}
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </p>
+                </div>
+
+                {/* Row 4 - Notes */}
+                {client.notes && (
+                  <div className="col-span-2">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Notes</p>
+                    <p className="text-sm text-gray-700 line-clamp-2">{client.notes}</p>
+                  </div>
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* Right Column - Status & Metrics */}
+            <div className="space-y-4">
+              {/* Account Balance */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Account Balance</p>
+                <p
+                  className={`text-2xl font-bold ${
+                    client.account_balance < 0 ? 'text-green-600' : 'text-red-600'
+                  }`}
+                >
+                  ${Math.abs(client.account_balance).toFixed(2)}
+                </p>
+              </div>
+
+              {/* Status Badge */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status</p>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                    client.account_status === 'active'
+                      ? 'bg-green-100 text-green-800'
+                      : client.account_status === 'overdue'
+                      ? 'bg-red-100 text-red-800'
+                      : client.account_status === 'suspended'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {client.account_status || 'Active'}
+                </span>
+              </div>
+
+              {/* AutoCC Recurring */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">AutoCC Recurring</p>
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                      client.autocc_recurring
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {client.autocc_recurring ? 'Yes' : 'No'}
+                  </span>
+                  <Toggle
+                    checked={client.autocc_recurring}
+                    onChange={handleToggleAutocc}
+                    disabled={toggleAutoccMutation.isPending}
+                  />
+                </div>
+              </div>
+
+              {/* Additional Settings */}
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Auto-Send</span>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                    client.auto_send_invoices ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-500'
+                  }`}>
+                    {client.auto_send_invoices ? 'On' : 'Off'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Collections</span>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                    client.collections_exempt ? 'bg-yellow-50 text-yellow-700' : 'bg-gray-50 text-gray-500'
+                  }`}>
+                    {client.collections_exempt ? 'Exempt' : 'Active'}
+                  </span>
+                </div>
+                {client.late_fee_type !== 'none' && (
+                  <div className="text-xs">
+                    <p className="font-semibold text-gray-500 uppercase tracking-wide mb-1">Late Fee</p>
+                    <p className="text-gray-700">
+                      {client.late_fee_type === 'flat' ? `$${client.late_fee_amount.toFixed(2)}` : `${client.late_fee_amount}%`}
+                      {client.late_fee_grace_days > 0 && ` after ${client.late_fee_grace_days}d`}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Edit Button */}
+              <div className="pt-4 border-t">
+                <Button
+                  onClick={() => setIsEditClientOpen(true)}
+                  size="sm"
+                  className="w-full"
+                >
+                  Edit Client
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 gap-6">
         <Card>
