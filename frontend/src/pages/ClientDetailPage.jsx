@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef } from 'react';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
@@ -12,6 +12,7 @@ import { Plus, Eye, Search, X } from 'lucide-react';
 export default function ClientDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
@@ -60,6 +61,22 @@ export default function ClientDetailPage() {
       return response.data?.items || response.data || [];
     },
   });
+
+  const toggleAuthnetMutation = useMutation({
+    mutationFn: async (newValue) => {
+      const response = await apiClient.put(`/clients/${id}`, {
+        authnet_recurring: newValue,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients', id] });
+    },
+  });
+
+  const handleToggleAuthnet = async () => {
+    toggleAuthnetMutation.mutate(!client.authnet_recurring);
+  };
 
   const isLoading = clientLoading || schedulesLoading || invoicesLoading || activityLoading;
 
@@ -213,6 +230,25 @@ export default function ClientDetailPage() {
           <CardContent className="pt-6">
             <p className="text-gray-600 text-sm font-medium mb-2">Status</p>
             <p className="text-2xl font-bold">{client.account_status || 'Active'}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-gray-600 text-sm font-medium mb-2">Auth.net Recurring</p>
+            <div className="flex items-center justify-between">
+              <p className="text-2xl font-bold">{client.authnet_recurring ? 'Active' : 'Inactive'}</p>
+              <button
+                onClick={handleToggleAuthnet}
+                disabled={toggleAuthnetMutation.isPending}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  client.authnet_recurring
+                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
+                }`}
+              >
+                {toggleAuthnetMutation.isPending ? 'Saving...' : 'Toggle'}
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
