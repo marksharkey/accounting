@@ -1,19 +1,23 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import AddBillingScheduleModal from '../components/AddBillingScheduleModal';
 import EditClientModal from '../components/EditClientModal';
-import { formatBillingType } from '../utils/formatting';
+import { Plus, Eye, Search, X } from 'lucide-react';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchInputRef = useRef(null);
 
   const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ['clients', id],
@@ -48,14 +52,68 @@ export default function ClientDetailPage() {
   });
 
   const { data: allClients } = useQuery({
-    queryKey: ['clients'],
+    queryKey: ['clients-all'],
     queryFn: async () => {
-      const response = await apiClient.get('/clients');
+      const response = await apiClient.get('/clients/', {
+        params: { limit: 10000 },
+      });
       return response.data?.items || response.data || [];
     },
   });
 
   const isLoading = clientLoading || schedulesLoading || invoicesLoading || activityLoading;
+
+  const handleSearch = () => {
+    if (!searchInput.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const query = searchInput.toLowerCase();
+    const results = (allClients || []).filter(c => {
+      const companyName = c.company_name?.toLowerCase() || '';
+      const contactName = c.contact_name?.toLowerCase() || '';
+      const email = c.email?.toLowerCase() || '';
+      const phone = c.phone?.toLowerCase() || '';
+      const address1 = c.address_line1?.toLowerCase() || '';
+      const address2 = c.address_line2?.toLowerCase() || '';
+      const city = c.city?.toLowerCase() || '';
+      const state = c.state?.toLowerCase() || '';
+      const zip = c.zip_code?.toLowerCase() || '';
+
+      return (
+        companyName.includes(query) ||
+        contactName.includes(query) ||
+        email.includes(query) ||
+        phone.includes(query) ||
+        address1.includes(query) ||
+        address2.includes(query) ||
+        city.includes(query) ||
+        state.includes(query) ||
+        zip.includes(query)
+      );
+    });
+
+    setSearchResults(results);
+    setIsSearching(true);
+  };
+
+  const handleSelectClient = (clientId) => {
+    navigate(`/clients/${clientId}`);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchResults([]);
+    setIsSearching(false);
+    searchInputRef.current?.focus();
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   if (isLoading) {
     return <Layout title="Client Detail">Loading...</Layout>;
@@ -66,30 +124,75 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <Layout title={client.name}>
+    <Layout title={client.company_name}>
       <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <label htmlFor="client-select" className="text-sm font-medium text-gray-700">
-            Client:
-          </label>
-          <select
-            id="client-select"
-            value={id}
-            onChange={(e) => navigate(`/clients/${e.target.value}`)}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {allClients && allClients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.company_name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm font-medium text-gray-700">
+            Client: <span className="font-semibold text-gray-900">{client?.company_name}</span>
+          </span>
           <Button
             size="sm"
             onClick={() => setIsEditClientOpen(true)}
           >
             Edit
           </Button>
+        </div>
+
+        <div className="relative">
+          <div className="flex gap-2">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search by name, email, address..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+              autoComplete="off"
+            />
+            <button
+              onClick={handleSearch}
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm flex items-center gap-1"
+            >
+              <Search className="w-4 h-4" />
+              Search
+            </button>
+            {isSearching && (
+              <button
+                onClick={handleClearSearch}
+                className="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md text-sm flex items-center gap-1"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {isSearching && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
+              {searchResults.length > 0 ? (
+                searchResults.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleSelectClient(c.id)}
+                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-blue-50 transition-colors ${
+                      c.id === parseInt(id) ? 'bg-blue-100 font-medium' : ''
+                    }`}
+                  >
+                    <div className="font-medium">{c.company_name}</div>
+                    <div className="text-xs text-gray-600">
+                      {c.contact_name && <div>{c.contact_name}</div>}
+                      {c.email && <div>{c.email}</div>}
+                      {c.city && <div>{c.city}, {c.state}</div>}
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-3 text-sm text-gray-500">No clients found</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -109,7 +212,7 @@ export default function ClientDetailPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-gray-600 text-sm font-medium mb-2">Billing Type</p>
-            <p className="text-2xl font-bold">{formatBillingType(client.billing_type)}</p>
+            <p className="text-2xl font-bold">{client.authnet_recurring ? 'Auth.net Recurring' : 'Fixed Recurring'}</p>
           </CardContent>
         </Card>
         <Card>
@@ -160,8 +263,25 @@ export default function ClientDetailPage() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg">Recent Invoices</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => navigate(`/invoices/new?client_id=${id}`)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                New Invoice
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => navigate(`/invoices?client_id=${id}`)}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                View All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {invoices && invoices.length > 0 ? (
@@ -214,6 +334,9 @@ export default function ClientDetailPage() {
                   switch (log.action) {
                     case 'created':
                       description = `Created ${log.entity_type === 'invoice' ? 'Invoice' : log.entity_type === 'credit_memo' ? 'Credit Memo' : log.entity_type === 'payment' ? 'Payment' : 'Record'}`;
+                      if (log.notes) {
+                        description += `: ${log.notes}`;
+                      }
                       break;
                     case 'sent':
                       description = `Sent Invoice`;

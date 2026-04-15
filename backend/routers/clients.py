@@ -24,7 +24,7 @@ class ClientBase(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     zip_code: Optional[str] = None
-    billing_type: models.BillingType = models.BillingType.fixed_recurring
+    authnet_recurring: bool = False
     authnet_customer_id: Optional[str] = None
     late_fee_type: models.LateFeeType = models.LateFeeType.none
     late_fee_amount: float = 0.00
@@ -150,61 +150,6 @@ def create_client(
     db.commit()
     db.refresh(client)
     return client
-
-
-@router.get("/{client_id}")
-def get_client(
-    client_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    client = db.query(models.Client).filter_by(id=client_id).first()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    return client
-
-
-@router.put("/{client_id}", response_model=ClientResponse)
-def update_client(
-    client_id: int,
-    data: ClientUpdate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    client = db.query(models.Client).filter_by(id=client_id).first()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    for key, value in data.model_dump().items():
-        setattr(client, key, value)
-    log = models.ActivityLog(
-        entity_type="client", entity_id=client_id, client_id=client_id,
-        action="updated", performed_by_id=current_user.id,
-        performed_by_name=current_user.full_name
-    )
-    db.add(log)
-    db.commit()
-    db.refresh(client)
-    return client
-
-
-@router.delete("/{client_id}")
-def deactivate_client(
-    client_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    client = db.query(models.Client).filter_by(id=client_id).first()
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    client.is_active = False
-    log = models.ActivityLog(
-        entity_type="client", entity_id=client_id, client_id=client_id,
-        action="deactivated", performed_by_id=current_user.id,
-        performed_by_name=current_user.full_name
-    )
-    db.add(log)
-    db.commit()
-    return {"message": "Client deactivated"}
 
 
 @router.get("/{client_id}/billing-schedules", response_model=List[BillingScheduleResponse])
@@ -370,3 +315,58 @@ def get_client_activity(
 ):
     return db.query(models.ActivityLog).filter_by(client_id=client_id)\
         .order_by(models.ActivityLog.timestamp.desc()).limit(limit).all()
+
+
+@router.get("/{client_id}")
+def get_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    client = db.query(models.Client).filter_by(id=client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return client
+
+
+@router.put("/{client_id}", response_model=ClientResponse)
+def update_client(
+    client_id: int,
+    data: ClientUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    client = db.query(models.Client).filter_by(id=client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    for key, value in data.model_dump().items():
+        setattr(client, key, value)
+    log = models.ActivityLog(
+        entity_type="client", entity_id=client_id, client_id=client_id,
+        action="updated", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(client)
+    return client
+
+
+@router.delete("/{client_id}")
+def deactivate_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    client = db.query(models.Client).filter_by(id=client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    client.is_active = False
+    log = models.ActivityLog(
+        entity_type="client", entity_id=client_id, client_id=client_id,
+        action="deactivated", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name
+    )
+    db.add(log)
+    db.commit()
+    return {"message": "Client deactivated"}

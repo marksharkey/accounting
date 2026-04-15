@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from typing import Optional, List
 from pydantic import BaseModel
@@ -43,6 +43,17 @@ class LineItemOut(BaseModel):
         from_attributes = True
 
 
+class PaymentOut(BaseModel):
+    id: int
+    payment_date: date
+    amount: float
+    method: str
+    reference_number: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
 class ClientOut(BaseModel):
     id: int
     company_name: str
@@ -80,6 +91,7 @@ class InvoiceOut(BaseModel):
     internal_notes: Optional[str]
     voided_reason: Optional[str]
     line_items: List[LineItemOut]
+    payments: List[PaymentOut]
     created_at: datetime
     updated_at: datetime
 
@@ -104,28 +116,85 @@ class InvoiceCreate(BaseModel):
         use_enum_values = False
 
 
+class AnetBatchItem(BaseModel):
+    invoice_id: int
+    paid: bool
+
+
+class AnetBatchRequest(BaseModel):
+    items: List[AnetBatchItem]
+
+
+class AnetBatchClient(BaseModel):
+    id: int
+    company_name: str
+    email: str
+    invoice_id: Optional[int] = None
+    invoice_number: Optional[str] = None
+    invoice_total: Optional[float] = None
+    invoice_status: Optional[models.InvoiceStatus] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AnetBatchResponse(BaseModel):
+    paid_count: int
+    declined_count: int
+    paid_invoices: List[str]
+    declined_clients: List[str]
+
+
 @router.get("/")
 def list_invoices(
+    invoice_number: Optional[str] = None,
     client_id: Optional[int] = None,
     status: Optional[models.InvoiceStatus] = None,
+    overdue: Optional[bool] = None,
+    is_open: Optional[bool] = None,
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
+    sort_by: str = "created_date",
+    sort_order: str = "desc",
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    query = db.query(models.Invoice)
+    query = db.query(models.Invoice).options(joinedload(models.Invoice.client))
+    if invoice_number:
+        query = query.filter(models.Invoice.invoice_number.ilike(f"%{invoice_number}%"))
     if client_id:
         query = query.filter_by(client_id=client_id)
     if status:
         query = query.filter_by(status=status)
+    if overdue:
+        # Overdue invoices: due_date in the past and balance_due > 0
+        today = date.today()
+        query = query.filter(
+            models.Invoice.due_date < today,
+            models.Invoice.balance_due > 0
+        )
+    if is_open:
+        # Open invoices: sent or partially_paid status and balance_due > 0
+        query = query.filter(
+            models.Invoice.status.in_([models.InvoiceStatus.sent, models.InvoiceStatus.partially_paid]),
+            models.Invoice.balance_due > 0
+        )
     if from_date:
         query = query.filter(models.Invoice.created_date >= from_date)
     if to_date:
         query = query.filter(models.Invoice.created_date <= to_date)
     total = query.count()
-    invoices = query.order_by(models.Invoice.created_date.desc()).offset(skip).limit(limit).all()
+
+    # Handle sorting
+    sort_column = getattr(models.Invoice, sort_by, models.Invoice.created_date)
+    if sort_order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    invoices = query.offset(skip).limit(limit).all()
     return {"total": total, "items": invoices}
 
 
@@ -197,6 +266,47 @@ def prefill_invoice(
         "suggested_due_date": due_date,
         "line_items": line_items,
         "billing_schedule_ids": schedule_ids,
+    }
+
+
+@router.get("/duplicate-previous/{client_id}")
+def duplicate_previous_invoice(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get line items from the most recent invoice for this client."""
+    client = db.query(models.Client).filter_by(id=client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    # Get the most recent invoice
+    previous_invoice = db.query(models.Invoice).filter(
+        models.Invoice.client_id == client_id
+    ).order_by(models.Invoice.created_date.desc()).first()
+
+    if not previous_invoice:
+        raise HTTPException(status_code=404, detail="No previous invoice found")
+
+    # Extract line items from previous invoice
+    line_items = [
+        {
+            "description": item.description,
+            "quantity": float(item.quantity),
+            "unit_amount": float(item.unit_amount),
+            "amount": float(item.amount),
+            "service_id": item.service_id,
+        }
+        for item in previous_invoice.line_items
+    ]
+
+    return {
+        "client": client,
+        "previous_invoice": {
+            "number": previous_invoice.invoice_number,
+            "date": previous_invoice.created_date,
+        },
+        "line_items": line_items,
     }
 
 
@@ -278,7 +388,11 @@ def get_invoice(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    invoice = db.query(models.Invoice).options(
+        joinedload(models.Invoice.client),
+        joinedload(models.Invoice.line_items),
+        joinedload(models.Invoice.payments)
+    ).filter_by(id=invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return invoice
@@ -474,3 +588,116 @@ def download_invoice_pdf(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
+
+
+@router.get("/anet-batch")
+def get_anet_batch(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get all authnet_recurring clients with their latest draft/sent invoice."""
+    clients = db.query(models.Client).filter(
+        models.Client.authnet_recurring == True,
+        models.Client.is_active == True
+    ).all()
+
+    result = []
+    for client in clients:
+        # Find latest draft or sent invoice for this client
+        invoice = db.query(models.Invoice).filter(
+            models.Invoice.client_id == client.id,
+            models.Invoice.status.in_([models.InvoiceStatus.draft, models.InvoiceStatus.sent])
+        ).order_by(models.Invoice.created_date.desc()).first()
+
+        batch_item = AnetBatchClient(
+            id=client.id,
+            company_name=client.company_name,
+            email=client.email,
+            invoice_id=invoice.id if invoice else None,
+            invoice_number=invoice.invoice_number if invoice else None,
+            invoice_total=invoice.total if invoice else None,
+            invoice_status=invoice.status if invoice else None
+        )
+        result.append(batch_item)
+
+    return result
+
+
+@router.post("/anet-batch/process")
+async def process_anet_batch(
+    request: AnetBatchRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Process A.net batch payment decisions."""
+    from services.email import send_invoice_email, send_cc_declined_email
+
+    paid_invoices = []
+    declined_clients = []
+
+    for item in request.items:
+        invoice = db.query(models.Invoice).filter_by(id=item.invoice_id).first()
+        if not invoice:
+            continue
+
+        client = invoice.client
+        if not client:
+            continue
+
+        if item.paid:
+            # Mark invoice as paid
+            invoice.status = models.InvoiceStatus.paid
+            invoice.amount_paid = invoice.total
+            invoice.balance_due = 0
+            db.add(invoice)
+            db.flush()
+
+            # Update client balance
+            client.account_balance -= invoice.total
+            db.add(client)
+            db.flush()
+
+            # Log activity
+            log = models.ActivityLog(
+                entity_type="invoice",
+                entity_id=invoice.id,
+                client_id=invoice.client_id,
+                action="marked_paid_via_anet_batch",
+                performed_by_id=current_user.id,
+                notes="Marked as paid via A.net batch process"
+            )
+            db.add(log)
+
+            # Send invoice email
+            try:
+                await send_invoice_email(invoice, client)
+                paid_invoices.append(invoice.invoice_number)
+            except Exception as e:
+                print(f"Error sending invoice email for {invoice.invoice_number}: {str(e)}")
+        else:
+            # Send CC declined email
+            try:
+                await send_cc_declined_email(client)
+                declined_clients.append(client.company_name)
+            except Exception as e:
+                print(f"Error sending declined email for {client.company_name}: {str(e)}")
+
+            # Log activity
+            log = models.ActivityLog(
+                entity_type="invoice",
+                entity_id=invoice.id,
+                client_id=invoice.client_id,
+                action="anet_charge_declined",
+                performed_by_id=current_user.id,
+                notes=f"A.net charge declined for invoice {invoice.invoice_number}"
+            )
+            db.add(log)
+
+    db.commit()
+
+    return AnetBatchResponse(
+        paid_count=len(paid_invoices),
+        declined_count=len(declined_clients),
+        paid_invoices=paid_invoices,
+        declined_clients=declined_clients
+    )

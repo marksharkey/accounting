@@ -12,7 +12,7 @@ export default function AddClientModal({ isOpen, onClose }) {
     contact_name: '',
     email: '',
     phone: '',
-    billing_type: 'fixed_recurring',
+    authnet_recurring: false,
     authnet_customer_id: '',
     late_fee_type: 'none',
     late_fee_amount: '',
@@ -32,10 +32,12 @@ export default function AddClientModal({ isOpen, onClose }) {
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'late_fee_amount' || name === 'late_fee_grace_days'
+      [name]: type === 'checkbox'
+        ? checked
+        : name === 'late_fee_amount' || name === 'late_fee_grace_days'
         ? value === '' ? '' : Number(value)
         : value,
     }));
@@ -57,7 +59,7 @@ export default function AddClientModal({ isOpen, onClose }) {
       contact_name: '',
       email: '',
       phone: '',
-      billing_type: 'fixed_recurring',
+      authnet_recurring: false,
       authnet_customer_id: '',
       late_fee_type: 'none',
       late_fee_amount: '',
@@ -151,21 +153,18 @@ export default function AddClientModal({ isOpen, onClose }) {
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Billing Type
-          </label>
-          <select
-            name="billing_type"
-            value={formData.billing_type}
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="authnet_recurring"
+            name="authnet_recurring"
+            checked={formData.authnet_recurring}
             onChange={handleChange}
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-          >
-            <option value="fixed_recurring">Fixed Recurring</option>
-            <option value="authnet_recurring">AuthNet Recurring</option>
-            <option value="mixed">Mixed</option>
-            <option value="one_off">One Off</option>
-          </select>
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+          <label htmlFor="authnet_recurring" className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
+            Use Auth.net Recurring Billing
+          </label>
         </div>
 
         <div>

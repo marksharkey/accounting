@@ -23,6 +23,7 @@ export default function EditClientModal({ isOpen, onClose, client }) {
         city: client.city || '',
         state: client.state || '',
         zip_code: client.zip_code || '',
+        authnet_recurring: client.authnet_recurring || false,
         notes: client.notes || '',
       });
     }
@@ -44,8 +45,11 @@ export default function EditClientModal({ isOpen, onClose, client }) {
   });
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
 
   const handleSubmit = (e) => {
@@ -165,6 +169,24 @@ export default function EditClientModal({ isOpen, onClose, client }) {
               value={form.phone}
               onChange={handleInputChange}
             />
+          </div>
+        </div>
+
+        {/* Billing Settings */}
+        <div className="space-y-4 border-b pb-4">
+          <h3 className="font-semibold text-gray-900">Billing Settings</h3>
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="authnet_recurring"
+              name="authnet_recurring"
+              checked={form.authnet_recurring}
+              onChange={handleInputChange}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            <label htmlFor="authnet_recurring" className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
+              Use Auth.net Recurring Billing
+            </label>
           </div>
         </div>
 

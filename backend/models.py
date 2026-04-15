@@ -20,13 +20,6 @@ class BillingCycle(str, enum.Enum):
     multi_year = "multi_year"
 
 
-class BillingType(str, enum.Enum):
-    authnet_recurring = "authnet_recurring"
-    fixed_recurring = "fixed_recurring"
-    mixed = "mixed"
-    one_off = "one_off"
-
-
 class AccountStatus(str, enum.Enum):
     active = "active"
     overdue = "overdue"
@@ -167,7 +160,7 @@ class Client(Base):
     state = Column(String(50), nullable=True)
     zip_code = Column(String(20), nullable=True)
 
-    billing_type = Column(Enum(BillingType), nullable=False, default=BillingType.fixed_recurring)
+    authnet_recurring = Column(Boolean, nullable=False, default=False)
     authnet_customer_id = Column(String(50), nullable=True)
     account_status = Column(Enum(AccountStatus), nullable=False, default=AccountStatus.active)
     account_balance = Column(Numeric(10, 2), default=0.00)
