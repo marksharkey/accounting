@@ -270,85 +270,43 @@ export default function ClientDetailPage() {
 
       {/* Main Content */}
       <div className="space-y-3">
-        {/* Top Section: Client Info + Quick Details (2-column) */}
-        <div className="grid grid-cols-[1fr_350px] gap-3">
-          {/* Client Info Panel */}
-          <div className="border border-gray-200 rounded text-[13px]">
-            <div className="grid grid-cols-3 gap-3 p-3">
-              <div>
-                <div className="text-[11px] font-semibold text-gray-600 mb-1">CONTACT</div>
-                <div className="text-gray-900">{client.contact_name || '—'}</div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold text-gray-600 mb-1">EMAIL</div>
-                <div>
-                  {client.email ? (
-                    <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800">
-                      {client.email}
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold text-gray-600 mb-1">PHONE</div>
-                <div className="text-gray-900">{client.phone || '—'}</div>
-              </div>
-              <div className="col-span-3">
-                <div className="text-[11px] font-semibold text-gray-600 mb-1">ADDRESS</div>
-                <div className="text-gray-900">
-                  {client.address_line1 ? (
-                    <>
-                      {client.address_line1}
-                      {client.address_line2 && <>, {client.address_line2}</>}
-                      {client.city && <>, {client.city} {client.state} {client.zip_code}</>}
-                    </>
-                  ) : (
-                    '—'
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Details */}
-          <div className="border border-gray-200 rounded p-3 text-[13px] space-y-2">
-            <div className="text-[11px] font-semibold text-gray-600 mb-2">QUICK INFO</div>
-
-            {client.email_cc && (
-              <div>
-                <div className="text-[11px] text-gray-600">CC Email</div>
-                <div className="text-gray-900">{client.email_cc}</div>
-              </div>
-            )}
-
-            {client.late_fee_type !== 'none' && (
-              <div>
-                <div className="text-[11px] text-gray-600">Late Fee</div>
-                <div className="text-gray-900">
-                  {client.late_fee_type === 'flat' ? `$${client.late_fee_amount.toFixed(2)}` : `${client.late_fee_amount}%`}
-                  {client.late_fee_grace_days > 0 && ` after ${client.late_fee_grace_days}d`}
-                </div>
-              </div>
-            )}
-
+        {/* Client Info Panel */}
+        <div className="border border-gray-200 rounded text-[13px]">
+          <div className="grid grid-cols-3 gap-3 p-3">
             <div>
-              <div className="text-[11px] text-gray-600">Auto-Send</div>
-              <div className="text-gray-900">{client.auto_send_invoices ? 'On' : 'Off'}</div>
+              <div className="text-[11px] font-semibold text-gray-600 mb-1">CONTACT</div>
+              <div className="text-gray-900">{client.contact_name || '—'}</div>
             </div>
-
             <div>
-              <div className="text-[11px] text-gray-600">Collections</div>
-              <div className="text-gray-900">{client.collections_exempt ? 'Exempt' : 'Active'}</div>
-            </div>
-
-            {client.notes && (
+              <div className="text-[11px] font-semibold text-gray-600 mb-1">EMAIL</div>
               <div>
-                <div className="text-[11px] text-gray-600">Notes</div>
-                <div className="text-gray-900 text-[12px] line-clamp-3">{client.notes}</div>
+                {client.email ? (
+                  <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800">
+                    {client.email}
+                  </a>
+                ) : (
+                  '—'
+                )}
               </div>
-            )}
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold text-gray-600 mb-1">PHONE</div>
+              <div className="text-gray-900">{client.phone || '—'}</div>
+            </div>
+            <div className="col-span-3">
+              <div className="text-[11px] font-semibold text-gray-600 mb-1">ADDRESS</div>
+              <div className="text-gray-900">
+                {client.address_line1 ? (
+                  <>
+                    {client.address_line1}
+                    {client.address_line2 && <>, {client.address_line2}</>}
+                    {client.city && <>, {client.city} {client.state} {client.zip_code}</>}
+                  </>
+                ) : (
+                  '—'
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
