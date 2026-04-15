@@ -5,27 +5,24 @@ import {
   X,
   LayoutDashboard,
   FileText,
-  Plus,
   Users,
   DollarSign,
   Package,
   BarChart3,
   Settings,
   LogOut,
+  Zap,
+  Mail,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
-const NavSection = ({ label, items, isCollapsed, isDrawer = false }) => {
+const NavSection = ({ items, isCollapsed, isDrawer = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
   return (
-    <div className="mb-6">
-      {!isCollapsed && !isDrawer && (
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">
-          {label}
-        </p>
-      )}
+    <div className="mb-4">
+      {/* Headers removed */}
       <div className="space-y-1">
         {items.map((item) => {
           const isActive = location.pathname === item.href;
@@ -63,6 +60,7 @@ export default function Sidebar() {
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
 
+
   // Handle responsive behavior
   useEffect(() => {
     const handleResize = () => {
@@ -88,8 +86,7 @@ export default function Sidebar() {
 
   const billingItems = [
     { label: 'Invoices', href: '/invoices', icon: FileText },
-    { label: 'New Invoice', href: '/invoices/new', icon: Plus },
-    { label: 'Credit Memo', href: '/credit-memos/new', icon: DollarSign },
+    { label: 'AutoCC Batch', href: '/autocc-batch', icon: Zap },
   ];
 
   const clientsItems = [
@@ -108,25 +105,19 @@ export default function Sidebar() {
 
   const accountItems = [
     { label: 'Settings', href: '/settings/company', icon: Settings },
+    { label: 'Email Templates', href: '/settings/email-templates', icon: Mail },
   ];
 
   // Desktop & Tablet Sidebar
   const sidebarContent = (
     <>
-      {/* Logo/Brand */}
-      <div className="px-4 py-6 border-b">
-        <h1 className={`font-bold text-blue-700 ${isCollapsed ? 'text-center text-lg' : 'text-xl'}`}>
-          {isCollapsed ? 'PP' : 'PrecisionPros'}
-        </h1>
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-        <NavSection label="Billing" items={billingItems} isCollapsed={isCollapsed} />
-        <NavSection label="Clients" items={clientsItems} isCollapsed={isCollapsed} />
-        <NavSection label="Business" items={businessItems} isCollapsed={isCollapsed} />
-        <NavSection label="Insights" items={insightsItems} isCollapsed={isCollapsed} />
-        <NavSection label="Account" items={accountItems} isCollapsed={isCollapsed} />
+        <NavSection items={billingItems} isCollapsed={isCollapsed} />
+        <NavSection items={clientsItems} isCollapsed={isCollapsed} />
+        <NavSection items={businessItems} isCollapsed={isCollapsed} />
+        <NavSection items={insightsItems} isCollapsed={isCollapsed} />
+        <NavSection items={accountItems} isCollapsed={isCollapsed} />
       </nav>
 
       {/* User Info & Logout */}
@@ -157,17 +148,17 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop: Fixed Sidebar (1024px+) */}
-      <aside className="hidden lg:flex fixed left-0 top-0 w-56 h-screen bg-white border-r border-gray-200 flex-col z-50">
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen bg-white border-r border-gray-200 flex-col z-50" style={{ width: 'var(--sidebar-width-desktop)' }}>
         {sidebarContent}
       </aside>
 
       {/* Tablet: Collapsed Sidebar (768px - 1023px) */}
-      <aside className="hidden md:flex lg:hidden fixed left-0 top-0 w-16 h-screen bg-white border-r border-gray-200 flex-col z-50">
+      <aside className="hidden md:flex lg:hidden fixed left-0 top-0 h-screen bg-white border-r border-gray-200 flex-col z-50" style={{ width: 'var(--sidebar-width-tablet)' }}>
         {sidebarContent}
       </aside>
 
       {/* Mobile: Hamburger Menu & Drawer (< 768px) */}
-      <div className="md:hidden flex items-center gap-2 bg-white border-b border-gray-200 px-4 py-4">
+      <div className="md:hidden flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-4">
         <button
           onClick={() => setIsDrawerOpen(true)}
           className="text-gray-700 hover:text-gray-900"
@@ -175,7 +166,6 @@ export default function Sidebar() {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <h1 className="text-lg font-bold text-blue-700 ml-2">PrecisionPros</h1>
       </div>
 
       {/* Mobile Drawer Overlay */}
@@ -194,7 +184,6 @@ export default function Sidebar() {
         `}
       >
         <div className="flex items-center justify-between px-4 py-4 border-b">
-          <h1 className="font-bold text-xl text-blue-700">PrecisionPros</h1>
           <button
             onClick={() => setIsDrawerOpen(false)}
             className="text-gray-700 hover:text-gray-900"
@@ -204,11 +193,11 @@ export default function Sidebar() {
           </button>
         </div>
         <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-          <NavSection label="Billing" items={billingItems} isCollapsed={false} isDrawer />
-          <NavSection label="Clients" items={clientsItems} isCollapsed={false} isDrawer />
-          <NavSection label="Business" items={businessItems} isCollapsed={false} isDrawer />
-          <NavSection label="Insights" items={insightsItems} isCollapsed={false} isDrawer />
-          <NavSection label="Account" items={accountItems} isCollapsed={false} isDrawer />
+          <NavSection items={billingItems} isCollapsed={false} isDrawer />
+          <NavSection items={clientsItems} isCollapsed={false} isDrawer />
+          <NavSection items={businessItems} isCollapsed={false} isDrawer />
+          <NavSection items={insightsItems} isCollapsed={false} isDrawer />
+          <NavSection items={accountItems} isCollapsed={false} isDrawer />
         </nav>
         <div className="border-t p-4">
           <p className="text-sm font-medium text-gray-900 truncate mb-3">

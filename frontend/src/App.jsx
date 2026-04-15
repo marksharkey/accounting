@@ -9,11 +9,15 @@ import ClientDetailPage from './pages/ClientDetailPage';
 import InvoiceBuilderPage from './pages/InvoiceBuilderPage';
 import InvoiceDetailPage from './pages/InvoiceDetailPage';
 import InvoiceListPage from './pages/InvoiceListPage';
+import AutoccBatchPage from './pages/AutoccBatchPage';
 import CreditMemoBuilderPage from './pages/CreditMemoBuilderPage';
+import CreditMemoDetailPage from './pages/CreditMemoDetailPage';
+import CreditMemoListPage from './pages/CreditMemoListPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
+import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -95,10 +99,34 @@ function App() {
             }
           />
           <Route
+            path="/autocc-batch"
+            element={
+              <ProtectedRoute>
+                <AutoccBatchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-memos"
+            element={
+              <ProtectedRoute>
+                <CreditMemoListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/credit-memos/new"
             element={
               <ProtectedRoute>
                 <CreditMemoBuilderPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/credit-memos/:id"
+            element={
+              <ProtectedRoute>
+                <CreditMemoDetailPage />
               </ProtectedRoute>
             }
           />
@@ -131,6 +159,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <CompanySettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/email-templates"
+            element={
+              <ProtectedRoute>
+                <EmailTemplatesPage />
               </ProtectedRoute>
             }
           />
