@@ -5,6 +5,7 @@ import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
+import Toggle from '../components/ui/Toggle';
 import AddBillingScheduleModal from '../components/AddBillingScheduleModal';
 import EditClientModal from '../components/EditClientModal';
 import { Plus, Eye, Search, X } from 'lucide-react';
@@ -257,18 +258,12 @@ export default function ClientDetailPage() {
           <CardContent className="pt-6">
             <p className="text-gray-600 text-sm font-medium mb-2">AutoCC Recurring</p>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold">{client.autocc_recurring ? 'Active' : 'Inactive'}</p>
-              <button
-                onClick={handleToggleAutocc}
+              <p className="text-2xl font-bold">{client.autocc_recurring ? 'Yes' : 'No'}</p>
+              <Toggle
+                checked={client.autocc_recurring}
+                onChange={handleToggleAutocc}
                 disabled={toggleAutoccMutation.isPending}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  client.autocc_recurring
-                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
-                }`}
-              >
-                {toggleAutoccMutation.isPending ? 'Saving...' : 'Toggle'}
-              </button>
+              />
             </div>
           </CardContent>
         </Card>
