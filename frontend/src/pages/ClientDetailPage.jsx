@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef } from 'react';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Toggle from '../components/ui/Toggle';
 import AddBillingScheduleModal from '../components/AddBillingScheduleModal';
@@ -154,6 +153,13 @@ export default function ClientDetailPage() {
     }
   };
 
+  const getStatusColor = (status) => {
+    if (status === 'active') return 'text-green-700 bg-green-50';
+    if (status === 'overdue') return 'text-red-700 bg-red-50';
+    if (status === 'suspended') return 'text-yellow-700 bg-yellow-50';
+    return 'text-gray-700 bg-gray-50';
+  };
+
   if (isLoading) {
     return <Layout title="Client Detail">Loading...</Layout>;
   }
@@ -164,433 +170,350 @@ export default function ClientDetailPage() {
 
   return (
     <Layout title={client.company_name}>
-      {/* Client Search Bar */}
-      <div className="mb-6 relative">
-        <div className="flex gap-2 mb-2">
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Search clients..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 max-w-sm"
-            autoComplete="off"
-          />
-          <button
-            onClick={handleSearch}
-            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm flex items-center gap-1"
-          >
-            <Search className="w-4 h-4" />
-            Search
-          </button>
-          {isSearching && (
-            <button
-              onClick={handleClearSearch}
-              className="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md text-sm flex items-center gap-1"
-            >
-              <X className="w-4 h-4" />
-              Clear
-            </button>
-          )}
-        </div>
-
-        {isSearching && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-300 rounded-md shadow-lg z-50 max-h-64 overflow-y-auto">
-            {searchResults.length > 0 ? (
-              searchResults.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleSelectClient(c.id)}
-                  className={`w-full text-left px-4 py-3 border-b last:border-b-0 hover:bg-blue-50 transition-colors ${
-                    c.id === parseInt(id) ? 'bg-blue-100 font-medium' : ''
-                  }`}
-                >
-                  <div className="font-medium">{c.company_name}</div>
-                  <div className="text-xs text-gray-600">
-                    {c.contact_name && <div>{c.contact_name}</div>}
-                    {c.email && <div>{c.email}</div>}
-                    {c.city && <div>{c.city}, {c.state}</div>}
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="px-4 py-3 text-sm text-gray-500">No clients found</div>
+      {/* Toolbar */}
+      <div className="relative mb-3">
+        <div className="flex items-center gap-2">
+          {/* Search */}
+          <div className="relative flex-1 max-w-xs">
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="px-2 py-1 border border-gray-300 rounded text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
+              autoComplete="off"
+            />
+            {isSearching && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
             )}
-          </div>
-        )}
-      </div>
 
-      {/* Client Profile Header */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-3 gap-8">
-            {/* Left Column - Client Identity & Contact Info */}
-            <div className="col-span-2 space-y-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">{client.company_name}</h1>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                {/* Row 1 */}
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact Name</p>
-                  <p className="text-sm text-gray-900">{client.contact_name || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Email</p>
-                  <p className="text-sm">
-                    {client.email ? (
-                      <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800">
-                        {client.email}
-                      </a>
-                    ) : (
-                      '—'
-                    )}
-                  </p>
-                </div>
-
-                {/* Row 2 */}
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">CC Email</p>
-                  <p className="text-sm text-gray-900">{client.email_cc || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Phone</p>
-                  <p className="text-sm text-gray-900">{client.phone || '—'}</p>
-                </div>
-
-                {/* Row 3 - Address */}
-                <div className="col-span-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Address</p>
-                  <p className="text-sm text-gray-900">
-                    {client.address_line1 ? (
-                      <>
-                        {client.address_line1}
-                        {client.address_line2 && <>, {client.address_line2}</>}
-                        {client.city && <>, {client.city}, {client.state} {client.zip_code}</>}
-                      </>
-                    ) : (
-                      '—'
-                    )}
-                  </p>
-                </div>
-
-                {/* Row 4 - Notes */}
-                {client.notes && (
-                  <div className="col-span-2">
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Notes</p>
-                    <p className="text-sm text-gray-700 line-clamp-2">{client.notes}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Column - Status & Metrics */}
-            <div className="space-y-4">
-              {/* Account Balance */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Account Balance</p>
-                <p
-                  className={`text-2xl font-bold ${
-                    client.account_balance < 0 ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
-                  ${Math.abs(client.account_balance).toFixed(2)}
-                </p>
-              </div>
-
-              {/* Status Badge */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Status</p>
-                <span
-                  className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                    client.account_status === 'active'
-                      ? 'bg-green-100 text-green-800'
-                      : client.account_status === 'overdue'
-                      ? 'bg-red-100 text-red-800'
-                      : client.account_status === 'suspended'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {client.account_status || 'Active'}
-                </span>
-              </div>
-
-              {/* AutoCC Recurring */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">AutoCC Recurring</p>
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                      client.autocc_recurring
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {client.autocc_recurring ? 'Yes' : 'No'}
-                  </span>
-                  <Toggle
-                    checked={client.autocc_recurring}
-                    onChange={handleToggleAutocc}
-                    disabled={toggleAutoccMutation.isPending}
-                  />
-                </div>
-              </div>
-
-              {/* Additional Settings */}
-              <div className="border-t pt-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Auto-Send</span>
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                    client.auto_send_invoices ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-500'
-                  }`}>
-                    {client.auto_send_invoices ? 'On' : 'Off'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Collections</span>
-                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                    client.collections_exempt ? 'bg-yellow-50 text-yellow-700' : 'bg-gray-50 text-gray-500'
-                  }`}>
-                    {client.collections_exempt ? 'Exempt' : 'Active'}
-                  </span>
-                </div>
-                {client.late_fee_type !== 'none' && (
-                  <div className="text-xs">
-                    <p className="font-semibold text-gray-500 uppercase tracking-wide mb-1">Late Fee</p>
-                    <p className="text-gray-700">
-                      {client.late_fee_type === 'flat' ? `$${client.late_fee_amount.toFixed(2)}` : `${client.late_fee_amount}%`}
-                      {client.late_fee_grace_days > 0 && ` after ${client.late_fee_grace_days}d`}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Edit Button */}
-              <div className="pt-4 border-t">
-                <Button
-                  onClick={() => setIsEditClientOpen(true)}
-                  size="sm"
-                  className="w-full"
-                >
-                  Edit Client
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-2 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Billing Schedules</CardTitle>
-            <Button size="sm" onClick={() => setIsAddScheduleOpen(true)}>Add</Button>
-          </CardHeader>
-          <CardContent>
-            {schedules && schedules.length > 0 ? (
-              <div className="space-y-4">
-                {schedules.map((schedule) => (
-                  <div key={schedule.id} className="border-b pb-3 last:border-b-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-medium text-gray-900">{schedule.cycle.replace('_', '-').toUpperCase()}</p>
-                        <p className="text-xs text-gray-500">Next: {new Date(schedule.next_bill_date).toLocaleDateString()}</p>
-                        {schedule.notes && (
-                          <p className="text-xs text-gray-600 mt-1">{schedule.notes}</p>
-                        )}
+            {isSearching && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-sm z-50 max-h-48 overflow-y-auto">
+                {searchResults.length > 0 ? (
+                  searchResults.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => handleSelectClient(c.id)}
+                      className={`w-full text-left px-2 py-1 border-b text-[13px] hover:bg-blue-50 ${
+                        c.id === parseInt(id) ? 'bg-blue-100 font-medium' : ''
+                      }`}
+                    >
+                      <div className="font-medium">{c.company_name}</div>
+                      <div className="text-xs text-gray-600">
+                        {c.email && <span>{c.email}</span>}
                       </div>
-                      <p className="text-lg font-bold text-gray-900">${parseFloat(schedule.amount).toFixed(2)}</p>
-                    </div>
-                    {schedule.line_items && schedule.line_items.length > 0 && (
-                      <ul className="space-y-1 ml-2">
-                        {schedule.line_items.map((item) => (
-                          <li key={item.id} className="text-xs text-gray-600">
-                            {item.description} × {parseFloat(item.quantity).toFixed(2)} = ${parseFloat(item.amount).toFixed(2)}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-2 py-1 text-[13px] text-gray-500">No clients found</div>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-gray-500">No billing schedules</p>
             )}
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Invoices</CardTitle>
-            <div className="flex gap-2">
+          {/* Toolbar Items */}
+          <div className="flex items-center gap-3 flex-1 px-2 py-1 border-l border-gray-300">
+            {/* Name */}
+            <span className="font-medium text-[14px] text-gray-900">{client.company_name}</span>
+
+            {/* Status Badge */}
+            <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${getStatusColor(client.account_status)}`}>
+              {client.account_status || 'Active'}
+            </span>
+
+            {/* Balance */}
+            <span className={`font-mono text-[13px] font-semibold ${
+              client.account_balance < 0 ? 'text-green-700' : 'text-red-700'
+            }`}>
+              ${Math.abs(client.account_balance).toFixed(2)}
+            </span>
+
+            {/* AutoCC Toggle */}
+            <div className="flex items-center gap-1 border-l border-gray-300 pl-3">
+              <span className="text-[12px] text-gray-600">AutoCC:</span>
+              <Toggle
+                checked={client.autocc_recurring}
+                onChange={handleToggleAutocc}
+                disabled={toggleAutoccMutation.isPending}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-1 border-l border-gray-300 pl-3 ml-auto">
+              <Button
+                size="sm"
+                onClick={() => setIsEditClientOpen(true)}
+                className="!px-2 !py-0.5 !text-[12px]"
+              >
+                Edit
+              </Button>
               <Button
                 size="sm"
                 onClick={() => navigate(`/invoices/new?client_id=${id}`)}
+                className="!px-2 !py-0.5 !text-[12px]"
               >
-                <Plus className="w-4 h-4 mr-1" />
-                New Invoice
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => navigate(`/invoices?client_id=${id}`)}
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                View All
+                <Plus className="w-3 h-3 mr-0.5" />
+                Invoice
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
-            {invoices && invoices.length > 0 ? (
-              <ul className="space-y-2">
-                {invoices.slice(0, 5).map((invoice) => (
-                  <li key={invoice.id} className="text-sm text-gray-600 border-b pb-2">
-                    <Link
-                      to={`/invoices/${invoice.id}`}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      {invoice.invoice_number || invoice.number}
-                    </Link>
-                    {' '} — ${invoice.total} ({invoice.status})
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">No invoices</p>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Activity Log</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {activity && activity.length > 0 ? (
-            <div className="h-64 overflow-y-auto border border-gray-200 rounded-md p-3">
-              <ul className="space-y-3">
-                {activity.slice(0, 5).map((log) => {
-                  const getActivityLink = () => {
-                    if (log.entity_type === 'invoice') {
-                      return `/invoices/${log.entity_id}`;
-                    } else if (log.entity_type === 'credit_memo') {
-                      return `/credit-memos/${log.entity_id}`;
-                    } else if (log.entity_type === 'payment') {
-                      return `/payments/${log.entity_id}`;
-                    }
-                    return null;
-                  };
-
-                  const getActivityDescription = () => {
-                    const timestamp = new Date(log.timestamp);
-                    const dateStr = timestamp.toLocaleDateString();
-                    const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const byUser = log.performed_by_name ? ` (${log.performed_by_name})` : '';
-
-                    let entityLabel = '';
-                    switch (log.entity_type) {
-                      case 'invoice':
-                        entityLabel = 'Invoice';
-                        break;
-                      case 'credit_memo':
-                        entityLabel = 'Credit Memo';
-                        break;
-                      case 'payment':
-                        entityLabel = 'Payment';
-                        break;
-                      case 'client':
-                        entityLabel = 'Client Profile';
-                        break;
-                      case 'billing_schedule':
-                        entityLabel = 'Billing Schedule';
-                        break;
-                      default:
-                        entityLabel = log.entity_type?.replace(/_/g, ' ') || 'Record';
-                    }
-
-                    let description = '';
-                    switch (log.action) {
-                      case 'created':
-                        description = `Created ${entityLabel}`;
-                        break;
-                      case 'sent':
-                        description = `Sent ${entityLabel}`;
-                        break;
-                      case 'resent':
-                        description = `Resent ${entityLabel}`;
-                        break;
-                      case 'marked_sent':
-                        description = `Marked ${entityLabel} as Sent`;
-                        break;
-                      case 'status_changed':
-                        description = `Changed ${entityLabel} Status`;
-                        break;
-                      case 'voided':
-                        description = `Voided ${entityLabel}`;
-                        break;
-                      case 'updated':
-                        description = `Updated ${entityLabel}`;
-                        break;
-                      case 'deactivated':
-                        description = `Deactivated ${entityLabel}`;
-                        break;
-                      case 'autocc_verified':
-                        description = `Verified Payment (AutoCC)`;
-                        break;
-                      case 'autocc_charge_declined':
-                        description = `AutoCC Charge Declined`;
-                        break;
-                      case 'marked_paid_via_autocc_batch':
-                        description = `Marked as Paid (AutoCC Batch)`;
-                        break;
-                      case 'paid':
-                        description = `Marked ${entityLabel} as Paid`;
-                        break;
-                      default:
-                        description = log.action.replace(/_/g, ' ').charAt(0).toUpperCase() + log.action.slice(1).replace(/_/g, ' ');
-                    }
-
-                    // Add notes with detail
-                    if (log.notes) {
-                      description += `: ${log.notes}`;
-                    }
-
-                    return `${description} on ${dateStr} at ${timeStr}${byUser}`;
-                  };
-
-                  const link = getActivityLink();
-                  const isClickable = link !== null;
-
-                  return (
-                    <li
-                      key={log.id}
-                      className={`border-b pb-3 last:border-b-0 ${isClickable ? 'cursor-pointer' : ''}`}
-                    >
-                      {isClickable ? (
-                        <Link
-                          to={link}
-                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline block"
-                        >
-                          {getActivityDescription()}
-                        </Link>
-                      ) : (
-                        <p className="text-sm text-gray-700">{getActivityDescription()}</p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-[1fr_350px] gap-3">
+        {/* LEFT COLUMN - 65% */}
+        <div className="space-y-3">
+          {/* Client Info Panel */}
+          <div className="border border-gray-200 rounded text-[13px]">
+            <div className="grid grid-cols-3 gap-3 p-3">
+              <div>
+                <div className="text-[11px] font-semibold text-gray-600 mb-1">CONTACT</div>
+                <div className="text-gray-900">{client.contact_name || '—'}</div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold text-gray-600 mb-1">EMAIL</div>
+                <div>
+                  {client.email ? (
+                    <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800">
+                      {client.email}
+                    </a>
+                  ) : (
+                    '—'
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-[11px] font-semibold text-gray-600 mb-1">PHONE</div>
+                <div className="text-gray-900">{client.phone || '—'}</div>
+              </div>
+              <div className="col-span-3">
+                <div className="text-[11px] font-semibold text-gray-600 mb-1">ADDRESS</div>
+                <div className="text-gray-900">
+                  {client.address_line1 ? (
+                    <>
+                      {client.address_line1}
+                      {client.address_line2 && <>, {client.address_line2}</>}
+                      {client.city && <>, {client.city} {client.state} {client.zip_code}</>}
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </div>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-gray-500">No activity</p>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+
+          {/* Billing Schedules Table */}
+          <div className="border border-gray-200 rounded overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+              <div className="font-semibold text-[13px]">Billing Schedules</div>
+              <Button
+                size="sm"
+                onClick={() => setIsAddScheduleOpen(true)}
+                className="!px-2 !py-0.5 !text-[12px]"
+              >
+                Add
+              </Button>
+            </div>
+            {schedules && schedules.length > 0 ? (
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Frequency</th>
+                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Next Date</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Components</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedules.map((schedule) => (
+                    <tr key={schedule.id} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="px-3 py-1 font-medium">{schedule.cycle.replace('_', ' ').toUpperCase()}</td>
+                      <td className="text-right px-3 py-1 font-mono">${parseFloat(schedule.amount).toFixed(2)}</td>
+                      <td className="px-3 py-1 text-gray-600">{new Date(schedule.next_bill_date).toLocaleDateString()}</td>
+                      <td className="px-3 py-1 text-gray-600">
+                        {schedule.line_items && schedule.line_items.length > 0 ? (
+                          <div className="text-[12px]">
+                            {schedule.line_items.map((item, idx) => (
+                              <div key={item.id}>{item.description} ×{parseFloat(item.quantity).toFixed(2)}</div>
+                            ))}
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="px-3 py-2 text-gray-500 text-[13px]">No billing schedules</div>
+            )}
+          </div>
+
+          {/* Activity Log Table */}
+          <div className="border border-gray-200 rounded overflow-hidden">
+            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 font-semibold text-[13px]">
+              Activity Log
+            </div>
+            {activity && activity.length > 0 ? (
+              <div className="overflow-y-auto max-h-80">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Timestamp</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Action</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activity.map((log) => {
+                      const timestamp = new Date(log.timestamp);
+                      const dateStr = timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                      let actionLabel = log.action.replace(/_/g, ' ').charAt(0).toUpperCase() + log.action.slice(1).replace(/_/g, ' ');
+                      if (log.entity_type === 'invoice' && log.action === 'sent') actionLabel = 'Invoice sent';
+                      if (log.entity_type === 'invoice' && log.action === 'created') actionLabel = 'Invoice created';
+
+                      const link =
+                        log.entity_type === 'invoice' ? `/invoices/${log.entity_id}` :
+                        log.entity_type === 'credit_memo' ? `/credit-memos/${log.entity_id}` :
+                        log.entity_type === 'payment' ? `/payments/${log.entity_id}` :
+                        null;
+
+                      return (
+                        <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
+                          <td className="px-3 py-1 text-gray-600 font-mono text-[12px]">
+                            {dateStr} {timeStr}
+                          </td>
+                          <td className="px-3 py-1">
+                            {link ? (
+                              <Link to={link} className="text-blue-600 hover:text-blue-800">
+                                {actionLabel}
+                              </Link>
+                            ) : (
+                              actionLabel
+                            )}
+                          </td>
+                          <td className="px-3 py-1 text-gray-600 text-[12px]">{log.performed_by_name || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-gray-500 text-[13px]">No activity</div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN - 35% */}
+        <div className="space-y-3">
+          {/* Recent Invoices Table */}
+          <div className="border border-gray-200 rounded overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+              <div className="font-semibold text-[13px]">Recent Invoices</div>
+              <Button
+                size="sm"
+                onClick={() => navigate(`/invoices?client_id=${id}`)}
+                className="!px-1.5 !py-0.5 !text-[11px]"
+              >
+                <Eye className="w-3 h-3" />
+              </Button>
+            </div>
+            {invoices && invoices.length > 0 ? (
+              <div className="overflow-y-auto max-h-60">
+                <table className="w-full text-[13px]">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Invoice #</th>
+                      <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.slice(0, 20).map((invoice) => (
+                      <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-3 py-1">
+                          <Link
+                            to={`/invoices/${invoice.id}`}
+                            className="text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {invoice.invoice_number || invoice.number}
+                          </Link>
+                        </td>
+                        <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.total).toFixed(2)}</td>
+                        <td className="px-3 py-1">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
+                            invoice.status === 'paid' ? 'bg-green-50 text-green-700' :
+                            invoice.status === 'sent' ? 'bg-blue-50 text-blue-700' :
+                            invoice.status === 'draft' ? 'bg-gray-50 text-gray-700' :
+                            'bg-yellow-50 text-yellow-700'
+                          }`}>
+                            {invoice.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-gray-500 text-[13px]">No invoices</div>
+            )}
+          </div>
+
+          {/* Quick Details */}
+          <div className="border border-gray-200 rounded p-3 text-[13px] space-y-2">
+            <div className="text-[11px] font-semibold text-gray-600 mb-2">QUICK INFO</div>
+
+            {client.email_cc && (
+              <div>
+                <div className="text-[11px] text-gray-600">CC Email</div>
+                <div className="text-gray-900">{client.email_cc}</div>
+              </div>
+            )}
+
+            {client.late_fee_type !== 'none' && (
+              <div>
+                <div className="text-[11px] text-gray-600">Late Fee</div>
+                <div className="text-gray-900">
+                  {client.late_fee_type === 'flat' ? `$${client.late_fee_amount.toFixed(2)}` : `${client.late_fee_amount}%`}
+                  {client.late_fee_grace_days > 0 && ` after ${client.late_fee_grace_days}d`}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="text-[11px] text-gray-600">Auto-Send</div>
+              <div className="text-gray-900">{client.auto_send_invoices ? 'On' : 'Off'}</div>
+            </div>
+
+            <div>
+              <div className="text-[11px] text-gray-600">Collections</div>
+              <div className="text-gray-900">{client.collections_exempt ? 'Exempt' : 'Active'}</div>
+            </div>
+
+            {client.notes && (
+              <div>
+                <div className="text-[11px] text-gray-600">Notes</div>
+                <div className="text-gray-900 text-[12px] line-clamp-3">{client.notes}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <AddBillingScheduleModal
         isOpen={isAddScheduleOpen}
