@@ -65,12 +65,33 @@ export default function ClientDetailPage() {
   const toggleAuthnetMutation = useMutation({
     mutationFn: async (newValue) => {
       const response = await apiClient.put(`/clients/${id}`, {
+        company_name: client.company_name,
+        contact_name: client.contact_name,
+        email: client.email,
+        email_cc: client.email_cc,
+        phone: client.phone,
+        address_line1: client.address_line1,
+        address_line2: client.address_line2,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
         authnet_recurring: newValue,
+        authnet_customer_id: client.authnet_customer_id,
+        late_fee_type: client.late_fee_type,
+        late_fee_amount: client.late_fee_amount,
+        late_fee_grace_days: client.late_fee_grace_days,
+        collections_exempt: client.collections_exempt,
+        auto_send_invoices: client.auto_send_invoices,
+        notes: client.notes,
       });
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients', id] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+    onError: (error) => {
+      console.error('Failed to toggle Auth.net:', error);
     },
   });
 
