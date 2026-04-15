@@ -44,7 +44,7 @@ class CreditMemoStatus(str, enum.Enum):
 
 
 class PaymentMethod(str, enum.Enum):
-    authnet = "authnet"
+    autocc = "autocc"
     check = "check"
     credit_card = "credit_card"
     cash = "cash"
@@ -83,6 +83,18 @@ class EstimateStatus(str, enum.Enum):
     declined = "declined"
     expired = "expired"
     converted = "converted"
+
+
+class EmailTemplateType(str, enum.Enum):
+    new_invoice = "new_invoice"
+    reminder_invoice = "reminder_invoice"
+    invoice_past_due = "invoice_past_due"
+    suspension_invoice = "suspension_invoice"
+    cancellation_invoice = "cancellation_invoice"
+    paid_invoice = "paid_invoice"
+    credit_memo_issued = "credit_memo_issued"
+    payment_failed = "payment_failed"
+    default = "default"
 
 
 # ─────────────────────────────────────────────
@@ -160,8 +172,8 @@ class Client(Base):
     state = Column(String(50), nullable=True)
     zip_code = Column(String(20), nullable=True)
 
-    authnet_recurring = Column(Boolean, nullable=False, default=False)
-    authnet_customer_id = Column(String(50), nullable=True)
+    autocc_recurring = Column(Boolean, nullable=False, default=False)
+    autocc_customer_id = Column(String(50), nullable=True)
     account_status = Column(Enum(AccountStatus), nullable=False, default=AccountStatus.active)
     account_balance = Column(Numeric(10, 2), default=0.00)
 
@@ -199,7 +211,7 @@ class BillingSchedule(Base):
     amount = Column(Numeric(10, 2), nullable=False, default=0.00)
     cycle = Column(Enum(BillingCycle), nullable=False)
     next_bill_date = Column(Date, nullable=False)
-    authnet_recurring = Column(Boolean, default=False)
+    autocc_recurring = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
@@ -242,8 +254,8 @@ class Invoice(Base):
     sent_date = Column(DateTime, nullable=True)
 
     status = Column(Enum(InvoiceStatus), nullable=False, default=InvoiceStatus.draft)
-    authnet_verified = Column(Boolean, default=False)
-    authnet_transaction_id = Column(String(50), nullable=True)
+    autocc_verified = Column(Boolean, default=False)
+    autocc_transaction_id = Column(String(50), nullable=True)
 
     subtotal = Column(Numeric(10, 2), nullable=False, default=0.00)
     late_fee_amount = Column(Numeric(10, 2), default=0.00)
@@ -510,6 +522,22 @@ class CompanyInfo(Base):
     email = Column(String(150), nullable=True)
     website_url = Column(String(255), nullable=True)
     logo_filename = Column(String(255), nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
+# ─────────────────────────────────────────────
+# Email Templates
+# ─────────────────────────────────────────────
+
+class EmailTemplate(Base):
+    __tablename__ = "email_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+    template_type = Column(Enum(EmailTemplateType), nullable=False, unique=True)
+    subject = Column(String(255), nullable=False)
+    body = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
