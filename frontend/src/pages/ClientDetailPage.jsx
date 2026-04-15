@@ -268,10 +268,10 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-[1fr_350px] gap-3">
-        {/* LEFT COLUMN - 65% */}
-        <div className="space-y-3">
+      {/* Main Content */}
+      <div className="space-y-3">
+        {/* Top Section: Client Info + Quick Details (2-column) */}
+        <div className="grid grid-cols-[1fr_350px] gap-3">
           {/* Client Info Panel */}
           <div className="border border-gray-200 rounded text-[13px]">
             <div className="grid grid-cols-3 gap-3 p-3">
@@ -312,168 +312,6 @@ export default function ClientDetailPage() {
             </div>
           </div>
 
-          {/* Billing Schedules Table */}
-          <div className="border border-gray-200 rounded overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-              <div className="font-semibold text-[13px]">Billing Schedules</div>
-              <Button
-                size="sm"
-                onClick={() => setIsAddScheduleOpen(true)}
-                className="!px-2 !py-0.5 !text-[12px]"
-              >
-                Add
-              </Button>
-            </div>
-            {schedules && schedules.length > 0 ? (
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Frequency</th>
-                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Next Date</th>
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Components</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {schedules.map((schedule) => (
-                    <tr key={schedule.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-1 font-medium">{schedule.cycle.replace('_', ' ').toUpperCase()}</td>
-                      <td className="text-right px-3 py-1 font-mono">${parseFloat(schedule.amount).toFixed(2)}</td>
-                      <td className="px-3 py-1 text-gray-600">{new Date(schedule.next_bill_date).toLocaleDateString()}</td>
-                      <td className="px-3 py-1 text-gray-600">
-                        {schedule.line_items && schedule.line_items.length > 0 ? (
-                          <div className="text-[12px]">
-                            {schedule.line_items.map((item, idx) => (
-                              <div key={item.id}>{item.description} ×{parseFloat(item.quantity).toFixed(2)}</div>
-                            ))}
-                          </div>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="px-3 py-2 text-gray-500 text-[13px]">No billing schedules</div>
-            )}
-          </div>
-
-          {/* Activity Log Table */}
-          <div className="border border-gray-200 rounded overflow-hidden">
-            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 font-semibold text-[13px]">
-              Activity Log
-            </div>
-            {activity && activity.length > 0 ? (
-              <div className="overflow-y-auto max-h-80">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
-                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Timestamp</th>
-                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Action</th>
-                      <th className="text-left px-3 py-1 font-semibold text-[12px]">User</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activity.map((log) => {
-                      const timestamp = new Date(log.timestamp);
-                      const dateStr = timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                      const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                      let actionLabel = log.action.replace(/_/g, ' ').charAt(0).toUpperCase() + log.action.slice(1).replace(/_/g, ' ');
-                      if (log.entity_type === 'invoice' && log.action === 'sent') actionLabel = 'Invoice sent';
-                      if (log.entity_type === 'invoice' && log.action === 'created') actionLabel = 'Invoice created';
-
-                      const link =
-                        log.entity_type === 'invoice' ? `/invoices/${log.entity_id}` :
-                        log.entity_type === 'credit_memo' ? `/credit-memos/${log.entity_id}` :
-                        log.entity_type === 'payment' ? `/payments/${log.entity_id}` :
-                        null;
-
-                      return (
-                        <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
-                          <td className="px-3 py-1 text-gray-600 font-mono text-[12px]">
-                            {dateStr} {timeStr}
-                          </td>
-                          <td className="px-3 py-1">
-                            {link ? (
-                              <Link to={link} className="text-blue-600 hover:text-blue-800">
-                                {actionLabel}
-                              </Link>
-                            ) : (
-                              actionLabel
-                            )}
-                          </td>
-                          <td className="px-3 py-1 text-gray-600 text-[12px]">{log.performed_by_name || '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="px-3 py-2 text-gray-500 text-[13px]">No activity</div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN - 35% */}
-        <div className="space-y-3">
-          {/* Recent Invoices Table */}
-          <div className="border border-gray-200 rounded overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-              <div className="font-semibold text-[13px]">Recent Invoices</div>
-              <Button
-                size="sm"
-                onClick={() => navigate(`/invoices?client_id=${id}`)}
-                className="!px-1.5 !py-0.5 !text-[11px]"
-              >
-                <Eye className="w-3 h-3" />
-              </Button>
-            </div>
-            {invoices && invoices.length > 0 ? (
-              <div className="overflow-y-auto max-h-60">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
-                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Invoice #</th>
-                      <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
-                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.slice(0, 20).map((invoice) => (
-                      <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50">
-                        <td className="px-3 py-1">
-                          <Link
-                            to={`/invoices/${invoice.id}`}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
-                          >
-                            {invoice.invoice_number || invoice.number}
-                          </Link>
-                        </td>
-                        <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.total).toFixed(2)}</td>
-                        <td className="px-3 py-1">
-                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
-                            invoice.status === 'paid' ? 'bg-green-50 text-green-700' :
-                            invoice.status === 'sent' ? 'bg-blue-50 text-blue-700' :
-                            invoice.status === 'draft' ? 'bg-gray-50 text-gray-700' :
-                            'bg-yellow-50 text-yellow-700'
-                          }`}>
-                            {invoice.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="px-3 py-2 text-gray-500 text-[13px]">No invoices</div>
-            )}
-          </div>
-
           {/* Quick Details */}
           <div className="border border-gray-200 rounded p-3 text-[13px] space-y-2">
             <div className="text-[11px] font-semibold text-gray-600 mb-2">QUICK INFO</div>
@@ -512,6 +350,182 @@ export default function ClientDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Billing Schedules Table */}
+        <div className="border border-gray-200 rounded overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+            <div className="font-semibold text-[13px]">Billing Schedules</div>
+            <Button
+              size="sm"
+              onClick={() => setIsAddScheduleOpen(true)}
+              className="!px-2 !py-0.5 !text-[12px]"
+            >
+              Add
+            </Button>
+          </div>
+          {schedules && schedules.length > 0 ? (
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left px-3 py-1 font-semibold text-[12px]">Frequency</th>
+                  <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
+                  <th className="text-left px-3 py-1 font-semibold text-[12px]">Next Date</th>
+                  <th className="text-left px-3 py-1 font-semibold text-[12px]">Components</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schedules.map((schedule) => (
+                  <tr key={schedule.id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <td className="px-3 py-1 font-medium">{schedule.cycle.replace('_', ' ').toUpperCase()}</td>
+                    <td className="text-right px-3 py-1 font-mono">${parseFloat(schedule.amount).toFixed(2)}</td>
+                    <td className="px-3 py-1 text-gray-600">{new Date(schedule.next_bill_date).toLocaleDateString()}</td>
+                    <td className="px-3 py-1 text-gray-600">
+                      {schedule.line_items && schedule.line_items.length > 0 ? (
+                        <div className="text-[12px]">
+                          {schedule.line_items.map((item, idx) => (
+                            <div key={item.id}>{item.description} ×{parseFloat(item.quantity).toFixed(2)}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="px-3 py-2 text-gray-500 text-[13px]">No billing schedules</div>
+          )}
+        </div>
+
+        {/* Recent Invoices Table - Full Width */}
+        <div className="border border-gray-200 rounded overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+            <div className="font-semibold text-[13px]">Recent Invoices</div>
+            <Button
+              size="sm"
+              onClick={() => navigate(`/invoices?client_id=${id}`)}
+              className="!px-1.5 !py-0.5 !text-[11px]"
+            >
+              <Eye className="w-3 h-3 mr-0.5" />
+              View All
+            </Button>
+          </div>
+          {invoices && invoices.length > 0 ? (
+            <div className="overflow-y-auto max-h-96">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Invoice #</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Date</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Due</th>
+                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
+                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Paid</th>
+                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Balance</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => (
+                    <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="px-3 py-1">
+                        <Link
+                          to={`/invoices/${invoice.id}`}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          {invoice.invoice_number || invoice.number}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-1 text-gray-600">{new Date(invoice.created_date).toLocaleDateString()}</td>
+                      <td className="px-3 py-1 text-gray-600">{new Date(invoice.due_date).toLocaleDateString()}</td>
+                      <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.total).toFixed(2)}</td>
+                      <td className="text-right px-3 py-1 font-mono text-green-700">${parseFloat(invoice.amount_paid).toFixed(2)}</td>
+                      <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.balance_due).toFixed(2)}</td>
+                      <td className="px-3 py-1">
+                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
+                          invoice.status === 'paid' ? 'bg-green-50 text-green-700' :
+                          invoice.status === 'sent' ? 'bg-blue-50 text-blue-700' :
+                          invoice.status === 'draft' ? 'bg-gray-50 text-gray-700' :
+                          invoice.status === 'partially_paid' ? 'bg-yellow-50 text-yellow-700' :
+                          'bg-gray-50 text-gray-700'
+                        }`}>
+                          {invoice.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="px-3 py-2 text-gray-500 text-[13px]">No invoices</div>
+          )}
+        </div>
+
+        {/* Activity Log Table - Full Width */}
+        <div className="border border-gray-200 rounded overflow-hidden">
+          <div className="px-3 py-2 bg-gray-50 border-b border-gray-200 font-semibold text-[13px]">
+            Activity Log
+          </div>
+          {activity && activity.length > 0 ? (
+            <div className="overflow-y-auto max-h-96">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
+                    <th className="text-left px-3 py-1 font-semibold text-[12px] min-w-[120px]">Timestamp</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Entity</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Action</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Details</th>
+                    <th className="text-left px-3 py-1 font-semibold text-[12px]">User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activity.map((log) => {
+                    const timestamp = new Date(log.timestamp);
+                    const dateStr = timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    let actionLabel = log.action.replace(/_/g, ' ').charAt(0).toUpperCase() + log.action.slice(1).replace(/_/g, ' ');
+                    let entityLabel = log.entity_type?.replace(/_/g, ' ').charAt(0).toUpperCase() + log.entity_type?.slice(1).replace(/_/g, ' ');
+
+                    const link =
+                      log.entity_type === 'invoice' ? `/invoices/${log.entity_id}` :
+                      log.entity_type === 'credit_memo' ? `/credit-memos/${log.entity_id}` :
+                      log.entity_type === 'payment' ? `/payments/${log.entity_id}` :
+                      null;
+
+                    return (
+                      <tr key={log.id} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-3 py-1 text-gray-600 font-mono text-[12px] whitespace-nowrap">
+                          {dateStr} {timeStr}
+                        </td>
+                        <td className="px-3 py-1 text-gray-700 text-[12px]">
+                          {entityLabel}
+                        </td>
+                        <td className="px-3 py-1">
+                          {link ? (
+                            <Link to={link} className="text-blue-600 hover:text-blue-800">
+                              {actionLabel}
+                            </Link>
+                          ) : (
+                            actionLabel
+                          )}
+                        </td>
+                        <td className="px-3 py-1 text-gray-600 text-[12px]">
+                          {log.notes ? log.notes : '—'}
+                        </td>
+                        <td className="px-3 py-1 text-gray-600 text-[12px]">{log.performed_by_name || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="px-3 py-2 text-gray-500 text-[13px]">No activity</div>
+          )}
         </div>
       </div>
 
