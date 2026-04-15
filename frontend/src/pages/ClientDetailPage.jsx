@@ -340,7 +340,16 @@ export default function ClientDetailPage() {
           </div>
           {invoices && invoices.length > 0 ? (
             <div className="overflow-y-auto max-h-96">
-              <table className="w-full text-[13px]">
+              <table className="w-full text-[13px] table-fixed">
+                <colgroup>
+                  <col style={{ width: '12%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col style={{ width: '13%' }} />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
                     <th className="text-left px-3 py-1 font-semibold text-[12px]">Invoice #</th>
@@ -355,7 +364,7 @@ export default function ClientDetailPage() {
                 <tbody>
                   {invoices.map((invoice) => (
                     <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-1">
+                      <td className="px-3 py-1 truncate">
                         <Link
                           to={`/invoices/${invoice.id}`}
                           className="text-blue-600 hover:text-blue-800 font-medium"
@@ -363,8 +372,8 @@ export default function ClientDetailPage() {
                           {invoice.invoice_number || invoice.number}
                         </Link>
                       </td>
-                      <td className="px-3 py-1 text-gray-600">{new Date(invoice.created_date).toLocaleDateString()}</td>
-                      <td className="px-3 py-1 text-gray-600">{new Date(invoice.due_date).toLocaleDateString()}</td>
+                      <td className="px-3 py-1 text-gray-600 text-left">{new Date(invoice.created_date).toLocaleDateString()}</td>
+                      <td className="px-3 py-1 text-gray-600 text-left">{new Date(invoice.due_date).toLocaleDateString()}</td>
                       <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.total).toFixed(2)}</td>
                       <td className="text-right px-3 py-1 font-mono text-green-700">${parseFloat(invoice.amount_paid).toFixed(2)}</td>
                       <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.balance_due).toFixed(2)}</td>
