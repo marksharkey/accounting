@@ -171,53 +171,20 @@ export default function ClientDetailPage() {
   return (
     <Layout title={client.company_name}>
       {/* Toolbar */}
-      <div className="relative mb-3">
+      <div className="mb-3">
         <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className="relative flex-1 max-w-xs">
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="px-2 py-1 border border-gray-300 rounded text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
-              autoComplete="off"
-            />
-            {isSearching && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-
-            {isSearching && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-sm z-50 max-h-48 overflow-y-auto">
-                {searchResults.length > 0 ? (
-                  searchResults.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => handleSelectClient(c.id)}
-                      className={`w-full text-left px-2 py-1 border-b text-[13px] hover:bg-blue-50 ${
-                        c.id === parseInt(id) ? 'bg-blue-100 font-medium' : ''
-                      }`}
-                    >
-                      <div className="font-medium">{c.company_name}</div>
-                      <div className="text-xs text-gray-600">
-                        {c.email && <span>{c.email}</span>}
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-2 py-1 text-[13px] text-gray-500">No clients found</div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* Client Dropdown */}
+          <select
+            value={id}
+            onChange={(e) => handleSelectClient(e.target.value)}
+            className="px-2 py-1 border border-gray-300 rounded text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-xs"
+          >
+            {allClients && allClients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.company_name}
+              </option>
+            ))}
+          </select>
 
           {/* Toolbar Items */}
           <div className="flex items-center gap-3 flex-1 px-2 py-1 border-l border-gray-300">
@@ -270,18 +237,18 @@ export default function ClientDetailPage() {
 
       {/* Main Content */}
       <div className="space-y-3">
-        {/* Client Info Panel */}
+        {/* Client Info Panel - Compact */}
         <div className="border border-gray-200 rounded text-[13px]">
-          <div className="grid grid-cols-3 gap-3 p-3">
+          <div className="grid grid-cols-2 gap-2 p-2">
             <div>
-              <div className="text-[11px] font-semibold text-gray-600 mb-1">CONTACT</div>
+              <div className="text-[11px] font-semibold text-gray-600">CONTACT</div>
               <div className="text-gray-900">{client.contact_name || '—'}</div>
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-gray-600 mb-1">EMAIL</div>
+              <div className="text-[11px] font-semibold text-gray-600">EMAIL</div>
               <div>
                 {client.email ? (
-                  <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800">
+                  <a href={`mailto:${client.email}`} className="text-blue-600 hover:text-blue-800 truncate">
                     {client.email}
                   </a>
                 ) : (
@@ -290,12 +257,12 @@ export default function ClientDetailPage() {
               </div>
             </div>
             <div>
-              <div className="text-[11px] font-semibold text-gray-600 mb-1">PHONE</div>
+              <div className="text-[11px] font-semibold text-gray-600">PHONE</div>
               <div className="text-gray-900">{client.phone || '—'}</div>
             </div>
-            <div className="col-span-3">
-              <div className="text-[11px] font-semibold text-gray-600 mb-1">ADDRESS</div>
-              <div className="text-gray-900">
+            <div>
+              <div className="text-[11px] font-semibold text-gray-600">ADDRESS</div>
+              <div className="text-gray-900 text-[12px]">
                 {client.address_line1 ? (
                   <>
                     {client.address_line1}
