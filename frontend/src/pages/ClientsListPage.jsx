@@ -121,7 +121,6 @@ export default function ClientsListPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Billing Type</TableHead>
               <TableHead>A.net</TableHead>
               <TableHead>Balance</TableHead>
               <TableHead>Status</TableHead>
@@ -140,7 +139,6 @@ export default function ClientsListPage() {
                       {client.company_name}
                     </Link>
                   </TableCell>
-                  <TableCell>{client.authnet_recurring ? 'Auth.net Recurring' : 'Fixed Recurring'}</TableCell>
                   <TableCell>
                     {client.authnet_recurring ? (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">

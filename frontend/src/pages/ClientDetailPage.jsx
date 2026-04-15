@@ -211,12 +211,6 @@ export default function ClientDetailPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-600 text-sm font-medium mb-2">Billing Type</p>
-            <p className="text-2xl font-bold">{client.authnet_recurring ? 'Auth.net Recurring' : 'Fixed Recurring'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
             <p className="text-gray-600 text-sm font-medium mb-2">Status</p>
             <p className="text-2xl font-bold">{client.account_status || 'Active'}</p>
           </CardContent>
