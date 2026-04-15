@@ -62,7 +62,7 @@ export default function ClientDetailPage() {
     },
   });
 
-  const toggleAuthnetMutation = useMutation({
+  const toggleAutoccMutation = useMutation({
     mutationFn: async (newValue) => {
       const response = await apiClient.put(`/clients/${id}`, {
         company_name: client.company_name,
@@ -75,8 +75,8 @@ export default function ClientDetailPage() {
         city: client.city,
         state: client.state,
         zip_code: client.zip_code,
-        authnet_recurring: newValue,
-        authnet_customer_id: client.authnet_customer_id,
+        autocc_recurring: newValue,
+        autocc_customer_id: client.autocc_customer_id,
         late_fee_type: client.late_fee_type,
         late_fee_amount: client.late_fee_amount,
         late_fee_grace_days: client.late_fee_grace_days,
@@ -91,12 +91,12 @@ export default function ClientDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
     },
     onError: (error) => {
-      console.error('Failed to toggle Auth.net:', error);
+      console.error('Failed to toggle AutoCC:', error);
     },
   });
 
-  const handleToggleAuthnet = async () => {
-    toggleAuthnetMutation.mutate(!client.authnet_recurring);
+  const handleToggleAutocc = async () => {
+    toggleAutoccMutation.mutate(!client.autocc_recurring);
   };
 
   const isLoading = clientLoading || schedulesLoading || invoicesLoading || activityLoading;
@@ -255,19 +255,19 @@ export default function ClientDetailPage() {
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-600 text-sm font-medium mb-2">Auth.net Recurring</p>
+            <p className="text-gray-600 text-sm font-medium mb-2">AutoCC Recurring</p>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold">{client.authnet_recurring ? 'Active' : 'Inactive'}</p>
+              <p className="text-2xl font-bold">{client.autocc_recurring ? 'Active' : 'Inactive'}</p>
               <button
-                onClick={handleToggleAuthnet}
-                disabled={toggleAuthnetMutation.isPending}
+                onClick={handleToggleAutocc}
+                disabled={toggleAutoccMutation.isPending}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  client.authnet_recurring
+                  client.autocc_recurring
                     ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50'
                 }`}
               >
-                {toggleAuthnetMutation.isPending ? 'Saving...' : 'Toggle'}
+                {toggleAutoccMutation.isPending ? 'Saving...' : 'Toggle'}
               </button>
             </div>
           </CardContent>
@@ -362,83 +362,120 @@ export default function ClientDetailPage() {
         </CardHeader>
         <CardContent>
           {activity && activity.length > 0 ? (
-            <ul className="space-y-3">
-              {activity.slice(0, 10).map((log) => {
-                const getActivityLink = () => {
-                  if (log.entity_type === 'invoice') {
-                    return `/invoices/${log.entity_id}`;
-                  } else if (log.entity_type === 'credit_memo') {
-                    return `/credit-memos/${log.entity_id}`;
-                  } else if (log.entity_type === 'payment') {
-                    return `/payments/${log.entity_id}`;
-                  }
-                  return null;
-                };
+            <div className="h-64 overflow-y-auto border border-gray-200 rounded-md p-3">
+              <ul className="space-y-3">
+                {activity.slice(0, 5).map((log) => {
+                  const getActivityLink = () => {
+                    if (log.entity_type === 'invoice') {
+                      return `/invoices/${log.entity_id}`;
+                    } else if (log.entity_type === 'credit_memo') {
+                      return `/credit-memos/${log.entity_id}`;
+                    } else if (log.entity_type === 'payment') {
+                      return `/payments/${log.entity_id}`;
+                    }
+                    return null;
+                  };
 
-                const getActivityDescription = () => {
-                  const timestamp = new Date(log.timestamp);
-                  const dateStr = timestamp.toLocaleDateString();
-                  const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const byUser = log.performed_by_name ? ` by ${log.performed_by_name}` : '';
+                  const getActivityDescription = () => {
+                    const timestamp = new Date(log.timestamp);
+                    const dateStr = timestamp.toLocaleDateString();
+                    const timeStr = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const byUser = log.performed_by_name ? ` (${log.performed_by_name})` : '';
 
-                  let description = '';
-                  switch (log.action) {
-                    case 'created':
-                      description = `Created ${log.entity_type === 'invoice' ? 'Invoice' : log.entity_type === 'credit_memo' ? 'Credit Memo' : log.entity_type === 'payment' ? 'Payment' : 'Record'}`;
-                      if (log.notes) {
-                        description += `: ${log.notes}`;
-                      }
-                      break;
-                    case 'sent':
-                      description = `Sent Invoice`;
-                      break;
-                    case 'resent':
-                      description = `Resent Invoice`;
-                      break;
-                    case 'marked_sent':
-                      description = `Marked Invoice as Sent`;
-                      break;
-                    case 'status_changed':
-                      description = `Changed Status: ${log.notes || 'status updated'}`;
-                      break;
-                    case 'voided':
-                      description = `Voided Invoice${log.notes ? ': ' + log.notes : ''}`;
-                      break;
-                    case 'authnet_verified':
-                      description = `Verified Payment (AuthNet)`;
-                      break;
-                    case 'paid':
-                      description = `Marked as Paid`;
-                      break;
-                    default:
-                      description = log.action.replace(/_/g, ' ').charAt(0).toUpperCase() + log.action.slice(1).replace(/_/g, ' ');
-                  }
+                    let entityLabel = '';
+                    switch (log.entity_type) {
+                      case 'invoice':
+                        entityLabel = 'Invoice';
+                        break;
+                      case 'credit_memo':
+                        entityLabel = 'Credit Memo';
+                        break;
+                      case 'payment':
+                        entityLabel = 'Payment';
+                        break;
+                      case 'client':
+                        entityLabel = 'Client Profile';
+                        break;
+                      case 'billing_schedule':
+                        entityLabel = 'Billing Schedule';
+                        break;
+                      default:
+                        entityLabel = log.entity_type?.replace(/_/g, ' ') || 'Record';
+                    }
 
-                  return `${description}${byUser} on ${dateStr} at ${timeStr}`;
-                };
+                    let description = '';
+                    switch (log.action) {
+                      case 'created':
+                        description = `Created ${entityLabel}`;
+                        break;
+                      case 'sent':
+                        description = `Sent ${entityLabel}`;
+                        break;
+                      case 'resent':
+                        description = `Resent ${entityLabel}`;
+                        break;
+                      case 'marked_sent':
+                        description = `Marked ${entityLabel} as Sent`;
+                        break;
+                      case 'status_changed':
+                        description = `Changed ${entityLabel} Status`;
+                        break;
+                      case 'voided':
+                        description = `Voided ${entityLabel}`;
+                        break;
+                      case 'updated':
+                        description = `Updated ${entityLabel}`;
+                        break;
+                      case 'deactivated':
+                        description = `Deactivated ${entityLabel}`;
+                        break;
+                      case 'autocc_verified':
+                        description = `Verified Payment (AutoCC)`;
+                        break;
+                      case 'autocc_charge_declined':
+                        description = `AutoCC Charge Declined`;
+                        break;
+                      case 'marked_paid_via_autocc_batch':
+                        description = `Marked as Paid (AutoCC Batch)`;
+                        break;
+                      case 'paid':
+                        description = `Marked ${entityLabel} as Paid`;
+                        break;
+                      default:
+                        description = log.action.replace(/_/g, ' ').charAt(0).toUpperCase() + log.action.slice(1).replace(/_/g, ' ');
+                    }
 
-                const link = getActivityLink();
-                const isClickable = link !== null;
+                    // Add notes with detail
+                    if (log.notes) {
+                      description += `: ${log.notes}`;
+                    }
 
-                return (
-                  <li
-                    key={log.id}
-                    className={`border-b pb-3 last:border-b-0 ${isClickable ? 'cursor-pointer' : ''}`}
-                  >
-                    {isClickable ? (
-                      <Link
-                        to={link}
-                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline block"
-                      >
-                        {getActivityDescription()}
-                      </Link>
-                    ) : (
-                      <p className="text-sm text-gray-700">{getActivityDescription()}</p>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+                    return `${description} on ${dateStr} at ${timeStr}${byUser}`;
+                  };
+
+                  const link = getActivityLink();
+                  const isClickable = link !== null;
+
+                  return (
+                    <li
+                      key={log.id}
+                      className={`border-b pb-3 last:border-b-0 ${isClickable ? 'cursor-pointer' : ''}`}
+                    >
+                      {isClickable ? (
+                        <Link
+                          to={link}
+                          className="text-sm text-blue-600 hover:text-blue-800 hover:underline block"
+                        >
+                          {getActivityDescription()}
+                        </Link>
+                      ) : (
+                        <p className="text-sm text-gray-700">{getActivityDescription()}</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           ) : (
             <p className="text-sm text-gray-500">No activity</p>
           )}

@@ -24,8 +24,8 @@ class ClientBase(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     zip_code: Optional[str] = None
-    authnet_recurring: bool = False
-    authnet_customer_id: Optional[str] = None
+    autocc_recurring: bool = False
+    autocc_customer_id: Optional[str] = None
     late_fee_type: models.LateFeeType = models.LateFeeType.none
     late_fee_amount: float = 0.00
     late_fee_grace_days: int = 0
@@ -62,7 +62,7 @@ class LineItemResponse(LineItemIn):
 class BillingScheduleCreate(BaseModel):
     cycle: models.BillingCycle
     next_bill_date: date
-    authnet_recurring: bool = False
+    autocc_recurring: bool = False
     notes: Optional[str] = None
     line_items: List[LineItemIn]
 
@@ -70,7 +70,7 @@ class BillingScheduleCreate(BaseModel):
 class BillingScheduleUpdate(BaseModel):
     cycle: models.BillingCycle
     next_bill_date: date
-    authnet_recurring: bool = False
+    autocc_recurring: bool = False
     notes: Optional[str] = None
     line_items: List[LineItemIn]
 
@@ -81,7 +81,7 @@ class BillingScheduleResponse(BaseModel):
     amount: float
     cycle: models.BillingCycle
     next_bill_date: date
-    authnet_recurring: bool
+    autocc_recurring: bool
     is_active: bool
     notes: Optional[str]
     line_items: List[LineItemResponse]
@@ -184,7 +184,7 @@ def create_billing_schedule(
         client_id=client_id,
         cycle=data.cycle,
         next_bill_date=data.next_bill_date,
-        authnet_recurring=data.authnet_recurring,
+        autocc_recurring=data.autocc_recurring,
         notes=data.notes,
         amount=total_amount
     )
@@ -236,10 +236,23 @@ def update_billing_schedule(
         for item in data.line_items
     )
 
+    # Track changes for activity log
+    changes = []
+    if schedule.cycle != data.cycle:
+        changes.append(f"Cycle: {schedule.cycle} → {data.cycle}")
+    if schedule.next_bill_date != data.next_bill_date:
+        changes.append(f"Next Bill Date: {schedule.next_bill_date} → {data.next_bill_date}")
+    if schedule.autocc_recurring != data.autocc_recurring:
+        changes.append(f"AutoCC Recurring: {schedule.autocc_recurring} → {data.autocc_recurring}")
+    if schedule.amount != total_amount:
+        changes.append(f"Amount: ${float(schedule.amount):.2f} → ${float(total_amount):.2f}")
+    if schedule.notes != data.notes:
+        changes.append(f"Notes updated")
+
     # Update schedule header
     schedule.cycle = data.cycle
     schedule.next_bill_date = data.next_bill_date
-    schedule.authnet_recurring = data.authnet_recurring
+    schedule.autocc_recurring = data.autocc_recurring
     schedule.notes = data.notes
     schedule.amount = total_amount
 
@@ -260,10 +273,13 @@ def update_billing_schedule(
         )
         db.add(line_item)
 
+    # Create activity log with detailed changes
+    notes = "; ".join(changes) if changes else "No changes"
     log = models.ActivityLog(
         entity_type="billing_schedule", entity_id=schedule_id, client_id=client_id,
         action="updated", performed_by_id=current_user.id,
-        performed_by_name=current_user.full_name
+        performed_by_name=current_user.full_name,
+        notes=notes
     )
     db.add(log)
     db.commit()
@@ -339,12 +355,24 @@ def update_client(
     client = db.query(models.Client).filter_by(id=client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
+
+    # Track changes for activity log
+    changes = []
     for key, value in data.model_dump().items():
+        old_value = getattr(client, key)
+        if old_value != value:
+            # Format the field name for display
+            field_name = key.replace('_', ' ').title()
+            changes.append(f"{field_name}: {old_value} → {value}")
         setattr(client, key, value)
+
+    # Create activity log with detailed changes
+    notes = "; ".join(changes) if changes else "No changes"
     log = models.ActivityLog(
         entity_type="client", entity_id=client_id, client_id=client_id,
         action="updated", performed_by_id=current_user.id,
-        performed_by_name=current_user.full_name
+        performed_by_name=current_user.full_name,
+        notes=notes
     )
     db.add(log)
     db.commit()
