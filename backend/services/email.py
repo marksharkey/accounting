@@ -3,38 +3,67 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-from jinja2 import Environment, FileSystemLoader
-import os
 from datetime import datetime
 from config import get_settings
 from io import BytesIO
+from database import SessionLocal
+from models import EmailTemplate, EmailTemplateType
 
 settings = get_settings()
 
-# Setup Jinja2
-template_dir = os.path.join(os.path.dirname(__file__), '..', 'email_templates')
-env = Environment(loader=FileSystemLoader(template_dir))
+
+async def _get_template(template_type: EmailTemplateType):
+    """Get a template from database, with fallback to default template."""
+    db = SessionLocal()
+    try:
+        template = db.query(EmailTemplate).filter(
+            EmailTemplate.template_type == template_type
+        ).first()
+
+        if template and template.is_active:
+            return template
+
+        # Fall back to default template if not found or inactive
+        default = db.query(EmailTemplate).filter(
+            EmailTemplate.template_type == EmailTemplateType.default
+        ).first()
+
+        return default if default else None
+    finally:
+        db.close()
+
+
+def _render_template_string(template_string: str, context: dict) -> str:
+    """Render a template string with {variable} syntax using context variables."""
+    if not template_string:
+        return ""
+
+    try:
+        # Use Python's str.format() which supports {variable} syntax
+        return template_string.format(**context)
+    except KeyError as e:
+        # If a variable is missing, return the original string with missing vars left as-is
+        print(f"Warning: Missing template variable: {e}")
+        return template_string
+    except Exception as e:
+        print(f"Error rendering template: {e}")
+        return template_string  # Return unrendered on error
 
 
 async def send_email(
     to_email: str,
     subject: str,
-    template_name: str,
-    context: dict,
+    html_body: str,
     to_name: str = None,
     attachment_bytes: BytesIO = None,
     attachment_filename: str = None
 ):
-    """Send email with Jinja2 template rendering and optional attachment"""
+    """Send an email with HTML body and optional attachment."""
     if not settings.smtp_host or not settings.smtp_user:
         print(f"Email not configured. Skipping: {subject} to {to_email}")
         return False
 
     try:
-        # Render template
-        template = env.get_template(template_name)
-        html_content = template.render(**context)
-
         # Create email
         msg = MIMEMultipart('mixed')
         msg['Subject'] = subject
@@ -43,7 +72,7 @@ async def send_email(
 
         # Attach HTML content
         msg_alternative = MIMEMultipart('alternative')
-        msg_alternative.attach(MIMEText(html_content, 'html'))
+        msg_alternative.attach(MIMEText(html_body, 'html'))
         msg.attach(msg_alternative)
 
         # Attach file if provided
@@ -68,116 +97,223 @@ async def send_email(
         return False
 
 
-async def send_invoice_email(invoice, client):
-    """Send invoice email with PDF attachment"""
+async def send_template_email(
+    to_email: str,
+    template_type: EmailTemplateType,
+    context: dict,
+    to_name: str = None,
+    attachment_bytes: BytesIO = None,
+    attachment_filename: str = None
+):
+    """
+    Send an email using a template from the database.
+
+    Args:
+        to_email: Recipient email address
+        template_type: EmailTemplateType enum value
+        context: Dictionary of variables to render in template
+        to_name: Recipient name (optional)
+        attachment_bytes: File content to attach (optional)
+        attachment_filename: Name of attachment (optional)
+    """
+    if not settings.smtp_host or not settings.smtp_user:
+        print(f"Email not configured. Skipping template: {template_type.value} to {to_email}")
+        return False
+
     try:
-        from services.pdf import generate_invoice_pdf
-        # Generate PDF
-        pdf_bytes = generate_invoice_pdf(invoice, client)
+        template = await _get_template(template_type)
+
+        if not template:
+            print(f"No template found for type: {template_type.value}")
+            return False
+
+        # Render subject and body with context variables
+        subject = _render_template_string(template.subject, context)
+        html_body = _render_template_string(template.body, context)
 
         return await send_email(
+            to_email=to_email,
+            subject=subject,
+            html_body=html_body,
+            to_name=to_name,
+            attachment_bytes=attachment_bytes,
+            attachment_filename=attachment_filename
+        )
+    except Exception as e:
+        print(f"Error sending template email: {e}")
+        return False
+
+
+# ─────────────────────────────────────────────
+# High-Level Email Functions (Invoice-Related)
+# ─────────────────────────────────────────────
+
+async def send_new_invoice_email(invoice, client):
+    """Send new invoice notification."""
+    try:
+        from services.pdf import generate_invoice_pdf
+        pdf_bytes = generate_invoice_pdf(invoice, client)
+
+        return await send_template_email(
             to_email=client.email,
-            subject=f"Invoice {invoice.invoice_number} from PrecisionPros",
-            template_name="invoice.html",
+            template_type=EmailTemplateType.new_invoice,
             context={
                 "client_name": client.company_name,
                 "invoice_number": invoice.invoice_number,
-                "total": f"${invoice.total:.2f}",
-                "date": datetime.now().strftime("%B %d, %Y"),
+                "amount_due": f"${invoice.total:.2f}",
+                "due_date": invoice.due_date.strftime("%B %d, %Y"),
+                "company_name": settings.company_name or "Our Company",
             },
             to_name=client.company_name,
             attachment_bytes=pdf_bytes,
             attachment_filename=f"{invoice.invoice_number}.pdf"
         )
     except Exception as e:
-        print(f"Error sending invoice email with PDF: {e}")
-        # Fall back to sending email without attachment
-        return await send_email(
+        print(f"Error sending new invoice email with PDF: {e}")
+        # Fall back to email without attachment
+        return await send_template_email(
             to_email=client.email,
-            subject=f"Invoice {invoice.invoice_number} from PrecisionPros",
-            template_name="invoice.html",
+            template_type=EmailTemplateType.new_invoice,
             context={
                 "client_name": client.company_name,
                 "invoice_number": invoice.invoice_number,
-                "total": f"${invoice.total:.2f}",
-                "date": datetime.now().strftime("%B %d, %Y"),
+                "amount_due": f"${invoice.total:.2f}",
+                "due_date": invoice.due_date.strftime("%B %d, %Y"),
+                "company_name": settings.company_name or "Our Company",
             },
             to_name=client.company_name,
         )
 
 
-async def send_receipt_email(payment, invoice, client):
-    """Send payment receipt email"""
-    return await send_email(
+async def send_reminder_email(invoice, client):
+    """Send payment reminder."""
+    return await send_template_email(
         to_email=client.email,
-        subject=f"Payment Receipt for Invoice {invoice.invoice_number}",
-        template_name="receipt.html",
-        context={
-            "client_name": client.company_name,
-            "invoice_number": invoice.invoice_number,
-            "amount": f"${payment.amount:.2f}",
-            "date": datetime.now().strftime("%B %d, %Y"),
-        },
-        to_name=client.company_name,
-    )
-
-
-async def send_payment_reminder_email(invoice, client):
-    """Send payment reminder email"""
-    return await send_email(
-        to_email=client.email,
-        subject=f"Payment Reminder: Invoice {invoice.invoice_number} is Due",
-        template_name="payment_reminder.html",
+        template_type=EmailTemplateType.reminder_invoice,
         context={
             "client_name": client.company_name,
             "invoice_number": invoice.invoice_number,
             "balance_due": f"${invoice.balance_due:.2f}",
             "due_date": invoice.due_date.strftime("%B %d, %Y"),
+            "company_name": settings.company_name or "Our Company",
         },
         to_name=client.company_name,
     )
 
 
-async def send_late_fee_notice_email(invoice, client):
-    """Send late fee notice email"""
-    return await send_email(
+async def send_past_due_email(invoice, client):
+    """Send past due notice."""
+    return await send_template_email(
         to_email=client.email,
-        subject=f"Late Fee Applied to Invoice {invoice.invoice_number}",
-        template_name="late_fee_notice.html",
+        template_type=EmailTemplateType.invoice_past_due,
         context={
             "client_name": client.company_name,
             "invoice_number": invoice.invoice_number,
-            "late_fee": f"${invoice.late_fee_amount:.2f}",
             "balance_due": f"${invoice.balance_due:.2f}",
-            "date": datetime.now().strftime("%B %d, %Y"),
+            "due_date": invoice.due_date.strftime("%B %d, %Y"),
+            "company_name": settings.company_name or "Our Company",
         },
         to_name=client.company_name,
     )
 
 
 async def send_suspension_warning_email(client):
-    """Send account suspension warning email"""
-    return await send_email(
+    """Send account suspension warning."""
+    return await send_template_email(
         to_email=client.email,
-        subject="Account Suspension Warning - Immediate Action Required",
-        template_name="suspension_warning.html",
+        template_type=EmailTemplateType.suspension_invoice,
         context={
             "client_name": client.company_name,
-            "date": datetime.now().strftime("%B %d, %Y"),
+            "amount_due": f"${client.account_balance:.2f}",
+            "company_name": settings.company_name or "Our Company",
         },
         to_name=client.company_name,
     )
 
 
-async def send_deletion_warning_email(client):
-    """Send account deletion warning email"""
-    return await send_email(
+async def send_cancellation_email(client):
+    """Send account cancellation notice."""
+    return await send_template_email(
         to_email=client.email,
-        subject="Final Notice - Account Deletion Pending",
-        template_name="deletion_warning.html",
+        template_type=EmailTemplateType.cancellation_invoice,
         context={
             "client_name": client.company_name,
-            "date": datetime.now().strftime("%B %d, %Y"),
+            "amount_due": f"${client.account_balance:.2f}",
+            "company_name": settings.company_name or "Our Company",
         },
+        to_name=client.company_name,
+    )
+
+
+async def send_payment_received_email(payment, invoice, client):
+    """Send payment received confirmation."""
+    return await send_template_email(
+        to_email=client.email,
+        template_type=EmailTemplateType.paid_invoice,
+        context={
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "payment_amount": f"${payment.amount:.2f}",
+            "payment_date": datetime.now().strftime("%B %d, %Y"),
+            "company_name": settings.company_name or "Our Company",
+        },
+        to_name=client.company_name,
+    )
+
+
+async def send_credit_memo_email(memo, client):
+    """Send credit memo notification."""
+    try:
+        from services.pdf import generate_credit_memo_pdf
+        pdf_bytes = generate_credit_memo_pdf(memo, client)
+
+        return await send_template_email(
+            to_email=client.email,
+            template_type=EmailTemplateType.credit_memo_issued,
+            context={
+                "client_name": client.company_name,
+                "memo_number": memo.memo_number,
+                "credit_amount": f"${memo.total:.2f}",
+                "reason": memo.reason or "",
+                "company_name": settings.company_name or "Our Company",
+            },
+            to_name=client.company_name,
+            attachment_bytes=pdf_bytes,
+            attachment_filename=f"credit-memo-{memo.memo_number}.pdf"
+        )
+    except Exception as e:
+        print(f"Error sending credit memo email with PDF: {e}")
+        # Fall back to email without attachment
+        return await send_template_email(
+            to_email=client.email,
+            template_type=EmailTemplateType.credit_memo_issued,
+            context={
+                "client_name": client.company_name,
+                "memo_number": memo.memo_number,
+                "credit_amount": f"${memo.total:.2f}",
+                "reason": memo.reason or "",
+                "company_name": settings.company_name or "Our Company",
+            },
+            to_name=client.company_name,
+        )
+
+
+async def send_payment_failed_email(client, invoice=None, amount_due=None):
+    """Send payment failure notification (e.g., CC declined)."""
+    context = {
+        "client_name": client.company_name,
+        "company_name": settings.company_name or "Our Company",
+    }
+
+    if invoice:
+        context["invoice_number"] = invoice.invoice_number
+        context["amount_due"] = f"${invoice.balance_due:.2f}"
+    elif amount_due:
+        context["amount_due"] = f"${amount_due:.2f}"
+
+    return await send_template_email(
+        to_email=client.email,
+        template_type=EmailTemplateType.payment_failed,
+        context=context,
         to_name=client.company_name,
     )
