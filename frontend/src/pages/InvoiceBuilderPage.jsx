@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
 export default function InvoiceBuilderPage() {
+  const [searchParams] = useSearchParams();
+
   // State
   const [selectedClient, setSelectedClient] = useState('');
   const [lineItems, setLineItems] = useState([]);
@@ -19,12 +22,43 @@ export default function InvoiceBuilderPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [billingScheduleIds, setBillingScheduleIds] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [duplicatePreviousData, setDuplicatePreviousData] = useState(null);
+  const [isDuplicateLoading, setIsDuplicateLoading] = useState(false);
+
+  // Refs for auto-expanding textareas
+  const textareaRefs = useRef({});
+
+  const adjustTextareaHeight = (textareaId) => {
+    const textarea = textareaRefs.current[textareaId];
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.max(textarea.scrollHeight, 60) + 'px';
+    }
+  };
+
+  // Adjust textarea heights when line items change or content updates
+  useEffect(() => {
+    lineItems.forEach(item => {
+      // Use setTimeout to ensure DOM is updated
+      setTimeout(() => adjustTextareaHeight(item.id), 0);
+    });
+  }, [lineItems]);
+
+  // Pre-select client from URL parameter if provided
+  useEffect(() => {
+    const clientId = searchParams.get('client_id');
+    if (clientId) {
+      setSelectedClient(clientId);
+    }
+  }, [searchParams]);
 
   // Queries
   const { data: clientData } = useQuery({
-    queryKey: ['clients'],
+    queryKey: ['clients-all'],
     queryFn: async () => {
-      const response = await apiClient.get('/clients/');
+      const response = await apiClient.get('/clients/', {
+        params: { limit: 10000 },
+      });
       return response.data;
     },
   });
@@ -73,6 +107,27 @@ export default function InvoiceBuilderPage() {
     }
   }, [selectedClient, prefilled]);
 
+  // Fetch duplicate previous invoice data
+  useEffect(() => {
+    if (!selectedClient) {
+      setDuplicatePreviousData(null);
+      return;
+    }
+
+    setIsDuplicateLoading(true);
+    apiClient
+      .get(`/invoices/duplicate-previous/${selectedClient}`)
+      .then(response => {
+        setDuplicatePreviousData(response.data);
+      })
+      .catch(() => {
+        setDuplicatePreviousData(null);
+      })
+      .finally(() => {
+        setIsDuplicateLoading(false);
+      });
+  }, [selectedClient]);
+
 
   const resetForm = () => {
     setSelectedClient('');
@@ -109,7 +164,7 @@ export default function InvoiceBuilderPage() {
       {
         id: crypto.randomUUID(),
         service_id: null,
-        description: 'New Item',
+        description: '',
         qty: 1,
         unitPrice: 0,
       },
@@ -139,6 +194,19 @@ export default function InvoiceBuilderPage() {
       })));
       setDueDate(prefilled.suggested_due_date);
       setBillingScheduleIds(prefilled.billing_schedule_ids || []);
+    }
+  };
+
+  const handleApplyDuplicatePrevious = () => {
+    if (duplicatePreviousData && duplicatePreviousData.line_items) {
+      setLineItems(duplicatePreviousData.line_items.map((item) => ({
+        id: crypto.randomUUID(),
+        service_id: item.service_id || null,
+        description: item.description,
+        qty: item.quantity || 1,
+        unitPrice: item.unit_amount || 0,
+      })));
+      setBillingScheduleIds([]);
     }
   };
 
@@ -212,7 +280,7 @@ export default function InvoiceBuilderPage() {
       notes: notesToClient || null,
       internal_notes: internalNotes || null,
       status: 'draft',
-      authnet_verified: isAuthNetVerified,
+      autocc_verified: isAuthNetVerified,
       billing_schedule_ids: billingScheduleIds.length > 0 ? billingScheduleIds : null,
     };
 
@@ -238,39 +306,6 @@ export default function InvoiceBuilderPage() {
 
   return (
     <Layout>
-      {/* Company Info Header Preview */}
-      {companyInfo && (
-        <div className="mb-6 border border-gray-200 rounded-lg p-4 bg-gray-50">
-          <div className="flex gap-4">
-            {companyInfo.logo_url && (
-              <div className="flex-shrink-0">
-                <img
-                  src={companyInfo.logo_url}
-                  alt="Company Logo"
-                  className="h-16 w-auto object-contain"
-                />
-              </div>
-            )}
-            <div className="flex-1">
-              <h3 className="font-bold text-lg">{companyInfo.company_name}</h3>
-              {(companyInfo.address_line1 || companyInfo.city) && (
-                <p className="text-sm text-gray-600">
-                  {[companyInfo.address_line1, companyInfo.address_line2].filter(Boolean).join(', ')}
-                  {companyInfo.city && ` ${companyInfo.city}`}
-                  {companyInfo.state && `, ${companyInfo.state}`}
-                  {companyInfo.zip_code && ` ${companyInfo.zip_code}`}
-                </p>
-              )}
-              {(companyInfo.phone || companyInfo.email || companyInfo.website_url) && (
-                <p className="text-sm text-gray-600">
-                  {[companyInfo.phone, companyInfo.email, companyInfo.website_url].filter(Boolean).join(' | ')}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Sticky Toolbar */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 -mx-4 sm:-mx-6 lg:-mx-8 mb-6">
         <div className="flex flex-wrap gap-3 items-center">
@@ -300,7 +335,7 @@ export default function InvoiceBuilderPage() {
             />
           </div>
 
-          {/* A.net Checkbox */}
+          {/* AutoCC Checkbox */}
           <label className="flex items-center whitespace-nowrap">
             <input
               type="checkbox"
@@ -308,7 +343,7 @@ export default function InvoiceBuilderPage() {
               onChange={(e) => setIsAuthNetVerified(e.target.checked)}
               className="w-4 h-4"
             />
-            <span className="ml-2 text-sm">A.net</span>
+            <span className="ml-2 text-sm">AutoCC</span>
           </label>
 
           {/* Action Buttons */}
@@ -352,11 +387,29 @@ export default function InvoiceBuilderPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pb-6 border-b border-gray-200">
             {/* Company Info */}
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">PrecisionPros</h3>
-              <p className="text-sm text-gray-600 mt-1">123 Tech Boulevard</p>
-              <p className="text-sm text-gray-600">San Francisco, CA 94105</p>
-              <p className="text-sm text-gray-600 mt-2">+1 (415) 123-4567</p>
-              <p className="text-sm text-gray-600">billing@precisionpros.com</p>
+              {companyInfo ? (
+                <>
+                  <h3 className="text-2xl font-bold text-gray-900">{companyInfo.company_name}</h3>
+                  {(companyInfo.address_line1 || companyInfo.city) && (
+                    <>
+                      {companyInfo.address_line1 && <p className="text-sm text-gray-600 mt-1">{companyInfo.address_line1}</p>}
+                      {companyInfo.address_line2 && <p className="text-sm text-gray-600">{companyInfo.address_line2}</p>}
+                      {(companyInfo.city || companyInfo.state || companyInfo.zip_code) && (
+                        <p className="text-sm text-gray-600">
+                          {[companyInfo.city, companyInfo.state, companyInfo.zip_code].filter(Boolean).join(' ')}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {companyInfo.phone && <p className="text-sm text-gray-600 mt-2">{companyInfo.phone}</p>}
+                  {companyInfo.email && <p className="text-sm text-gray-600">{companyInfo.email}</p>}
+                </>
+              ) : (
+                <>
+                  <h3 className="text-2xl font-bold text-gray-900">Your Company</h3>
+                  <p className="text-sm text-gray-500 mt-2">Set up your company information in Settings</p>
+                </>
+              )}
             </div>
 
             {/* Invoice Meta */}
@@ -386,8 +439,8 @@ export default function InvoiceBuilderPage() {
             )}
           </div>
 
-          {/* Prefill Banner */}
-          {selectedClient && prefilled && prefilled.line_items && lineItems.length === 0 && (
+          {/* Prefill Banner - only show if there are actual items */}
+          {selectedClient && prefilled && prefilled.line_items && prefilled.line_items.length > 0 && lineItems.length === 0 && (
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
               <span className="text-sm text-blue-900">Apply items from billing schedules?</span>
               <Button
@@ -401,12 +454,29 @@ export default function InvoiceBuilderPage() {
             </div>
           )}
 
+          {/* Duplicate Previous Banner */}
+          {selectedClient && duplicatePreviousData && duplicatePreviousData.line_items && duplicatePreviousData.line_items.length > 0 && lineItems.length === 0 && (!prefilled?.line_items || prefilled.line_items.length === 0) && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
+              <span className="text-sm text-green-900">
+                Duplicate items from invoice #{duplicatePreviousData.previous_invoice.number} ({duplicatePreviousData.previous_invoice.date})?
+              </span>
+              <Button
+                onClick={handleApplyDuplicatePrevious}
+                disabled={isDuplicateLoading}
+                className="text-sm"
+                size="sm"
+              >
+                {isDuplicateLoading ? 'Loading...' : 'Duplicate'}
+              </Button>
+            </div>
+          )}
+
           {/* Line Items */}
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Items</p>
 
             {/* Desktop Table Header */}
-            <div className="hidden md:grid grid-cols-[1fr_80px_110px_100px_36px] gap-3 text-xs font-medium text-gray-600 pb-2 border-b border-gray-300 mb-2">
+            <div className="hidden md:grid grid-cols-[1fr_60px_90px_80px_36px] gap-3 text-xs font-medium text-gray-600 pb-2 border-b border-gray-300 mb-2">
               <div>Description</div>
               <div className="text-center">Qty</div>
               <div className="text-right">Unit Price</div>
@@ -420,15 +490,21 @@ export default function InvoiceBuilderPage() {
                 {lineItems.map((item) => (
                   <div
                     key={item.id}
-                    className="grid grid-cols-1 md:grid-cols-[1fr_80px_110px_100px_36px] gap-2 md:gap-3 items-start md:items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                    className="grid grid-cols-1 md:grid-cols-[1fr_60px_90px_80px_36px] gap-2 md:gap-3 items-start md:items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200"
                   >
                     {/* Description */}
-                    <input
-                      type="text"
+                    <textarea
+                      ref={el => {
+                        if (el) textareaRefs.current[item.id] = el;
+                      }}
                       value={item.description}
-                      onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                      className="w-full min-w-0 px-2 py-1.5 bg-transparent border-0 outline-none focus:bg-gray-50 focus:ring-1 focus:ring-blue-400 rounded text-sm"
+                      onChange={(e) => {
+                        updateLineItem(item.id, 'description', e.target.value);
+                        setTimeout(() => adjustTextareaHeight(item.id), 0);
+                      }}
+                      className="w-full min-w-0 px-2 py-1.5 bg-transparent border-0 outline-none focus:bg-gray-50 focus:ring-1 focus:ring-blue-400 rounded text-sm resize-none"
                       placeholder="Item description"
+                      rows="1"
                     />
 
                     {/* Qty */}
@@ -438,7 +514,7 @@ export default function InvoiceBuilderPage() {
                       onChange={(e) => updateLineItem(item.id, 'qty', e.target.value)}
                       min="0"
                       step="any"
-                      className="w-full min-w-0 px-2 py-1.5 bg-transparent border-0 outline-none focus:bg-gray-50 focus:ring-1 focus:ring-blue-400 rounded text-sm text-center"
+                      className="w-full min-w-0 px-2 py-1.5 bg-transparent border-0 outline-none focus:bg-gray-50 focus:ring-1 focus:ring-blue-400 rounded text-sm text-center appearance-none"
                     />
 
                     {/* Unit Price */}
@@ -448,7 +524,7 @@ export default function InvoiceBuilderPage() {
                       onChange={(e) => updateLineItem(item.id, 'unitPrice', e.target.value)}
                       min="0"
                       step="0.01"
-                      className="w-full min-w-0 px-2 py-1.5 bg-transparent border-0 outline-none focus:bg-gray-50 focus:ring-1 focus:ring-blue-400 rounded text-sm text-right"
+                      className="w-full min-w-0 px-2 py-1.5 bg-transparent border-0 outline-none focus:bg-gray-50 focus:ring-1 focus:ring-blue-400 rounded text-sm text-right appearance-none"
                     />
 
                     {/* Amount */}

@@ -121,7 +121,7 @@ export default function ClientsListPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>A.net</TableHead>
+              <TableHead>AutoCC</TableHead>
               <TableHead>Balance</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
@@ -140,7 +140,7 @@ export default function ClientsListPage() {
                     </Link>
                   </TableCell>
                   <TableCell>
-                    {client.authnet_recurring ? (
+                    {client.autocc_recurring ? (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
                         Yes
                       </span>
