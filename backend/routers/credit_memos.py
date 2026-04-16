@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import date, datetime
 from decimal import Decimal
 import asyncio
@@ -22,6 +22,27 @@ class LineItemIn(BaseModel):
     quantity: float = 1.0
     unit_amount: float
     sort_order: int = 0
+
+    @field_validator('quantity')
+    @classmethod
+    def quantity_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        return v
+
+    @field_validator('unit_amount')
+    @classmethod
+    def unit_amount_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Unit amount must be greater than 0')
+        return v
+
+    @field_validator('description')
+    @classmethod
+    def description_cannot_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Description cannot be empty')
+        return v
 
 
 class LineItemOut(BaseModel):
@@ -72,6 +93,20 @@ class CreditMemoCreate(BaseModel):
     reason: Optional[str] = None
     notes: Optional[str] = None
     status: models.CreditMemoStatus = models.CreditMemoStatus.draft
+
+    @field_validator('client_id')
+    @classmethod
+    def client_id_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Client ID must be greater than 0')
+        return v
+
+    @field_validator('line_items')
+    @classmethod
+    def line_items_cannot_be_empty(cls, v):
+        if not v:
+            raise ValueError('Credit memo must have at least one line item')
+        return v
 
 
 @router.get("/")

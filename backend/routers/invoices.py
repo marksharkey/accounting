@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import date, timedelta, datetime
 from decimal import Decimal
 import asyncio
@@ -52,6 +52,27 @@ class LineItemIn(BaseModel):
     is_prorated: bool = False
     prorate_note: Optional[str] = None
     sort_order: int = 0
+
+    @field_validator('quantity')
+    @classmethod
+    def quantity_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        return v
+
+    @field_validator('unit_amount')
+    @classmethod
+    def unit_amount_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Unit amount must be greater than 0')
+        return v
+
+    @field_validator('description')
+    @classmethod
+    def description_cannot_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Description cannot be empty')
+        return v
 
 
 class LineItemOut(BaseModel):
@@ -135,6 +156,27 @@ class InvoiceCreate(BaseModel):
     notes: Optional[str] = None
     internal_notes: Optional[str] = None
     billing_schedule_ids: Optional[List[int]] = None
+
+    @field_validator('client_id')
+    @classmethod
+    def client_id_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Client ID must be greater than 0')
+        return v
+
+    @field_validator('line_items')
+    @classmethod
+    def line_items_cannot_be_empty(cls, v):
+        if not v:
+            raise ValueError('Invoice must have at least one line item')
+        return v
+
+    @field_validator('due_date')
+    @classmethod
+    def due_date_must_be_at_least_created_date(cls, v, info):
+        if 'created_date' in info.data and v < info.data['created_date']:
+            raise ValueError('Due date must be on or after created date')
+        return v
 
     class Config:
         use_enum_values = False

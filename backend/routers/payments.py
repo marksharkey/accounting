@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import date
 from decimal import Decimal
 import asyncio
@@ -21,6 +21,20 @@ class PaymentIn(BaseModel):
     method: models.PaymentMethod
     reference_number: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator('invoice_id')
+    @classmethod
+    def invoice_id_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Invoice ID must be greater than 0')
+        return v
+
+    @field_validator('amount')
+    @classmethod
+    def amount_must_be_positive(cls, v):
+        if v <= 0:
+            raise ValueError('Payment amount must be greater than 0')
+        return v
 
 
 @router.post("/", status_code=201)
