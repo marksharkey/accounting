@@ -14,7 +14,7 @@ class ServiceBase(BaseModel):
     name: str
     description: Optional[str] = None
     default_amount: float
-    default_cycle: models.BillingCycle = models.BillingCycle.monthly
+    default_cycle: models.BillingCycle
     category: Optional[str] = None
     income_account_id: Optional[int] = None
     is_active: bool = True

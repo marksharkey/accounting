@@ -127,7 +127,7 @@ try:
     coa_cache = {c.name.lower(): c for c in db.query(ChartOfAccount).all()}
 
     for s in services_raw:
-        # Skip duplicates
+        # Check for duplicates
         from models import ServiceCatalog as SC
         existing = db.query(SC).filter(SC.name == s["name"]).first()
         if existing:
@@ -142,11 +142,16 @@ try:
                     coa = val
                     break
 
+        # Determine appropriate default cycle based on service name
+        default_cycle = "monthly"
+        if "annual" in s["name"].lower() or "domain" in s["name"].lower() or "ssl" in s["name"].lower():
+            default_cycle = "annual"
+
         svc = ServiceCatalog(
             name              = s["name"],
             description       = s["description"],
             default_amount    = s["price"],
-            default_cycle     = "monthly",
+            default_cycle     = default_cycle,
             category          = s["category"],
             income_account_id = coa.id if coa else None,
             is_active         = True,
