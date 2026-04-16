@@ -126,3 +126,176 @@ def generate_invoice_pdf(invoice, client, db: Session = None):
     except Exception as e:
         print(f"Error generating invoice PDF: {e}")
         raise
+
+
+def generate_credit_memo_pdf(memo, client, db: Session = None):
+    """Generate PDF for a credit memo using WeasyPrint"""
+    try:
+        # Get company info from database, fallback to defaults if not set
+        company_info = {
+            'name': 'PrecisionPros',
+            'address1': '6543 East Omega Street',
+            'address2': 'Mesa, AZ 85215',
+            'phone': '480-329-6176',
+            'email': 'billing@precisionpros.com',
+        }
+
+        if db:
+            import models
+            company = db.query(models.CompanyInfo).first()
+            if company:
+                company_info['name'] = company.company_name
+                company_info['address1'] = company.address_line1 or ''
+                company_info['address2'] = (
+                    f"{company.city or ''}, {company.state or ''} {company.zip_code or ''}".strip()
+                    if company.city or company.state or company.zip_code else ''
+                )
+                if company.address_line2:
+                    company_info['address1'] = f"{company_info['address1']}\n{company.address_line2}".strip()
+                company_info['phone'] = company.phone or company_info['phone']
+                company_info['email'] = company.email or company_info['email']
+
+        # Prepare line items
+        line_items = []
+        for item in memo.line_items:
+            line_items.append({
+                'description': item.description,
+                'quantity': float(item.quantity),
+                'unit_amount': float(item.unit_amount),
+                'amount': float(item.amount),
+            })
+
+        # Format numbers
+        total = float(memo.total)
+
+        # Render template using a simple HTML template
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 40px; }}
+                .header {{ margin-bottom: 40px; }}
+                .header h1 {{ color: #27ae60; margin: 0; }}
+                .company-info {{ color: #666; font-size: 12px; margin-bottom: 30px; }}
+                .section-title {{ color: #2c3e50; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }}
+                .client-info {{ margin-bottom: 30px; }}
+                table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+                th {{ background-color: #f5f5f5; padding: 10px; text-align: left; border-bottom: 2px solid #ddd; }}
+                td {{ padding: 10px; border-bottom: 1px solid #ddd; }}
+                .amount-col {{ text-align: right; }}
+                .total-section {{ margin-top: 20px; text-align: right; }}
+                .total-amount {{ font-size: 18px; font-weight: bold; color: #27ae60; }}
+                .memo-info {{ margin: 20px 0; font-size: 14px; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Credit Memo {{ memo_number }}</h1>
+                <div class="company-info">
+                    <p><strong>{{ company_name }}</strong></p>
+                    {% if company_address1 %}<p>{{ company_address1 }}</p>{% endif %}
+                    {% if company_address2 %}<p>{{ company_address2 }}</p>{% endif %}
+                    {% if company_phone %}<p>{{ company_phone }}</p>{% endif %}
+                    {% if company_email %}<p>{{ company_email }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="memo-info">
+                <p><strong>Date:</strong> {{ created_date }}</p>
+            </div>
+
+            <div class="section-title">Bill To</div>
+            <div class="client-info">
+                <p><strong>{{ client_name }}</strong></p>
+                {% if contact_name %}<p>{{ contact_name }}</p>{% endif %}
+                {% if email %}<p>{{ email }}</p>{% endif %}
+                {% if phone %}<p>{{ phone }}</p>{% endif %}
+                {% if address_line1 %}<p>{{ address_line1 }}</p>{% endif %}
+                {% if address_line2 %}<p>{{ address_line2 }}</p>{% endif %}
+                {% if city %}<p>{{ city }}{% if state %}, {{ state }}{% endif %} {% if zip_code %}{{ zip_code }}{% endif %}</p>{% endif %}
+            </div>
+
+            <div class="section-title">Credit Items</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th style="width: 80px;" class="amount-col">Qty</th>
+                        <th style="width: 100px;" class="amount-col">Unit Amount</th>
+                        <th style="width: 100px;" class="amount-col">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in line_items %}
+                    <tr>
+                        <td>{{ item.description }}</td>
+                        <td class="amount-col">{{ "%.2f"|format(item.quantity) }}</td>
+                        <td class="amount-col">${{ "%.2f"|format(item.unit_amount) }}</td>
+                        <td class="amount-col"><strong>${{ "%.2f"|format(item.amount) }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="total-section">
+                <p><strong>Total Credit Amount:</strong> <span class="total-amount">${{ "%.2f"|format(total) }}</span></p>
+            </div>
+
+            {% if reason %}
+            <div style="margin-top: 30px;">
+                <div class="section-title">Reason</div>
+                <p>{{ reason }}</p>
+            </div>
+            {% endif %}
+
+            {% if notes %}
+            <div style="margin-top: 20px;">
+                <div class="section-title">Notes</div>
+                <p>{{ notes }}</p>
+            </div>
+            {% endif %}
+        </body>
+        </html>
+        """
+
+        template = env.from_string(html_template)
+        html_content = template.render(
+            # Company info
+            company_name=company_info['name'],
+            company_address1=company_info['address1'],
+            company_address2=company_info['address2'],
+            company_phone=company_info['phone'],
+            company_email=company_info['email'],
+
+            # Memo details
+            memo_number=memo.memo_number,
+            created_date=memo.created_date.strftime("%b %d, %Y"),
+            status=memo.status.value,
+            status_display=memo.status.value.replace('_', ' ').title(),
+
+            # Client info
+            client_name=client.company_name,
+            contact_name=client.contact_name or '',
+            email=client.email,
+            phone=format_phone(client.phone) if client.phone else '',
+            address_line1=client.address_line1 or '',
+            address_line2=client.address_line2 or '',
+            city=client.city or '',
+            state=client.state or '',
+            zip_code=client.zip_code or '',
+
+            # Line items and totals
+            line_items=line_items,
+            total=total,
+            reason=memo.reason or '',
+            notes=memo.notes or '',
+        )
+
+        # Convert HTML to PDF
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        return BytesIO(pdf_bytes)
+
+    except Exception as e:
+        print(f"Error generating credit memo PDF: {e}")
+        raise

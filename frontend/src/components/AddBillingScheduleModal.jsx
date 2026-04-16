@@ -10,7 +10,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
   const [lineItems, setLineItems] = useState([]);
   const [cycle, setCycle] = useState('monthly');
   const [nextBillDate, setNextBillDate] = useState('');
-  const [authnetRecurring, setAuthnetRecurring] = useState(false);
+  const [autoccRecurring, setAutoccRecurring] = useState(false);
   const [notes, setNotes] = useState('');
   const [catalogSelectOpen, setCatalogSelectOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -64,7 +64,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
       {
         id: crypto.randomUUID(),
         service_id: null,
-        description: 'New Item',
+        description: '',
         qty: 1,
         unitPrice: 0,
       },
@@ -111,7 +111,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
     const submitData = {
       cycle,
       next_bill_date: nextBillDate,
-      authnet_recurring: authnetRecurring,
+      autocc_recurring: autoccRecurring,
       notes,
       line_items: formattedItems,
     };
@@ -123,7 +123,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
     setLineItems([]);
     setCycle('monthly');
     setNextBillDate('');
-    setAuthnetRecurring(false);
+    setAutoccRecurring(false);
     setNotes('');
     setCatalogSelectOpen(false);
     setErrorMessage('');
@@ -198,13 +198,13 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="authnet_recurring"
-              checked={authnetRecurring}
-              onChange={(e) => setAuthnetRecurring(e.target.checked)}
+              id="autocc_recurring"
+              checked={autoccRecurring}
+              onChange={(e) => setAutoccRecurring(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
             />
-            <label htmlFor="authnet_recurring" className="text-sm font-medium text-gray-700">
-              AuthNet Recurring
+            <label htmlFor="autocc_recurring" className="text-sm font-medium text-gray-700">
+              AutoCC Recurring
             </label>
           </div>
 

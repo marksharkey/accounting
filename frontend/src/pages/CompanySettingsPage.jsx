@@ -193,7 +193,7 @@ export default function CompanySettingsPage() {
                       name="address_line1"
                       value={form.address_line1 || ''}
                       onChange={handleInputChange}
-                      placeholder="123 Main St"
+                      placeholder="e.g. 123 Main St"
                     />
                   </div>
 
@@ -206,7 +206,7 @@ export default function CompanySettingsPage() {
                       name="address_line2"
                       value={form.address_line2 || ''}
                       onChange={handleInputChange}
-                      placeholder="Suite 100"
+                      placeholder="e.g. Suite 100 (optional)"
                     />
                   </div>
 
@@ -220,7 +220,7 @@ export default function CompanySettingsPage() {
                         name="city"
                         value={form.city || ''}
                         onChange={handleInputChange}
-                        placeholder="City"
+                        placeholder="e.g. San Francisco"
                       />
                     </div>
 
@@ -233,7 +233,7 @@ export default function CompanySettingsPage() {
                         name="state"
                         value={form.state || ''}
                         onChange={handleInputChange}
-                        placeholder="CA"
+                        placeholder="e.g. CA"
                         maxLength={2}
                       />
                     </div>
@@ -247,7 +247,7 @@ export default function CompanySettingsPage() {
                         name="zip_code"
                         value={form.zip_code || ''}
                         onChange={handleInputChange}
-                        placeholder="90210"
+                        placeholder="e.g. 90210"
                       />
                     </div>
                   </div>
@@ -267,7 +267,7 @@ export default function CompanySettingsPage() {
                       name="phone"
                       value={form.phone || ''}
                       onChange={handleInputChange}
-                      placeholder="(555) 123-4567"
+                      placeholder="e.g. (555) 123-4567"
                     />
                   </div>
 
@@ -280,7 +280,7 @@ export default function CompanySettingsPage() {
                       name="email"
                       value={form.email || ''}
                       onChange={handleInputChange}
-                      placeholder="hello@precisionpros.com"
+                      placeholder="e.g. hello@company.com"
                     />
                   </div>
 
@@ -293,7 +293,7 @@ export default function CompanySettingsPage() {
                       name="website_url"
                       value={form.website_url || ''}
                       onChange={handleInputChange}
-                      placeholder="https://precisionpros.com"
+                      placeholder="e.g. https://yourcompany.com"
                     />
                   </div>
                 </div>

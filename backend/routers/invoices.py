@@ -12,7 +12,7 @@ import models
 from database import get_db
 from auth import get_current_user
 from services.billing import next_invoice_number
-from services.email import send_invoice_email
+from services.email import send_invoice_email, send_invoice_email_with_type, _get_template, _render_template_string, _build_invoice_context
 from services.pdf import generate_invoice_pdf
 from config import get_settings
 
@@ -79,8 +79,8 @@ class InvoiceOut(BaseModel):
     due_date: date
     sent_date: Optional[datetime] = None
     status: models.InvoiceStatus
-    authnet_verified: bool
-    authnet_transaction_id: Optional[str]
+    autocc_verified: bool
+    autocc_transaction_id: Optional[str]
     subtotal: float
     late_fee_amount: float
     total: float
@@ -105,8 +105,8 @@ class InvoiceCreate(BaseModel):
     due_date: date
     line_items: List[LineItemIn]
     status: models.InvoiceStatus = models.InvoiceStatus.draft
-    authnet_verified: bool = False
-    authnet_transaction_id: Optional[str] = None
+    autocc_verified: bool = False
+    autocc_transaction_id: Optional[str] = None
     previous_balance: float = 0.0
     notes: Optional[str] = None
     internal_notes: Optional[str] = None
@@ -116,16 +116,16 @@ class InvoiceCreate(BaseModel):
         use_enum_values = False
 
 
-class AnetBatchItem(BaseModel):
+class AutoccBatchItem(BaseModel):
     invoice_id: int
     paid: bool
 
 
-class AnetBatchRequest(BaseModel):
-    items: List[AnetBatchItem]
+class AutoccBatchRequest(BaseModel):
+    items: List[AutoccBatchItem]
 
 
-class AnetBatchClient(BaseModel):
+class AutoccBatchClient(BaseModel):
     id: int
     company_name: str
     email: str
@@ -138,7 +138,7 @@ class AnetBatchClient(BaseModel):
         from_attributes = True
 
 
-class AnetBatchResponse(BaseModel):
+class AutoccBatchResponse(BaseModel):
     paid_count: int
     declined_count: int
     paid_invoices: List[str]
@@ -217,6 +217,134 @@ def clients_due_for_billing(
             client_map[s.client_id] = {"client": s.client, "schedules": []}
         client_map[s.client_id]["schedules"].append(s)
     return list(client_map.values())
+
+
+@router.get("/autocc-batch")
+def get_anet_batch(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get all autocc_recurring clients with their latest invoice (for batch processing)."""
+    # Get all autocc clients
+    clients = db.query(models.Client).filter(
+        models.Client.autocc_recurring == True,
+        models.Client.is_active == True
+    ).all()
+
+    if not clients:
+        return []
+
+    client_ids = [c.id for c in clients]
+
+    # Get the latest invoice for each client (any status, ordered by created_date)
+    invoices = db.query(models.Invoice).filter(
+        models.Invoice.client_id.in_(client_ids)
+    ).order_by(
+        models.Invoice.client_id,
+        models.Invoice.created_date.desc()
+    ).all()
+
+    # Build a dict of client_id -> latest invoice (since ordered by date desc, first match is latest)
+    latest_invoices = {}
+    for invoice in invoices:
+        if invoice.client_id not in latest_invoices:
+            latest_invoices[invoice.client_id] = invoice
+
+    result = []
+    for client in clients:
+        invoice = latest_invoices.get(client.id)
+        batch_item = AutoccBatchClient(
+            id=client.id,
+            company_name=client.company_name,
+            email=client.email,
+            invoice_id=invoice.id if invoice else None,
+            invoice_number=invoice.invoice_number if invoice else None,
+            invoice_total=invoice.total if invoice else None,
+            invoice_status=invoice.status if invoice else None
+        )
+        result.append(batch_item)
+
+    return result
+
+
+@router.post("/autocc-batch/process")
+async def process_anet_batch(
+    request: AutoccBatchRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Process AutoCC batch payment decisions."""
+    from services.email import send_invoice_email, send_cc_declined_email
+
+    paid_invoices = []
+    declined_clients = []
+
+    for item in request.items:
+        invoice = db.query(models.Invoice).filter_by(id=item.invoice_id).first()
+        if not invoice:
+            continue
+
+        client = invoice.client
+        if not client:
+            continue
+
+        if item.paid:
+            # Mark invoice as paid
+            invoice.status = models.InvoiceStatus.paid
+            invoice.amount_paid = invoice.total
+            invoice.balance_due = 0
+            db.add(invoice)
+            db.flush()
+
+            # Update client balance
+            client.account_balance -= invoice.total
+            db.add(client)
+            db.flush()
+
+            # Log activity
+            log = models.ActivityLog(
+                entity_type="invoice",
+                entity_id=invoice.id,
+                client_id=invoice.client_id,
+                action="marked_paid_via_autocc_batch",
+                performed_by_id=current_user.id,
+                notes="Marked as paid via AutoCC batch process"
+            )
+            db.add(log)
+
+            # Send invoice email
+            try:
+                await send_invoice_email(invoice, client)
+                paid_invoices.append(invoice.invoice_number)
+            except Exception as e:
+                print(f"Error sending invoice email for {invoice.invoice_number}: {str(e)}")
+        else:
+            # Send CC declined email
+            try:
+                await send_cc_declined_email(client)
+                declined_clients.append(client.company_name)
+            except Exception as e:
+                print(f"Error sending declined email for {client.company_name}: {str(e)}")
+
+            # Log activity
+            log = models.ActivityLog(
+                entity_type="invoice",
+                entity_id=invoice.id,
+                client_id=invoice.client_id,
+                action="autocc_charge_declined",
+                performed_by_id=current_user.id,
+                notes=f"AutoCC charge declined for invoice {invoice.invoice_number}"
+            )
+            db.add(log)
+
+    db.commit()
+
+    return AutoccBatchResponse(
+        paid_count=len(paid_invoices),
+        declined_count=len(declined_clients),
+        paid_invoices=paid_invoices,
+        declined_clients=declined_clients
+    )
 
 
 @router.post("/prefill/{client_id}")
@@ -328,8 +456,8 @@ async def create_invoice(
         created_date=data.created_date,
         due_date=data.due_date,
         status=data.status,
-        authnet_verified=data.authnet_verified,
-        authnet_transaction_id=data.authnet_transaction_id,
+        autocc_verified=data.autocc_verified,
+        autocc_transaction_id=data.autocc_transaction_id,
         previous_balance=previous_balance,
         notes=data.notes,
         internal_notes=data.internal_notes,
@@ -422,8 +550,8 @@ async def update_invoice_status(
     return {"invoice_id": invoice_id, "status": new_status}
 
 
-@router.post("/{invoice_id}/verify-authnet")
-def verify_authnet(
+@router.post("/{invoice_id}/verify-autocc")
+def verify_autocc(
     invoice_id: int,
     transaction_id: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -432,23 +560,81 @@ def verify_authnet(
     invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
-    invoice.authnet_verified = True
+    invoice.autocc_verified = True
     if transaction_id:
-        invoice.authnet_transaction_id = transaction_id
+        invoice.autocc_transaction_id = transaction_id
     log = models.ActivityLog(
         entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
-        action="authnet_verified", performed_by_id=current_user.id,
+        action="autocc_verified", performed_by_id=current_user.id,
         performed_by_name=current_user.full_name,
-        notes=f"A.net transaction ID: {transaction_id or 'not provided'}"
+        notes=f"AutoCC transaction ID: {transaction_id or 'not provided'}"
     )
     db.add(log)
     db.commit()
     return {"verified": True, "transaction_id": transaction_id}
 
 
+@router.get("/{invoice_id}/email-preview")
+async def preview_invoice_email(
+    invoice_id: int,
+    template_type: str = "new_invoice",
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get a preview of the rendered email template for an invoice."""
+    try:
+        invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+
+        client = invoice.client
+        if not client:
+            raise HTTPException(status_code=404, detail="Client not found")
+
+        # Convert string to enum
+        try:
+            enum_type = models.EmailTemplateType[template_type]
+        except KeyError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid template type: {template_type}"
+            )
+
+        # Build context for template rendering inline
+        context = {
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "amount_due": f"${float(invoice.total):.2f}",
+            "due_date": invoice.due_date.strftime("%B %d, %Y"),
+            "company_name": getattr(settings, 'company_name', 'Our Company') or "Our Company",
+        }
+
+        # Get template and render
+        template = await _get_template(enum_type)
+        if not template:
+            raise HTTPException(status_code=404, detail=f"Template not found for type: {template_type}")
+
+        subject = _render_template_string(template.subject, context)
+        body = _render_template_string(template.body, context)
+
+        return {
+            "subject": subject,
+            "body": body,
+            "template_type": template_type
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in preview_invoice_email: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error generating preview: {str(e)}")
+
+
 @router.post("/{invoice_id}/send")
 async def send_invoice(
     invoice_id: int,
+    template_type: str = "new_invoice",
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -459,6 +645,15 @@ async def send_invoice(
     client = invoice.client
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
+
+    # Convert string to enum
+    try:
+        enum_type = models.EmailTemplateType[template_type]
+    except KeyError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid template type: {template_type}"
+        )
 
     old_status = invoice.status
     invoice.status = models.InvoiceStatus.sent
@@ -475,7 +670,7 @@ async def send_invoice(
 
     if client.email:
         try:
-            asyncio.create_task(send_invoice_email(invoice, client))
+            asyncio.create_task(send_invoice_email_with_type(invoice, client, enum_type))
         except Exception as e:
             print(f"Error sending invoice email: {e}")
 
@@ -510,6 +705,7 @@ def mark_invoice_sent(
 @router.post("/{invoice_id}/resend")
 async def resend_invoice(
     invoice_id: int,
+    template_type: str = "new_invoice",
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -520,6 +716,15 @@ async def resend_invoice(
     client = invoice.client
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
+
+    # Convert string to enum
+    try:
+        enum_type = models.EmailTemplateType[template_type]
+    except KeyError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid template type: {template_type}"
+        )
 
     log = models.ActivityLog(
         entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
@@ -532,7 +737,7 @@ async def resend_invoice(
 
     if client.email:
         try:
-            asyncio.create_task(send_invoice_email(invoice, client))
+            asyncio.create_task(send_invoice_email_with_type(invoice, client, enum_type))
         except Exception as e:
             print(f"Error sending invoice email: {e}")
 
@@ -563,6 +768,40 @@ def void_invoice(
     return {"voided": True, "reason": reason}
 
 
+@router.delete("/{invoice_id}")
+def delete_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    if invoice.status != models.InvoiceStatus.draft:
+        raise HTTPException(status_code=400, detail="Only draft invoices can be deleted")
+
+    client_id = invoice.client_id
+    invoice_number = invoice.invoice_number
+
+    # Delete related line items
+    db.query(models.InvoiceLineItem).filter_by(invoice_id=invoice_id).delete()
+
+    # Delete the invoice
+    db.delete(invoice)
+
+    # Log activity
+    log = models.ActivityLog(
+        entity_type="invoice", entity_id=invoice_id, client_id=client_id,
+        action="deleted", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes=f"Draft invoice {invoice_number} deleted"
+    )
+    db.add(log)
+    db.commit()
+
+    return {"deleted": True, "invoice_number": invoice_number}
+
+
 @router.get("/{invoice_id}/pdf")
 def download_invoice_pdf(
     invoice_id: int,
@@ -590,114 +829,3 @@ def download_invoice_pdf(
         raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")
 
 
-@router.get("/anet-batch")
-def get_anet_batch(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    """Get all authnet_recurring clients with their latest draft/sent invoice."""
-    clients = db.query(models.Client).filter(
-        models.Client.authnet_recurring == True,
-        models.Client.is_active == True
-    ).all()
-
-    result = []
-    for client in clients:
-        # Find latest draft or sent invoice for this client
-        invoice = db.query(models.Invoice).filter(
-            models.Invoice.client_id == client.id,
-            models.Invoice.status.in_([models.InvoiceStatus.draft, models.InvoiceStatus.sent])
-        ).order_by(models.Invoice.created_date.desc()).first()
-
-        batch_item = AnetBatchClient(
-            id=client.id,
-            company_name=client.company_name,
-            email=client.email,
-            invoice_id=invoice.id if invoice else None,
-            invoice_number=invoice.invoice_number if invoice else None,
-            invoice_total=invoice.total if invoice else None,
-            invoice_status=invoice.status if invoice else None
-        )
-        result.append(batch_item)
-
-    return result
-
-
-@router.post("/anet-batch/process")
-async def process_anet_batch(
-    request: AnetBatchRequest,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
-):
-    """Process A.net batch payment decisions."""
-    from services.email import send_invoice_email, send_cc_declined_email
-
-    paid_invoices = []
-    declined_clients = []
-
-    for item in request.items:
-        invoice = db.query(models.Invoice).filter_by(id=item.invoice_id).first()
-        if not invoice:
-            continue
-
-        client = invoice.client
-        if not client:
-            continue
-
-        if item.paid:
-            # Mark invoice as paid
-            invoice.status = models.InvoiceStatus.paid
-            invoice.amount_paid = invoice.total
-            invoice.balance_due = 0
-            db.add(invoice)
-            db.flush()
-
-            # Update client balance
-            client.account_balance -= invoice.total
-            db.add(client)
-            db.flush()
-
-            # Log activity
-            log = models.ActivityLog(
-                entity_type="invoice",
-                entity_id=invoice.id,
-                client_id=invoice.client_id,
-                action="marked_paid_via_anet_batch",
-                performed_by_id=current_user.id,
-                notes="Marked as paid via A.net batch process"
-            )
-            db.add(log)
-
-            # Send invoice email
-            try:
-                await send_invoice_email(invoice, client)
-                paid_invoices.append(invoice.invoice_number)
-            except Exception as e:
-                print(f"Error sending invoice email for {invoice.invoice_number}: {str(e)}")
-        else:
-            # Send CC declined email
-            try:
-                await send_cc_declined_email(client)
-                declined_clients.append(client.company_name)
-            except Exception as e:
-                print(f"Error sending declined email for {client.company_name}: {str(e)}")
-
-            # Log activity
-            log = models.ActivityLog(
-                entity_type="invoice",
-                entity_id=invoice.id,
-                client_id=invoice.client_id,
-                action="anet_charge_declined",
-                performed_by_id=current_user.id,
-                notes=f"A.net charge declined for invoice {invoice.invoice_number}"
-            )
-            db.add(log)
-
-    db.commit()
-
-    return AnetBatchResponse(
-        paid_count=len(paid_invoices),
-        declined_count=len(declined_clients),
-        paid_invoices=paid_invoices,
-        declined_clients=declined_clients
-    )

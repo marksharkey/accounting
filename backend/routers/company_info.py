@@ -10,6 +10,7 @@ from pathlib import Path
 import models
 from database import get_db
 from auth import get_current_user
+from config import get_settings
 
 router = APIRouter()
 
@@ -52,7 +53,8 @@ class CompanyInfoResponse(BaseModel):
     def from_orm(cls, obj):
         data = super().from_orm(obj)
         if obj.logo_filename:
-            data.logo_url = f"/uploads/logos/{obj.logo_filename}"
+            settings = get_settings()
+            data.logo_url = f"{settings.api_base_url}/uploads/logos/{obj.logo_filename}"
         return data
 
 

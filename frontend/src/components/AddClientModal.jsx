@@ -12,8 +12,8 @@ export default function AddClientModal({ isOpen, onClose }) {
     contact_name: '',
     email: '',
     phone: '',
-    authnet_recurring: false,
-    authnet_customer_id: '',
+    autocc_recurring: false,
+    autocc_customer_id: '',
     late_fee_type: 'none',
     late_fee_amount: '',
     late_fee_grace_days: '',
@@ -59,8 +59,8 @@ export default function AddClientModal({ isOpen, onClose }) {
       contact_name: '',
       email: '',
       phone: '',
-      authnet_recurring: false,
-      authnet_customer_id: '',
+      autocc_recurring: false,
+      autocc_customer_id: '',
       late_fee_type: 'none',
       late_fee_amount: '',
       late_fee_grace_days: '',
@@ -156,27 +156,27 @@ export default function AddClientModal({ isOpen, onClose }) {
         <div className="flex items-center">
           <input
             type="checkbox"
-            id="authnet_recurring"
-            name="authnet_recurring"
-            checked={formData.authnet_recurring}
+            id="autocc_recurring"
+            name="autocc_recurring"
+            checked={formData.autocc_recurring}
             onChange={handleChange}
             className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
           />
-          <label htmlFor="authnet_recurring" className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
-            Use Auth.net Recurring Billing
+          <label htmlFor="autocc_recurring" className="ml-2 block text-sm font-medium text-gray-700 cursor-pointer">
+            Use AutoCC Recurring Billing
           </label>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            AuthNet Customer ID
+            AutoCC Customer ID
           </label>
           <Input
             type="text"
-            name="authnet_customer_id"
-            value={formData.authnet_customer_id}
+            name="autocc_customer_id"
+            value={formData.autocc_customer_id}
             onChange={handleChange}
-            placeholder="AuthNet customer ID"
+            placeholder="AutoCC customer ID"
           />
         </div>
 

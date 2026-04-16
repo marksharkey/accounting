@@ -169,7 +169,7 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <Layout title={client.company_name}>
+    <Layout title={client.company_name} onBack={() => navigate(-1)}>
       {/* Toolbar */}
       <div className="mb-3">
         <div className="flex items-center gap-2">

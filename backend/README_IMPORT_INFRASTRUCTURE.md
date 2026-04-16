@@ -133,7 +133,7 @@ Check the output for any issues:
 If issues found, review `IMPORT_QUICK_START.md` troubleshooting section.
 
 ### Step 5: Manual Cleanup (If Needed)
-The import sets defaults for all clients (authnet_recurring, late_fee_type, etc.). Review and adjust as needed.
+The import sets defaults for all clients (autocc_recurring, late_fee_type, etc.). Review and adjust as needed.
 
 **Total time:** ~20 minutes (15 export + 5 import)
 

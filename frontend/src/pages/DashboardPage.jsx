@@ -319,7 +319,7 @@ export default function DashboardPage() {
             key={idx}
             client={{
               name: item.client.company_name,
-              subtitle: item.client.authnet_recurring ? 'Auto-charge' : 'Fixed recurring',
+              subtitle: item.client.autocc_recurring ? 'Auto-charge' : 'Fixed recurring',
             }}
             amount={item.schedules && item.schedules.length > 0 ? item.schedules[0].amount : 0}
             onClick={() => navigate(`/clients/${item.client.id}`)}

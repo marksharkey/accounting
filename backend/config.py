@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     app_name: str = "PrecisionPros Billing"
     app_version: str = "1.0.0"
     debug: bool = False
+    api_base_url: str = "http://localhost:8010"
 
     # Email
     smtp_host: str = ""

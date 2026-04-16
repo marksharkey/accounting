@@ -17,6 +17,10 @@ from services.email import (
 
 router = APIRouter()
 
+# Only trigger collections actions on invoices created on or after this date.
+# Invoices imported from QBO history are excluded — they are for reference only.
+COLLECTIONS_CUTOFF_DATE = date(2026, 3, 1)
+
 
 def _invoice_summary(inv: models.Invoice) -> dict:
     return {
@@ -36,9 +40,12 @@ def daily_action_queue(
     current_user: models.User = Depends(get_current_user)
 ):
     today = date.today()
-    overdue = db.query(models.Invoice).join(models.Client).filter(
+
+    # Get invoices due today
+    invoiced_and_due = db.query(models.Invoice).join(models.Client).filter(
         and_(
-            models.Invoice.due_date < today,
+            models.Invoice.due_date == today,
+            models.Invoice.created_date >= COLLECTIONS_CUTOFF_DATE,
             models.Invoice.status.in_([
                 models.InvoiceStatus.sent,
                 models.InvoiceStatus.partially_paid
@@ -48,15 +55,41 @@ def daily_action_queue(
         )
     ).all()
 
+    # Get all overdue invoices
+    overdue = db.query(models.Invoice).join(models.Client).filter(
+        and_(
+            models.Invoice.due_date < today,
+            models.Invoice.created_date >= COLLECTIONS_CUTOFF_DATE,
+            models.Invoice.status.in_([
+                models.InvoiceStatus.sent,
+                models.InvoiceStatus.partially_paid
+            ]),
+            models.Client.collections_exempt == False,
+            models.Client.collections_paused == False,
+        )
+    ).all()
+
+    # Categorize overdue invoices
+    first_of_month = today.replace(day=1)
+    past_due = [
+        inv for inv in overdue
+        if 1 <= (today - inv.due_date).days < 20
+    ]
+    suspension_candidates = [
+        inv for inv in overdue
+        if (today - inv.due_date).days >= 20
+    ]
+    termination_candidates = [
+        inv for inv in overdue
+        if inv.due_date < first_of_month
+    ]
+
+    # For internal use (late fees, deletion warnings)
     late_fee_candidates = [
         inv for inv in overdue
         if (today - inv.due_date).days >= 10
         and float(inv.late_fee_amount) == 0
         and inv.client.late_fee_type != models.LateFeeType.none
-    ]
-    suspension_candidates = [
-        inv for inv in overdue
-        if (today - inv.due_date).days >= 20
     ]
     last_day = calendar.monthrange(today.year, today.month)[1]
     deletion_candidates = [
@@ -66,9 +99,11 @@ def daily_action_queue(
 
     return {
         "date": today,
-        "overdue_count": len(overdue),
-        "late_fee_candidates": [_invoice_summary(i) for i in late_fee_candidates],
+        "invoiced_and_due": [_invoice_summary(i) for i in invoiced_and_due],
+        "past_due": [_invoice_summary(i) for i in past_due],
         "suspension_candidates": [_invoice_summary(i) for i in suspension_candidates],
+        "termination_candidates": [_invoice_summary(i) for i in termination_candidates],
+        "late_fee_candidates": [_invoice_summary(i) for i in late_fee_candidates],
         "deletion_candidates": [_invoice_summary(i) for i in deletion_candidates],
     }
 
@@ -122,7 +157,6 @@ async def apply_late_fee(
     db.add(log)
     db.commit()
 
-    # Send late fee notice email
     if client.email:
         try:
             asyncio.create_task(send_late_fee_notice_email(invoice, client))
@@ -168,7 +202,6 @@ async def update_account_status(
     ))
     db.commit()
 
-    # Send appropriate warning emails
     if client.email:
         try:
             if new_status == models.AccountStatus.suspended and old_status != models.AccountStatus.suspended:

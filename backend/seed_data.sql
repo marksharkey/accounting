@@ -33,7 +33,7 @@ INSERT INTO service_catalog (name, description, default_amount, default_cycle, c
 -- =====================================================
 -- 3. Clients
 -- =====================================================
-INSERT INTO clients (company_name, contact_name, email, email_cc, phone, authnet_recurring, account_status, account_balance, late_fee_type, late_fee_amount, late_fee_grace_days, notes, is_active, created_at, updated_at) VALUES
+INSERT INTO clients (company_name, contact_name, email, email_cc, phone, autocc_recurring, account_status, account_balance, late_fee_type, late_fee_amount, late_fee_grace_days, notes, is_active, created_at, updated_at) VALUES
 ('Acme Corporation', 'John Smith', 'john@acmecorp.com', NULL, '555-0001', FALSE, 'active', -1500.00, 'flat', 50.00, 15, 'Long-time client, always pays on time', TRUE, NOW(), NOW()),
 ('Global Tech Solutions', 'Sarah Johnson', 'billing@globaltech.com', 'sarah@globaltech.com', '555-0002', FALSE, 'active', -2850.00, 'percentage', 5.00, 10, 'Large account, multiple services', TRUE, NOW(), NOW()),
 ('Small Business LLC', 'Mike Davis', 'admin@smallbiz.com', NULL, '555-0003', TRUE, 'active', -400.00, 'none', 0.00, 0, 'New client, started in March 2026', TRUE, NOW(), NOW()),
@@ -55,22 +55,22 @@ SET @svc_consulting = (SELECT id FROM service_catalog WHERE name='Consulting - H
 SET @svc_maintenance = (SELECT id FROM service_catalog WHERE name='Annual Maintenance' LIMIT 1);
 
 -- Acme Corporation: Basic Hosting + Managed Services
-INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, authnet_recurring, is_active, notes, created_at, updated_at) VALUES
+INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, autocc_recurring, is_active, notes, created_at, updated_at) VALUES
 (@client_acme, @svc_basic_hosting, 'Basic Web Hosting', 29.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 10 DAY), FALSE, TRUE, 'Basic hosting plan', NOW(), NOW()),
 (@client_acme, @svc_managed, 'Managed Services', 199.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 5 DAY), FALSE, TRUE, 'Full server management', NOW(), NOW());
 
 -- Global Tech Solutions: Premium Hosting + Security Monitoring + Maintenance
-INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, authnet_recurring, is_active, notes, created_at, updated_at) VALUES
+INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, autocc_recurring, is_active, notes, created_at, updated_at) VALUES
 (@client_global, @svc_premium_hosting, 'Premium Web Hosting', 79.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 15 DAY), FALSE, TRUE, 'Premium hosting with 100 GB', NOW(), NOW()),
 (@client_global, @svc_security, 'Security Monitoring', 49.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 15 DAY), FALSE, TRUE, '24/7 monitoring', NOW(), NOW()),
 (@client_global, @svc_maintenance, 'Annual Maintenance', 599.99, 'annual', DATE_ADD(CURDATE(), INTERVAL 45 DAY), FALSE, TRUE, 'Annual contract', NOW(), NOW());
 
--- Small Business LLC: Basic Hosting via AuthNet
-INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, authnet_recurring, is_active, notes, created_at, updated_at) VALUES
+-- Small Business LLC: Basic Hosting via AutoCC
+INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, autocc_recurring, is_active, notes, created_at, updated_at) VALUES
 (@client_small, @svc_basic_hosting, 'Basic Web Hosting', 29.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 3 DAY), TRUE, TRUE, 'Basic hosting, auto-recurring', NOW(), NOW());
 
 -- Enterprise Solutions Inc: Multiple Services
-INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, authnet_recurring, is_active, notes, created_at, updated_at) VALUES
+INSERT INTO billing_schedules (client_id, service_id, description, amount, cycle, next_bill_date, autocc_recurring, is_active, notes, created_at, updated_at) VALUES
 (@client_enterprise, @svc_premium_hosting, 'Premium Web Hosting', 79.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 20 DAY), FALSE, TRUE, 'Premium hosting', NOW(), NOW()),
 (@client_enterprise, @svc_managed, 'Managed Services', 199.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 20 DAY), FALSE, TRUE, 'Full management', NOW(), NOW()),
 (@client_enterprise, @svc_security, 'Security Monitoring', 49.99, 'monthly', DATE_ADD(CURDATE(), INTERVAL 20 DAY), FALSE, TRUE, '24/7 monitoring', NOW(), NOW()),
@@ -114,7 +114,7 @@ INSERT INTO invoice_line_items (invoice_id, service_id, description, quantity, u
 -- =====================================================
 INSERT INTO payments (invoice_id, client_id, payment_date, amount, method, reference_number, notes, reconciled, created_at) VALUES
 (@inv1, @client_acme, DATE_SUB(CURDATE(), INTERVAL 5 DAY), 229.98, 'credit_card', 'CC-12345', 'Online payment', TRUE, NOW()),
-(@inv2, @client_global, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 729.97, 'authnet', 'AUTH-67890', 'Recurring charge', TRUE, NOW());
+(@inv2, @client_global, DATE_SUB(CURDATE(), INTERVAL 3 DAY), 729.97, 'autocc', 'AUTOCC-67890', 'Recurring charge', TRUE, NOW());
 
 -- =====================================================
 -- 8. Invoice Sequence

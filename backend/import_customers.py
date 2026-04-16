@@ -94,7 +94,7 @@ for idx, row in df.iterrows():
         "city":                 str(row["City"]).strip() if not pd.isna(row.get("City")) else None,
         "state":                str(row["State"]).strip() if not pd.isna(row.get("State")) else None,
         "zip_code":             clean_zip(row.get("Zip")),
-        "authnet_recurring":    False,
+        "autocc_recurring":    False,
         "account_status":       "active",
         "account_balance":      round(open_balance, 2),
         "late_fee_type":        "none",

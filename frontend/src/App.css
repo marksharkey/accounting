@@ -1,1 +1,37 @@
+/* Sidebar width custom properties - defined once, used everywhere */
+:root {
+  --sidebar-width-desktop: 15rem; /* 240px - industry standard */
+  --sidebar-width-tablet: 4rem;   /* 64px - w-16 equivalent */
+}
+
+/* Main content respects sidebar width */
+main {
+  margin-left: var(--sidebar-width-desktop);
+}
+
+/* Tablet: collapsed sidebar */
+@media (max-width: 1023px) {
+  main {
+    margin-left: var(--sidebar-width-tablet);
+  }
+}
+
+/* Mobile: no sidebar margin */
+@media (max-width: 767px) {
+  main {
+    margin-left: 0;
+  }
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* Styles managed by Tailwind CSS */

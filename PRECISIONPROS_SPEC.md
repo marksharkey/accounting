@@ -69,7 +69,7 @@ estimates               — PP-EST-YYYY-NNNN, convertible to invoice
 estimate_line_items
 credit_memos            — PP-CM-YYYY-NNNN, negative invoices
 credit_line_items
-payments                — authnet/check/credit_card/cash, reconciled flag for Phase 2
+payments                — autocc/check/credit_card/cash, reconciled flag for Phase 2
 expenses                — vendor expenses linked to chart of accounts
 collections_events      — timeline of all collections actions per client/invoice
 activity_log            — full audit trail across all entities
@@ -82,7 +82,7 @@ bank_transactions       — Phase 2 bank reconciliation (table exists, feature d
 ## Key Business Rules
 
 ### Billing Types (per client)
-- **authnet_recurring** — A.net charges automatically; operator verifies manually in A.net, marks verified in app, then sends paid-in-full invoice as receipt
+- **autocc_recurring** — AutoCC charges automatically; operator verifies manually in AutoCC, marks verified in app, then sends paid-in-full invoice as receipt
 - **fixed_recurring** — predictable charge, invoice sent on the 20th, due the 1st
 - **mixed** — fixed charges + one-off items on same invoice
 - **one_off** — ad hoc only
@@ -108,7 +108,7 @@ Last day       → Deletion warning sent (operator deletes manually on web serve
 - Collections can be paused per client with a reason
 
 ### Payment Methods
-authnet / check / credit_card / cash
+autocc / check / credit_card / cash
 
 ### Running Account Balance
 - Stored on `clients.account_balance`
@@ -170,7 +170,7 @@ POST /api/invoices/prefill/{client_id}  — pre-populate from billing schedules
 POST /api/invoices/                     — create invoice with line items
 GET  /api/invoices/{id}                 — get one
 PUT  /api/invoices/{id}/status          — update status
-POST /api/invoices/{id}/verify-authnet  — mark A.net charge verified
+POST /api/invoices/{id}/verify-autocc  — mark AutoCC charge verified
 POST /api/invoices/{id}/void            — void (requires reason)
 ```
 

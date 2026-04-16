@@ -1,14 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
 from datetime import date, datetime
 from decimal import Decimal
+import asyncio
 
 import models
 from database import get_db
 from auth import get_current_user
 from services.billing import next_credit_memo_number
+from services.email import send_credit_memo_email
+from services.pdf import generate_credit_memo_pdf
 
 router = APIRouter()
 
@@ -76,6 +80,8 @@ def list_credit_memos(
     status: Optional[models.CreditMemoStatus] = None,
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
+    sort_by: str = "created_date",
+    sort_order: str = "desc",
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
@@ -90,8 +96,16 @@ def list_credit_memos(
         query = query.filter(models.CreditMemo.created_date >= from_date)
     if to_date:
         query = query.filter(models.CreditMemo.created_date <= to_date)
+
+    # Apply sorting
+    sort_column = getattr(models.CreditMemo, sort_by, models.CreditMemo.created_date)
+    if sort_order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
     total = query.count()
-    memos = query.order_by(models.CreditMemo.created_date.desc()).offset(skip).limit(limit).all()
+    memos = query.offset(skip).limit(limit).all()
     return {"total": total, "items": memos}
 
 
@@ -107,8 +121,11 @@ def create_credit_memo(
 
     memo_number = next_credit_memo_number(db)
 
-    # Calculate total
-    total = sum(item.quantity * item.unit_amount for item in data.line_items)
+    # Calculate total using Decimal for precision
+    total = sum(
+        Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
+        for item in data.line_items
+    ) if data.line_items else Decimal("0.00")
 
     memo = models.CreditMemo(
         memo_number=memo_number,
@@ -124,7 +141,7 @@ def create_credit_memo(
     db.flush()
 
     for idx, item in enumerate(data.line_items):
-        amount = item.quantity * item.unit_amount
+        amount = Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
         line_item = models.CreditLineItem(
             credit_memo_id=memo.id,
             description=item.description,
@@ -170,3 +187,77 @@ def update_credit_memo_status(
     db.commit()
     db.refresh(memo)
     return memo
+
+
+@router.post("/{memo_id}/send")
+async def send_credit_memo(
+    memo_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Send credit memo and email to client"""
+    memo = db.query(models.CreditMemo).filter_by(id=memo_id).first()
+    if not memo:
+        raise HTTPException(status_code=404, detail="Credit memo not found")
+
+    # Update status and sent date
+    memo.status = models.CreditMemoStatus.sent
+    memo.sent_date = datetime.now()
+    db.commit()
+
+    # Send email asynchronously
+    client = memo.client
+    if client and client.email:
+        try:
+            asyncio.create_task(send_credit_memo_email(memo, client))
+        except Exception as e:
+            print(f"Error sending credit memo email: {e}")
+
+    db.refresh(memo)
+    return memo
+
+
+@router.post("/{memo_id}/mark-sent")
+def mark_credit_memo_sent(
+    memo_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Mark credit memo as sent without sending email"""
+    memo = db.query(models.CreditMemo).filter_by(id=memo_id).first()
+    if not memo:
+        raise HTTPException(status_code=404, detail="Credit memo not found")
+
+    memo.status = models.CreditMemoStatus.sent
+    memo.sent_date = datetime.now()
+    db.commit()
+    db.refresh(memo)
+    return memo
+
+
+@router.get("/{memo_id}/pdf")
+def download_credit_memo_pdf(
+    memo_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Download credit memo as PDF"""
+    memo = db.query(models.CreditMemo).filter_by(id=memo_id).first()
+    if not memo:
+        raise HTTPException(status_code=404, detail="Credit memo not found")
+
+    client = memo.client
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    try:
+        pdf_buffer = generate_credit_memo_pdf(memo, client, db)
+        return StreamingResponse(
+            iter([pdf_buffer.getvalue()]),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"attachment; filename=\"credit-memo-{memo.memo_number}.pdf\""
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating PDF: {str(e)}")

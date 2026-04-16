@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .message-box {
+            background-color: #ffe6e6;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Payment Declined</h2>
+        </div>
+
+        <p>Hi {{ client_name }},</p>
+
+        <div class="message-box">
+            <p><strong>Your payment on file was declined.</strong></p>
+            <p>Your scheduled credit card charge could not be processed. Please contact us to update your payment method or discuss alternative arrangements.</p>
+        </div>
+
+        <p>If you have questions or would like to update your payment information, please reply to this email or contact us at your earliest convenience.</p>
+
+        <p>Thank you for your business.</p>
+
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email address.</p>
+        </div>
+    </div>
+</body>
+</html>

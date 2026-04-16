@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import RecordPaymentModal from '../components/RecordPaymentModal';
+import SendInvoiceModal from '../components/SendInvoiceModal';
+import { formatLocalDate } from '../utils/dateFormat';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams();
@@ -13,6 +14,9 @@ export default function InvoiceDetailPage() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [voidReason, setVoidReason] = useState('');
   const [isVoidModalOpen, setIsVoidModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [sendModalMode, setSendModalMode] = useState('send'); // 'send' or 'resend'
 
   const { data: invoice, isLoading, refetch } = useQuery({
     queryKey: ['invoices', id],
@@ -22,22 +26,10 @@ export default function InvoiceDetailPage() {
     },
   });
 
-  const sendMutation = useMutation({
-    mutationFn: () => apiClient.post(`/invoices/${id}/send`),
-    onSuccess: () => refetch(),
-    onError: (error) => alert(error.response?.data?.detail || 'Failed to send invoice'),
-  });
-
   const markSentMutation = useMutation({
     mutationFn: () => apiClient.post(`/invoices/${id}/mark-sent`),
     onSuccess: () => refetch(),
     onError: (error) => alert(error.response?.data?.detail || 'Failed to mark invoice as sent'),
-  });
-
-  const resendMutation = useMutation({
-    mutationFn: () => apiClient.post(`/invoices/${id}/resend`),
-    onSuccess: () => refetch(),
-    onError: (error) => alert(error.response?.data?.detail || 'Failed to resend invoice'),
   });
 
   const voidMutation = useMutation({
@@ -48,6 +40,14 @@ export default function InvoiceDetailPage() {
       setVoidReason('');
     },
     onError: (error) => alert(error.response?.data?.detail || 'Failed to void invoice'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => apiClient.delete(`/invoices/${id}`),
+    onSuccess: () => {
+      navigate('/invoices');
+    },
+    onError: (error) => alert(error.response?.data?.detail || 'Failed to delete invoice'),
   });
 
   const handleDownloadPDF = async () => {
@@ -74,7 +74,25 @@ export default function InvoiceDetailPage() {
     return status;
   };
 
-  const isLoading_ = isLoading || sendMutation.isPending || markSentMutation.isPending || resendMutation.isPending || voidMutation.isPending;
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'sent':
+      case 'ready':
+        return 'bg-blue-100 text-blue-800';
+      case 'partially_paid':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'voided':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const isLoading_ = isLoading || markSentMutation.isPending || voidMutation.isPending || deleteMutation.isPending;
 
   if (isLoading) {
     return <Layout title="Invoice Detail">Loading...</Layout>;
@@ -85,90 +103,84 @@ export default function InvoiceDetailPage() {
   }
 
   return (
-    <Layout title={`Invoice ${invoice.invoice_number}`}>
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <h2 className="text-3xl font-bold mb-2">{invoice.invoice_number}</h2>
-          <p className="text-gray-600">
-            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-              invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-              invoice.status === 'sent' || invoice.status === 'ready' ? 'bg-blue-100 text-blue-800' :
-              invoice.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-              invoice.status === 'partially_paid' ? 'bg-yellow-100 text-yellow-800' :
-              invoice.status === 'voided' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
-              {invoice.status === 'voided' ? 'VOIDED' : getStatusDisplay(invoice.status).replace('_', ' ').toUpperCase()}
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2 justify-end">
-          {/* Status-specific action buttons */}
-          {invoice.status === 'draft' && (
-            <>
-              <Button
-                onClick={() => sendMutation.mutate()}
-                disabled={isLoading_}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {sendMutation.isPending ? 'Sending...' : 'Send'}
-              </Button>
-              <Button
-                onClick={() => markSentMutation.mutate()}
-                disabled={isLoading_}
-                className="bg-gray-600 hover:bg-gray-700 text-white"
-              >
-                {markSentMutation.isPending ? 'Marking...' : 'Mark as Sent'}
-              </Button>
-            </>
-          )}
-
-          {(invoice.status === 'sent' || invoice.status === 'ready') && (
-            <>
-              <Button
-                onClick={() => resendMutation.mutate()}
-                disabled={isLoading_}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {resendMutation.isPending ? 'Resending...' : 'Resend'}
-              </Button>
-            </>
-          )}
-
-          {(invoice.status === 'sent' || invoice.status === 'ready' || invoice.status === 'partially_paid') && (
+    <Layout title={`Invoice ${invoice.invoice_number}`} onBack={() => navigate(-1)}>
+      {/* Action Buttons */}
+      <div className="mb-6 flex flex-wrap gap-2 justify-end">
+        {invoice.status === 'draft' && (
+          <>
             <Button
-              onClick={() => setIsVoidModalOpen(true)}
+              onClick={() => {
+                setSendModalMode('send');
+                setIsSendModalOpen(true);
+              }}
+              disabled={isLoading_}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Send
+            </Button>
+            <Button
+              onClick={() => markSentMutation.mutate()}
+              disabled={isLoading_}
+              className="bg-gray-600 hover:bg-gray-700 text-white"
+            >
+              {markSentMutation.isPending ? 'Marking...' : 'Mark as Sent'}
+            </Button>
+            <Button
+              onClick={() => setIsDeleteModalOpen(true)}
               disabled={isLoading_}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Void
+              Delete
             </Button>
-          )}
+          </>
+        )}
 
-          {/* Payment recording */}
-          {invoice.status !== 'paid' && invoice.balance_due > 0 && (
+        {(invoice.status === 'sent' || invoice.status === 'ready') && (
+          <>
             <Button
-              onClick={() => setIsPaymentModalOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                setSendModalMode('resend');
+                setIsSendModalOpen(true);
+              }}
+              disabled={isLoading_}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Record Payment
+              Resend
             </Button>
-          )}
+          </>
+        )}
 
-          {/* Utility buttons */}
+        {(invoice.status === 'sent' || invoice.status === 'ready' || invoice.status === 'partially_paid') && (
           <Button
-            onClick={() => navigate('/credit-memos/new')}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
+            onClick={() => setIsVoidModalOpen(true)}
+            disabled={isLoading_}
+            className="bg-red-600 hover:bg-red-700 text-white"
           >
-            Create Credit Memo
+            Void
           </Button>
+        )}
+
+        {invoice.status !== 'paid' && invoice.balance_due > 0 && (
           <Button
-            onClick={handleDownloadPDF}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => setIsPaymentModalOpen(true)}
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
-            Download PDF
+            Record Payment
           </Button>
-        </div>
+        )}
+
+        <Button
+          onClick={() => navigate('/credit-memos/new')}
+          className="bg-orange-600 hover:bg-orange-700 text-white"
+        >
+          Create Credit Memo
+        </Button>
+        <Button
+          onClick={handleDownloadPDF}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          Download PDF
+        </Button>
       </div>
 
       <RecordPaymentModal
@@ -179,7 +191,14 @@ export default function InvoiceDetailPage() {
         onSuccess={() => refetch()}
       />
 
-      {/* Void Invoice Modal */}
+      <SendInvoiceModal
+        isOpen={isSendModalOpen}
+        onClose={() => setIsSendModalOpen(false)}
+        invoiceId={invoice.id}
+        mode={sendModalMode}
+        onSuccess={() => refetch()}
+      />
+
       {isVoidModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
@@ -215,144 +234,186 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Created Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {new Date(invoice.created_date).toLocaleDateString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Due Date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {new Date(invoice.due_date).toLocaleDateString()}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Balance Due</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className={`text-2xl font-bold ${
-              invoice.balance_due <= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
-              ${invoice.balance_due.toFixed(2)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Client Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Company Name</p>
-              <p className="text-lg">{invoice.client?.company_name}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Contact Name</p>
-              <p className="text-lg">{invoice.client?.contact_name || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Email</p>
-              <p className="text-lg">{invoice.client?.email}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-600">Phone</p>
-              <p className="text-lg">{invoice.client?.phone || 'N/A'}</p>
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold mb-4">Delete Invoice</h3>
+            <p className="text-gray-600 mb-4">Are you sure you want to delete this invoice? This action cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                onClick={() => setIsDeleteModalOpen(false)}
+                variant="secondary"
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => deleteMutation.mutate()}
+                className="bg-red-600 hover:bg-red-700 text-white"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete Invoice'}
+              </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Line Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 px-4 font-medium">Description</th>
-                  <th className="text-center py-2 px-4 font-medium">Qty</th>
-                  <th className="text-right py-2 px-4 font-medium">Unit Price</th>
-                  <th className="text-right py-2 px-4 font-medium">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.line_items?.map((item) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div>{item.description}</div>
-                      {item.is_prorated && item.prorate_note && (
-                        <div className="text-xs text-gray-500 italic">{item.prorate_note}</div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-center">{item.quantity.toFixed(4)}</td>
-                    <td className="py-3 px-4 text-right">${item.unit_amount.toFixed(2)}</td>
-                    <td className="py-3 px-4 text-right font-medium">${item.amount.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 max-w-md ml-auto">
-            <div className="flex justify-between">
-              <span className="font-medium">Subtotal:</span>
-              <span>${invoice.subtotal.toFixed(2)}</span>
+      {/* PDF-like Invoice Document */}
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md">
+        {/* Header */}
+        <div className="border-b-4 border-[#1a3a52] p-8 flex justify-between">
+          <div>
+            <div className="text-2xl font-bold text-[#1a3a52] mb-1">PrecisionPros</div>
+            <div className="text-xs text-gray-600 mb-3">Professional Web Hosting & IT Services</div>
+            <div className="text-xs text-gray-600 space-y-0.5">
+              <p>6543 East Omega Street</p>
+              <p>Mesa, AZ 85215</p>
+              <p>480-329-6176 | billing@precisionpros.com</p>
             </div>
+          </div>
+          <div className="text-right">
+            <div className="text-3xl font-bold text-[#1a3a52] mb-3">INVOICE</div>
+            <div className="text-sm text-gray-600 space-y-1 mb-3">
+              <div className="flex justify-between gap-8">
+                <span className="font-semibold text-gray-800">Invoice #:</span>
+                <span>{invoice.invoice_number}</span>
+              </div>
+              <div className="flex justify-between gap-8">
+                <span className="font-semibold text-gray-800">Date:</span>
+                <span>{formatLocalDate(invoice.created_date)}</span>
+              </div>
+              <div className="flex justify-between gap-8">
+                <span className="font-semibold text-gray-800">Due:</span>
+                <span>{formatLocalDate(invoice.due_date)}</span>
+              </div>
+            </div>
+            <span className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${getStatusBadgeClass(invoice.status)}`}>
+              {invoice.status === 'voided' ? 'VOIDED' : getStatusDisplay(invoice.status).replace('_', ' ')}
+            </span>
+          </div>
+        </div>
+
+        {/* Bill To */}
+        <div className="px-8 pt-6 pb-3">
+          <div className="text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">Bill To</div>
+          <div className="text-sm text-gray-700 space-y-0.5">
+            <div className="font-semibold text-[#1a3a52]">{invoice.client?.company_name}</div>
+            {invoice.client?.contact_name && <div>{invoice.client.contact_name}</div>}
+            {invoice.client?.address_line1 && <div>{invoice.client.address_line1}</div>}
+            {invoice.client?.address_line2 && <div>{invoice.client.address_line2}</div>}
+            {(invoice.client?.city || invoice.client?.state || invoice.client?.zip_code) && (
+              <div>
+                {invoice.client?.city}{invoice.client?.state ? ', ' + invoice.client.state : ''}{' '}
+                {invoice.client?.zip_code}
+              </div>
+            )}
+            {invoice.client?.email && <div>{invoice.client.email}</div>}
+            {invoice.client?.phone && <div>{invoice.client.phone}</div>}
+          </div>
+        </div>
+
+        {/* Line Items Table */}
+        <table className="w-full text-sm my-4">
+          <thead>
+            <tr className="bg-[#1a3a52] text-white">
+              <th className="text-left py-2 px-8 font-semibold text-xs uppercase tracking-wider">Description</th>
+              <th className="text-center py-2 px-4 font-semibold text-xs uppercase tracking-wider w-16">Qty</th>
+              <th className="text-right py-2 px-4 font-semibold text-xs uppercase tracking-wider w-24">Unit Price</th>
+              <th className="text-right py-2 px-8 font-semibold text-xs uppercase tracking-wider w-24">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoice.line_items?.map((item, idx) => (
+              <tr key={item.id} className={idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                <td className="py-3 px-8 text-gray-700">
+                  <div className="font-medium">{item.description}</div>
+                  {item.is_prorated && item.prorate_note && (
+                    <div className="text-xs text-gray-500 italic">{item.prorate_note}</div>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-center text-gray-700">{item.quantity.toFixed(2)}</td>
+                <td className="py-3 px-4 text-right text-gray-700">${item.unit_amount.toFixed(2)}</td>
+                <td className="py-3 px-8 text-right font-medium text-gray-900">${item.amount.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Totals and Summary */}
+        <div className="px-8 py-4 flex justify-end">
+          <div className="w-64">
             {invoice.late_fee_amount > 0 && (
-              <div className="flex justify-between">
-                <span className="font-medium">Late Fee:</span>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-700">Subtotal:</span>
+                <span>${invoice.subtotal.toFixed(2)}</span>
+              </div>
+            )}
+            {invoice.late_fee_amount > 0 && (
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-700">Late Fee:</span>
                 <span>${invoice.late_fee_amount.toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between border-t-2 border-gray-200 pt-3">
-              <span className="font-bold text-lg">Total:</span>
-              <span className="font-bold text-lg">${invoice.total.toFixed(2)}</span>
+            <div className="flex justify-between text-sm font-bold border-t-2 border-b-2 border-[#1a3a52] py-2 mb-2 bg-gray-50">
+              <span className="text-[#1a3a52]">Total:</span>
+              <span className="text-[#1a3a52]">${invoice.total.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between pt-2">
-              <span className="font-medium">Amount Paid:</span>
-              <span>${invoice.amount_paid.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-red-600 font-bold">
-              <span>Balance Due:</span>
-              <span>${invoice.balance_due.toFixed(2)}</span>
+            {invoice.amount_paid > 0 && (
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-700">Amount Paid:</span>
+                <span>${invoice.amount_paid.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm font-bold">
+              <span className={invoice.balance_due > 0 ? 'text-red-600' : 'text-green-600'}>Balance Due:</span>
+              <span className={invoice.balance_due > 0 ? 'text-red-600' : 'text-green-600'}>${invoice.balance_due.toFixed(2)}</span>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {invoice.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700">{invoice.notes}</p>
-          </CardContent>
-        </Card>
-      )}
+        {/* Payment History */}
+        {invoice.payments && invoice.payments.length > 0 && (
+          <div className="px-8 py-4 border-t border-gray-200">
+            <h3 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider">Payment History</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-300">
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Date Paid</th>
+                    <th className="text-right py-2 px-2 font-semibold text-gray-600">Amount</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Method</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...invoice.payments].sort((a, b) => new Date(b.payment_date) - new Date(a.payment_date)).map((payment) => (
+                    <tr key={payment.id} className="border-b border-gray-200">
+                      <td className="py-2 px-2">{formatLocalDate(payment.payment_date)}</td>
+                      <td className="py-2 px-2 text-right font-medium">${payment.amount.toFixed(2)}</td>
+                      <td className="py-2 px-2 capitalize">{payment.method.replace('_', ' ')}</td>
+                      <td className="py-2 px-2">{payment.reference_number || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {invoice.notes && (
+          <div className="px-8 py-4 border-t border-gray-200 border-l-4 border-l-[#1a3a52] bg-gray-50 mx-8 mb-4">
+            <h3 className="text-xs font-bold text-[#1a3a52] mb-2 uppercase tracking-wider">Notes</h3>
+            <p className="text-sm text-gray-700">{invoice.notes}</p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="px-8 py-6 border-t border-gray-200 text-center text-xs text-gray-500">
+          <p>Thank you for your business!</p>
+        </div>
+      </div>
     </Layout>
   );
 }

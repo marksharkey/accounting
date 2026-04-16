@@ -127,7 +127,7 @@ export default function RecordPaymentModal({ isOpen, onClose, invoiceId, balance
             <option value="check">Check</option>
             <option value="cash">Cash</option>
             <option value="credit_card">Credit Card</option>
-            <option value="authnet">AuthNet</option>
+            <option value="autocc">AutoCC</option>
           </select>
         </div>
 

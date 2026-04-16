@@ -149,7 +149,7 @@ python3 import_customers.py --commit --csv Customers.csv
 - Svestka, Lura:programming
 
 **Default values set on all clients:**
-- `authnet_recurring = false` (set to true for clients using Auth.net recurring billing)
+- `autocc_recurring = false` (set to true for clients using AutoCC recurring billing)
 - `account_status = active`
 - `late_fee_type = none`
 - `auto_send_invoices = False`
@@ -382,7 +382,7 @@ These are clients where QBO's invoice `Name` field differs from the `Company nam
 | Credit memos | Not exported or imported. Create manually as needed. |
 | Estimates | Not exported or imported. |
 | Deleted clients' invoices | 244 invoices for deleted QBO clients were skipped during import. |
-| authnet_customer_id | QBO doesn't store Authorize.net customer IDs. Must be populated manually per client. |
+| autocc_customer_id | QBO doesn't store AutoCC customer IDs. Must be populated manually per client. |
 
 ---
 

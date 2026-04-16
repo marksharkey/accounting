@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 
 export default function InvoiceBuilderPage() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   // State
@@ -305,7 +306,7 @@ export default function InvoiceBuilderPage() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <Layout>
+    <Layout onBack={() => navigate(-1)}>
       {/* Sticky Toolbar */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 -mx-4 sm:-mx-6 lg:-mx-8 mb-6">
         <div className="flex flex-wrap gap-3 items-center">

@@ -1,0 +1,18 @@
+    # Emerge Inc — CUSTOM NEGOTIATED PRICING — preserve original amounts, just consolidate splits
+    "49234": [
+        {"product": "Dedicated Server A",             "description": "Dedicated Server A",             "quantity": Decimal("1"), "unit_price": Decimal("185.00"),  "amount": Decimal("185.00")},
+        {"product": "Dedicated Server C",             "description": "Dedicated Server C",             "quantity": Decimal("1"), "unit_price": Decimal("758.99"),  "amount": Decimal("758.99")},
+        {"product": "Plesk 10 Domain License",        "description": "Plesk 10 Domain License",        "quantity": Decimal("1"), "unit_price": Decimal("20.00"),   "amount": Decimal("20.00")},
+        {"product": "Plesk Unlimited Domain License", "description": "Plesk Unlimited Domain License", "quantity": Decimal("2"), "unit_price": Decimal("70.00"),   "amount": Decimal("140.00")},
+        {"product": "Remote Cloud Backups",           "description": "Remote Cloud Backups",           "quantity": Decimal("1"), "unit_price": Decimal("10.00"),   "amount": Decimal("10.00")},
+    ],
+
+    # Mike Lorts — remove Domain Name Registration (annual charge, not monthly recurring)
+    "49232": [
+        {"product": "Additional IP",                  "description": "Additional IP",                  "quantity": Decimal("1"),  "unit_price": Decimal("2.00"),   "amount": Decimal("2.00")},
+        {"product": "Dedicated Server C",             "description": "Dedicated Server C",             "quantity": Decimal("1"),  "unit_price": Decimal("549.95"), "amount": Decimal("549.95")},
+        {"product": "Plesk Unlimited Domain License", "description": "Plesk Unlimited Domain License", "quantity": Decimal("1"),  "unit_price": Decimal("70.00"),  "amount": Decimal("70.00")},
+        {"product": "Remote Cloud Backups",           "description": "Remote Cloud Backups",           "quantity": Decimal("1"),  "unit_price": Decimal("20.00"),  "amount": Decimal("20.00")},
+        {"product": "Shared Server A",                "description": "Shared Server A",                "quantity": Decimal("1"),  "unit_price": Decimal("14.95"),  "amount": Decimal("14.95")},
+        {"product": "Virtuozzo 10 Container License", "description": "Virtuozzo 10 Container License", "quantity": Decimal("1"),  "unit_price": Decimal("144.00"), "amount": Decimal("144.00")},
+    ],

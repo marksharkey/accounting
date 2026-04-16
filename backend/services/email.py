@@ -148,39 +148,44 @@ async def send_template_email(
 # High-Level Email Functions (Invoice-Related)
 # ─────────────────────────────────────────────
 
+def _build_invoice_context(invoice, client):
+    """Build template context for invoice emails."""
+    company_name = getattr(settings, 'company_name', None) or "Our Company"
+    return {
+        "client_name": client.company_name,
+        "invoice_number": invoice.invoice_number,
+        "amount_due": f"${invoice.total:.2f}",
+        "due_date": invoice.due_date.strftime("%B %d, %Y"),
+        "company_name": company_name,
+    }
+
+
 async def send_new_invoice_email(invoice, client):
     """Send new invoice notification."""
+    return await send_invoice_email_with_type(invoice, client, EmailTemplateType.new_invoice)
+
+
+async def send_invoice_email_with_type(invoice, client, template_type=EmailTemplateType.new_invoice):
+    """Send invoice email using specified template type."""
     try:
         from services.pdf import generate_invoice_pdf
         pdf_bytes = generate_invoice_pdf(invoice, client)
 
         return await send_template_email(
             to_email=client.email,
-            template_type=EmailTemplateType.new_invoice,
-            context={
-                "client_name": client.company_name,
-                "invoice_number": invoice.invoice_number,
-                "amount_due": f"${invoice.total:.2f}",
-                "due_date": invoice.due_date.strftime("%B %d, %Y"),
-                "company_name": settings.company_name or "Our Company",
-            },
+            template_type=template_type,
+            context=_build_invoice_context(invoice, client),
             to_name=client.company_name,
             attachment_bytes=pdf_bytes,
             attachment_filename=f"{invoice.invoice_number}.pdf"
         )
     except Exception as e:
-        print(f"Error sending new invoice email with PDF: {e}")
+        print(f"Error sending invoice email with PDF: {e}")
         # Fall back to email without attachment
         return await send_template_email(
             to_email=client.email,
-            template_type=EmailTemplateType.new_invoice,
-            context={
-                "client_name": client.company_name,
-                "invoice_number": invoice.invoice_number,
-                "amount_due": f"${invoice.total:.2f}",
-                "due_date": invoice.due_date.strftime("%B %d, %Y"),
-                "company_name": settings.company_name or "Our Company",
-            },
+            template_type=template_type,
+            context=_build_invoice_context(invoice, client),
             to_name=client.company_name,
         )
 
@@ -315,5 +320,54 @@ async def send_payment_failed_email(client, invoice=None, amount_due=None):
         to_email=client.email,
         template_type=EmailTemplateType.payment_failed,
         context=context,
+        to_name=client.company_name,
+    )
+
+
+# ─────────────────────────────────────────────
+# Backward Compatibility Aliases
+# ─────────────────────────────────────────────
+
+async def send_invoice_email(invoice, client):
+    """Backward compatibility alias for send_new_invoice_email."""
+    return await send_new_invoice_email(invoice, client)
+
+
+async def send_receipt_email(payment, invoice, client):
+    """Backward compatibility alias for send_payment_received_email."""
+    return await send_payment_received_email(payment, invoice, client)
+
+
+async def send_cc_declined_email(client):
+    """Backward compatibility alias for send_payment_failed_email."""
+    return await send_payment_failed_email(client)
+
+
+async def send_late_fee_notice_email(invoice, client):
+    """Send late fee notice. Alias that uses past_due template."""
+    return await send_template_email(
+        to_email=client.email,
+        template_type=EmailTemplateType.invoice_past_due,
+        context={
+            "client_name": client.company_name,
+            "invoice_number": invoice.invoice_number,
+            "balance_due": f"${invoice.balance_due:.2f}",
+            "due_date": invoice.due_date.strftime("%B %d, %Y"),
+            "company_name": settings.company_name or "Our Company",
+        },
+        to_name=client.company_name,
+    )
+
+
+async def send_deletion_warning_email(client):
+    """Send account deletion warning. Alias that uses cancellation template."""
+    return await send_template_email(
+        to_email=client.email,
+        template_type=EmailTemplateType.cancellation_invoice,
+        context={
+            "client_name": client.company_name,
+            "amount_due": f"${client.account_balance:.2f}",
+            "company_name": settings.company_name or "Our Company",
+        },
         to_name=client.company_name,
     )
