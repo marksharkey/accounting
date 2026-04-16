@@ -490,7 +490,8 @@ async def create_invoice(
         raise HTTPException(status_code=404, detail="Client not found")
 
     invoice_number = next_invoice_number(db)
-    previous_balance = float(client.account_balance) if client.account_balance else 0.0
+    # Note: previous_balance will be set when invoice is sent, not at creation time
+    # This ensures it reflects the actual balance when the invoice is issued
     invoice = models.Invoice(
         invoice_number=invoice_number,
         client_id=data.client_id,
@@ -499,7 +500,7 @@ async def create_invoice(
         status=data.status,
         autocc_verified=data.autocc_verified,
         autocc_transaction_id=data.autocc_transaction_id,
-        previous_balance=previous_balance,
+        previous_balance=0.0,  # Will be updated when sent
         notes=data.notes,
         internal_notes=data.internal_notes,
         created_by_id=current_user.id,
@@ -711,8 +712,11 @@ async def send_invoice(
     invoice.status = models.InvoiceStatus.sent
     invoice.sent_date = datetime.utcnow()
 
-    # Update client account balance only if transitioning from draft/ready to sent
+    # Update client account balance and previous_balance only if transitioning from draft/ready to sent
     if old_status in [models.InvoiceStatus.draft, models.InvoiceStatus.ready]:
+        # Set previous_balance to current account_balance (what they owed before this invoice)
+        invoice.previous_balance = Decimal(str(client.account_balance or 0))
+        # Add invoice total to account_balance
         client.account_balance = Decimal(str(client.account_balance or 0)) + Decimal(str(invoice.total))
         db.add(client)
 
@@ -753,9 +757,12 @@ def mark_invoice_sent(
     invoice.status = models.InvoiceStatus.sent
     invoice.sent_date = datetime.utcnow()
 
-    # Update client account balance only if transitioning from draft/ready to sent
+    # Update client account balance and previous_balance only if transitioning from draft/ready to sent
     if old_status in [models.InvoiceStatus.draft, models.InvoiceStatus.ready]:
         client = invoice.client
+        # Set previous_balance to current account_balance (what they owed before this invoice)
+        invoice.previous_balance = Decimal(str(client.account_balance or 0))
+        # Add invoice total to account_balance
         client.account_balance = Decimal(str(client.account_balance or 0)) + Decimal(str(invoice.total))
         db.add(client)
 
