@@ -290,14 +290,18 @@ async def process_anet_batch(
 
         if item.paid:
             # Mark invoice as paid
+            # Calculate amount still owed before updating amount_paid
+            current_amount_paid = Decimal(str(invoice.amount_paid or 0))
+            remaining_amount = invoice.total - current_amount_paid
+
             invoice.status = models.InvoiceStatus.paid
             invoice.amount_paid = invoice.total
             invoice.balance_due = 0
             db.add(invoice)
             db.flush()
 
-            # Update client balance
-            client.account_balance -= invoice.total
+            # Update client balance - decrease by remaining amount owed
+            client.account_balance = Decimal(str(client.account_balance or 0)) - remaining_amount
             db.add(client)
             db.flush()
 
