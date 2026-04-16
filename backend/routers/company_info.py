@@ -128,7 +128,7 @@ def upload_logo(
             old_path.unlink()
 
     # Save new logo
-    filename = f"company_logo_{datetime.now().timestamp()}{file_ext}"
+    filename = f"company_logo_{datetime.utcnow().timestamp()}{file_ext}"
     file_path = UPLOADS_DIR / filename
 
     with open(file_path, "wb") as buffer:

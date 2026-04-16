@@ -261,7 +261,7 @@ async def send_payment_received_email(payment, invoice, client):
             "client_name": client.company_name,
             "invoice_number": invoice.invoice_number,
             "payment_amount": f"${payment.amount:.2f}",
-            "payment_date": datetime.now().strftime("%B %d, %Y"),
+            "payment_date": datetime.utcnow().strftime("%B %d, %Y"),
             "company_name": settings.company_name or "Our Company",
         },
         to_name=client.company_name,

@@ -217,7 +217,7 @@ def update_credit_memo_status(
 
     memo.status = status
     if status == models.CreditMemoStatus.sent:
-        memo.sent_date = datetime.now()
+        memo.sent_date = datetime.utcnow()
 
     db.commit()
     db.refresh(memo)
@@ -237,7 +237,7 @@ async def send_credit_memo(
 
     # Update status and sent date
     memo.status = models.CreditMemoStatus.sent
-    memo.sent_date = datetime.now()
+    memo.sent_date = datetime.utcnow()
     db.commit()
 
     # Send email asynchronously
@@ -264,7 +264,7 @@ def mark_credit_memo_sent(
         raise HTTPException(status_code=404, detail="Credit memo not found")
 
     memo.status = models.CreditMemoStatus.sent
-    memo.sent_date = datetime.now()
+    memo.sent_date = datetime.utcnow()
     db.commit()
     db.refresh(memo)
     return memo
