@@ -169,6 +169,8 @@ async def send_invoice_email_with_type(invoice, client, template_type=EmailTempl
     """Send invoice email using specified template type."""
     try:
         from services.pdf import generate_invoice_pdf
+        # Note: db not passed here - email attachments use default company info
+        # For real company info, use the PDF download endpoints in the routers
         pdf_bytes = generate_invoice_pdf(invoice, client)
 
         return await send_template_email(
@@ -270,6 +272,8 @@ async def send_credit_memo_email(memo, client):
     """Send credit memo notification."""
     try:
         from services.pdf import generate_credit_memo_pdf
+        # Note: db not passed here - email attachments use default company info
+        # For real company info, use the PDF download endpoints in the routers
         pdf_bytes = generate_credit_memo_pdf(memo, client)
 
         return await send_template_email(
