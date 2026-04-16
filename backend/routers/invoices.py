@@ -20,6 +20,30 @@ settings = get_settings()
 router = APIRouter()
 
 
+# Valid invoice status transitions
+VALID_STATUS_TRANSITIONS = {
+    models.InvoiceStatus.draft: {models.InvoiceStatus.ready, models.InvoiceStatus.sent, models.InvoiceStatus.voided},
+    models.InvoiceStatus.ready: {models.InvoiceStatus.sent, models.InvoiceStatus.voided},
+    models.InvoiceStatus.sent: {models.InvoiceStatus.partially_paid, models.InvoiceStatus.paid, models.InvoiceStatus.voided},
+    models.InvoiceStatus.partially_paid: {models.InvoiceStatus.paid, models.InvoiceStatus.voided},
+    models.InvoiceStatus.paid: set(),  # Terminal state
+    models.InvoiceStatus.voided: set(),  # Terminal state
+}
+
+
+def validate_status_transition(current_status: models.InvoiceStatus, new_status: models.InvoiceStatus) -> tuple[bool, str]:
+    """Validate if a status transition is allowed. Returns (is_valid, reason)"""
+    if current_status == new_status:
+        return True, "No change needed"
+
+    allowed_transitions = VALID_STATUS_TRANSITIONS.get(current_status, set())
+    if new_status not in allowed_transitions:
+        allowed = ", ".join(s.value for s in allowed_transitions) if allowed_transitions else "none"
+        return False, f"Cannot transition from {current_status.value} to {new_status.value}. Allowed transitions: {allowed}"
+
+    return True, ""
+
+
 class LineItemIn(BaseModel):
     description: str
     quantity: float = 1.0
@@ -540,6 +564,12 @@ async def update_invoice_status(
     invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
+
+    # Validate transition
+    is_valid, reason = validate_status_transition(invoice.status, new_status)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=reason)
+
     old_status = invoice.status
     invoice.status = new_status
     log = models.ActivityLog(
@@ -646,6 +676,11 @@ async def send_invoice(
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
+    # Validate can transition to sent
+    is_valid, reason = validate_status_transition(invoice.status, models.InvoiceStatus.sent)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=reason)
+
     client = invoice.client
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -663,8 +698,8 @@ async def send_invoice(
     invoice.status = models.InvoiceStatus.sent
     invoice.sent_date = datetime.utcnow()
 
-    # Update client account balance only if transitioning from draft to sent
-    if old_status == models.InvoiceStatus.draft:
+    # Update client account balance only if transitioning from draft/ready to sent
+    if old_status in [models.InvoiceStatus.draft, models.InvoiceStatus.ready]:
         client.account_balance = Decimal(str(client.account_balance or 0)) + Decimal(str(invoice.total))
         db.add(client)
 
@@ -696,12 +731,17 @@ def mark_invoice_sent(
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
+    # Validate can transition to sent
+    is_valid, reason = validate_status_transition(invoice.status, models.InvoiceStatus.sent)
+    if not is_valid:
+        raise HTTPException(status_code=400, detail=reason)
+
     old_status = invoice.status
     invoice.status = models.InvoiceStatus.sent
     invoice.sent_date = datetime.utcnow()
 
-    # Update client account balance only if transitioning from draft to sent
-    if old_status == models.InvoiceStatus.draft:
+    # Update client account balance only if transitioning from draft/ready to sent
+    if old_status in [models.InvoiceStatus.draft, models.InvoiceStatus.ready]:
         client = invoice.client
         client.account_balance = Decimal(str(client.account_balance or 0)) + Decimal(str(invoice.total))
         db.add(client)
