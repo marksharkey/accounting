@@ -431,18 +431,31 @@ def duplicate_previous_invoice(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Get line items from the most recent invoice for this client."""
+    """Get line items from the most recent non-paid invoice for this client."""
     client = db.query(models.Client).filter_by(id=client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    # Get the most recent invoice
+    # Get the most recent non-paid, non-voided invoice
+    # Prefer draft/ready > sent/partially_paid
     previous_invoice = db.query(models.Invoice).filter(
-        models.Invoice.client_id == client_id
+        models.Invoice.client_id == client_id,
+        models.Invoice.status.in_([
+            models.InvoiceStatus.draft,
+            models.InvoiceStatus.ready,
+            models.InvoiceStatus.sent,
+            models.InvoiceStatus.partially_paid
+        ])
     ).order_by(models.Invoice.created_date.desc()).first()
 
     if not previous_invoice:
-        raise HTTPException(status_code=404, detail="No previous invoice found")
+        # Fall back to most recent paid/voided if no open invoices exist
+        previous_invoice = db.query(models.Invoice).filter(
+            models.Invoice.client_id == client_id
+        ).order_by(models.Invoice.created_date.desc()).first()
+
+        if not previous_invoice:
+            raise HTTPException(status_code=404, detail="No previous invoice found")
 
     # Extract line items from previous invoice
     line_items = [
