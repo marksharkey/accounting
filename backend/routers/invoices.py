@@ -663,6 +663,11 @@ async def send_invoice(
     invoice.status = models.InvoiceStatus.sent
     invoice.sent_date = datetime.utcnow()
 
+    # Update client account balance only if transitioning from draft to sent
+    if old_status == models.InvoiceStatus.draft:
+        client.account_balance = Decimal(str(client.account_balance or 0)) + Decimal(str(invoice.total))
+        db.add(client)
+
     log = models.ActivityLog(
         entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
         action="sent", performed_by_id=current_user.id,
@@ -691,8 +696,15 @@ def mark_invoice_sent(
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
+    old_status = invoice.status
     invoice.status = models.InvoiceStatus.sent
     invoice.sent_date = datetime.utcnow()
+
+    # Update client account balance only if transitioning from draft to sent
+    if old_status == models.InvoiceStatus.draft:
+        client = invoice.client
+        client.account_balance = Decimal(str(client.account_balance or 0)) + Decimal(str(invoice.total))
+        db.add(client)
 
     log = models.ActivityLog(
         entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
@@ -760,8 +772,18 @@ def void_invoice(
         raise HTTPException(status_code=404, detail="Invoice not found")
     if invoice.status == models.InvoiceStatus.paid:
         raise HTTPException(status_code=400, detail="Cannot void a paid invoice. Issue a credit memo instead.")
+
+    old_status = invoice.status
     invoice.status = models.InvoiceStatus.voided
     invoice.voided_reason = reason
+
+    # Update client account balance: remove the invoice amount if it was sent
+    if old_status in [models.InvoiceStatus.sent, models.InvoiceStatus.partially_paid]:
+        client = invoice.client
+        # Decrease by remaining balance due (what client still owes on this invoice)
+        client.account_balance = Decimal(str(client.account_balance or 0)) - Decimal(str(invoice.balance_due or 0))
+        db.add(client)
+
     log = models.ActivityLog(
         entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
         action="voided", performed_by_id=current_user.id,
