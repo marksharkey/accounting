@@ -12,6 +12,18 @@ from models import EmailTemplate, EmailTemplateType
 settings = get_settings()
 
 
+def _get_email_recipient(to_email: str, to_name: str = None) -> tuple[str, str]:
+    """
+    Get the actual recipient email address, redirecting to dev email if in dev mode.
+    Returns (actual_to_email, actual_to_name)
+    """
+    if settings.dev_mode:
+        if to_email != settings.dev_email:  # Only log if not already dev email
+            print(f"[DEV MODE] Redirecting email from '{to_email}' to '{settings.dev_email}'")
+        return settings.dev_email, "Developer"
+    return to_email, to_name
+
+
 async def _get_template(template_type: EmailTemplateType):
     """Get a template from database, with fallback to default template."""
     db = SessionLocal()
@@ -62,6 +74,9 @@ async def send_email(
     if not settings.smtp_host or not settings.smtp_user:
         print(f"Email not configured. Skipping: {subject} to {to_email}")
         return False
+
+    # Redirect to dev email if in dev mode
+    to_email, to_name = _get_email_recipient(to_email, to_name)
 
     try:
         # Create email

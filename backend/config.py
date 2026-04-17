@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     smtp_from_name: str = "PrecisionPros Billing"
     smtp_from_email: str = ""
 
+    # Dev Mode
+    dev_mode: bool = False
+    dev_email: str = "mark@precisionpros.com"
+
     # Invoice Settings
     invoice_prefix: str = "PP"
     credit_memo_prefix: str = "PP-CM"
@@ -36,6 +40,11 @@ class Settings(BaseSettings):
     invoice_send_day: int = 20
     late_fee_day: int = 10
     suspension_day: int = 20
+
+    # Cloudflare
+    cloudflare_api_key: str = ""
+    cloudflare_api_email: str = ""
+    cloudflare_account_id: str = ""
 
     @property
     def database_url(self) -> str:

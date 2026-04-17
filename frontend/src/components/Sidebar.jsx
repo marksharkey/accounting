@@ -13,6 +13,7 @@ import {
   LogOut,
   Zap,
   Mail,
+  Globe,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -91,6 +92,7 @@ export default function Sidebar() {
 
   const clientsItems = [
     { label: 'Clients', href: '/clients', icon: Users },
+    { label: 'Domains', href: '/domains', icon: Globe },
   ];
 
   const businessItems = [

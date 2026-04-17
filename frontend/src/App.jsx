@@ -18,6 +18,7 @@ import ExpensesPage from './pages/ExpensesPage';
 import ReportsPage from './pages/ReportsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
+import DomainsPage from './pages/DomainsPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -167,6 +168,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <EmailTemplatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/domains"
+            element={
+              <ProtectedRoute>
+                <DomainsPage />
               </ProtectedRoute>
             }
           />

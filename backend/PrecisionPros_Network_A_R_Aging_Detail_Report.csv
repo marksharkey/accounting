@@ -1,6 +1,6 @@
 A/R Aging Detail Report,,,,,,,
 PrecisionPros Network,,,,,,,
-"As of Apr 14, 2026",,,,,,,
+"As of Apr 17, 2026",,,,,,,
 
 ,Date,Transaction type,Num,Customer full name,Due date,Amount,Open balance
 91 or more days past due,,,,,,,
@@ -116,32 +116,28 @@ Total for 61 - 90 days past due,,,,,,$80.00,$80.00
 ,02/13/2026,Invoice,49157,eWareness Inc.,03/01/2026,639.45,13.64
 ,02/13/2026,Invoice,49158,sancarlosproperty,03/01/2026,244.95,25.00
 ,03/01/2026,Invoice,49204,Get Green Earth(2),03/01/2026,75.00,75.00
+,03/05/2026,Payment,,zhost,03/05/2026,-355.00,-45.20
 ,03/09/2026,Journal Entry,9,Get Green Earth(2),03/09/2026,-50.00,-50.00
-Total for 31 - 60 days past due,,,,,,$199.40,$37.64
-1 - 30 days past due,,,,,,,
 ,03/17/2026,Payment,,Fish and Game,03/17/2026,-384.90,-20.00
+Total for 31 - 60 days past due,,,,,,-$540.50,-$27.56
+1 - 30 days past due,,,,,,,
 ,03/19/2026,Journal Entry,16,Digital Essentials,03/19/2026,-50.00,-50.00
 ,03/19/2026,Journal Entry,19,Private Jet Trading,03/19/2026,-159.66,-159.66
 ,03/29/2026,Invoice,49254,ravenmoonbooks.com,03/30/2026,100.00,100.00
 ,03/09/2026,Invoice,49236,Hawaii Health Guide,04/01/2026,260.00,260.00
-,03/09/2026,Invoice,49246,edgepowersolutions.net,04/01/2026,205.00,205.00
-,03/10/2026,Invoice,49248,"ehappyhour.com, Inc.",04/01/2026,185.00,185.00
 ,03/10/2026,Invoice,49250,Fish and Game,04/01/2026,179.95,20.00
 ,03/29/2026,Invoice,49252,Don Adair,04/01/2026,15.00,15.00
 ,04/01/2026,Journal Entry,19R,Private Jet Trading,04/01/2026,159.66,159.66
 ,04/01/2026,Journal Entry,16R,Digital Essentials,04/01/2026,50.00,50.00
-,04/01/2026,Invoice,49290,M&R & Sons,04/01/2026,49.95,49.95
-,04/01/2026,Invoice,49328,SteamworksAZ,04/01/2026,54.90,54.90
 ,04/01/2026,Payment,,psgraphics,04/01/2026,-218.00,-75.00
 ,04/05/2026,Journal Entry,21,psgraphics,04/05/2026,75.00,75.00
 ,04/10/2026,Invoice,49360,Mahon Ranch,04/10/2026,115.50,115.50
-Total for 1 - 30 days past due,,,,,,$637.40,$985.35
+Total for 1 - 30 days past due,,,,,,$527.45,$510.50
 CURRENT,,,,,,,
 ,04/10/2026,Invoice,49315,Atlantis Travel Agency,05/01/2026,178.00,178.00
 ,04/10/2026,Invoice,49339,"ehappyhour.com, Inc.",05/01/2026,160.00,160.00
 ,04/10/2026,Invoice,49340,Hawaii Health Guide,05/01/2026,245.00,245.00
 ,04/10/2026,Invoice,49341,Walsh Appraisal,05/01/2026,75.00,75.00
-,04/10/2026,Invoice,49342,hawthornepp,05/01/2026,97.00,97.00
 ,04/10/2026,Invoice,49344,"AZ Tech Engineers, Inc.",05/01/2026,240.00,240.00
 ,04/10/2026,Invoice,49345,BJSA,05/01/2026,45.00,45.00
 ,04/10/2026,Invoice,49346,Contractors Parts and Supply,05/01/2026,275.00,275.00
@@ -156,9 +152,9 @@ CURRENT,,,,,,,
 ,04/10/2026,Invoice,49357,"Sommer, Eric",05/01/2026,90.00,90.00
 ,04/10/2026,Invoice,49358,Lombardcompany.com,05/01/2026,79.95,79.95
 ,04/10/2026,Invoice,49359,Alan Hoffberg,05/01/2026,9.95,9.95
-Total for CURRENT,,,,,,"$5,163.66","$5,163.66"
-,TOTAL,,,,,"-$1,156.99","$6,422.20"
+Total for CURRENT,,,,,,"$5,066.66","$5,066.66"
+,TOTAL,,,,,"-$2,103.84","$5,785.15"
 
 
 
-" Tuesday, April 14, 2026 07:27 PM GMTZ",,,,,,,
+" Friday, April 17, 2026 08:09 PM GMTZ",,,,,,,

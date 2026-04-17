@@ -196,6 +196,7 @@ class Client(Base):
     payments = relationship("Payment", back_populates="client")
     collections_events = relationship("CollectionsEvent", back_populates="client")
     activity_logs = relationship("ActivityLog", back_populates="client")
+    domains = relationship("Domain", back_populates="client")
 
 
 # ─────────────────────────────────────────────
@@ -448,6 +449,35 @@ class Expense(Base):
 # ─────────────────────────────────────────────
 # Collections Events
 # ─────────────────────────────────────────────
+
+class Registrar(str, enum.Enum):
+    cloudflare = "cloudflare"
+    godaddy = "godaddy"
+    hosting_com = "hosting_com"
+    other = "other"
+
+
+# ─────────────────────────────────────────────
+# Domains
+# ─────────────────────────────────────────────
+
+class Domain(Base):
+    __tablename__ = "domains"
+
+    id = Column(Integer, primary_key=True, index=True)
+    domain_name = Column(String(255), nullable=False, unique=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True)
+    registrar = Column(Enum(Registrar), nullable=False, default=Registrar.cloudflare)
+    expiration_date = Column(Date, nullable=False)
+    renewal_cost = Column(Numeric(10, 2), nullable=False, default=25.00)
+    auto_renew = Column(Boolean, default=False)
+    cloudflare_id = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    client = relationship("Client", back_populates="domains")
+
 
 class CollectionsEvent(Base):
     __tablename__ = "collections_events"

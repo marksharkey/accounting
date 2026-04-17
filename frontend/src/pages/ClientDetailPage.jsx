@@ -137,6 +137,10 @@ export default function ClientDetailPage() {
   };
 
   const handleSelectClient = (clientId) => {
+    queryClient.invalidateQueries({ queryKey: ['clients', clientId] });
+    queryClient.invalidateQueries({ queryKey: ['clients', clientId, 'schedules'] });
+    queryClient.invalidateQueries({ queryKey: ['clients', clientId, 'invoices'] });
+    queryClient.invalidateQueries({ queryKey: ['clients', clientId, 'activity'] });
     navigate(`/clients/${clientId}`);
   };
 

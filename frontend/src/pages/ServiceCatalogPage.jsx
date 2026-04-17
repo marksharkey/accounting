@@ -10,6 +10,8 @@ import AddServiceModal from '../components/AddServiceModal';
 export default function ServiceCatalogPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
+  const [sortColumn, setSortColumn] = useState('name');
+  const [sortDirection, setSortDirection] = useState('asc');
 
   const { data: servicesData, isLoading } = useQuery({
     queryKey: ['services'],
@@ -40,6 +42,55 @@ export default function ServiceCatalogPage() {
     setSelectedService(null);
   };
 
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortedServices = () => {
+    const sorted = [...services].sort((a, b) => {
+      let aVal = a[sortColumn];
+      let bVal = b[sortColumn];
+
+      // Handle numeric columns
+      if (sortColumn === 'default_amount') {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // Handle string comparisons
+      aVal = String(aVal || '').toLowerCase();
+      bVal = String(bVal || '').toLowerCase();
+      if (sortDirection === 'asc') {
+        return aVal.localeCompare(bVal);
+      } else {
+        return bVal.localeCompare(aVal);
+      }
+    });
+    return sorted;
+  };
+
+  const SortableHeader = ({ column, label }) => {
+    const isActive = sortColumn === column;
+    const indicator = isActive ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : '';
+    return (
+      <TableHead
+        onClick={() => handleSort(column)}
+        className="cursor-pointer select-none hover:bg-gray-100"
+        title={`Sort by ${label}`}
+      >
+        {label}{indicator}
+      </TableHead>
+    );
+  };
+
+  const sortedServices = getSortedServices();
+
   return (
     <Layout title="Service Catalog">
       <div className="mb-6">
@@ -52,16 +103,16 @@ export default function ServiceCatalogPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Default Amount</TableHead>
-              <TableHead>Default Cycle</TableHead>
+              <SortableHeader column="name" label="Name" />
+              <SortableHeader column="category" label="Category" />
+              <SortableHeader column="default_amount" label="Default Amount" />
+              <SortableHeader column="default_cycle" label="Default Cycle" />
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {services && services.length > 0 ? (
-              services.map((service) => (
+            {sortedServices && sortedServices.length > 0 ? (
+              sortedServices.map((service) => (
                 <TableRow key={service.id}>
                   <TableCell className="font-medium">{service.name}</TableCell>
                   <TableCell>{service.category || '-'}</TableCell>
