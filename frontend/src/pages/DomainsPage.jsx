@@ -77,9 +77,6 @@ export default function DomainsPage() {
   return (
     <Layout title="Domains">
       <div className="space-y-3">
-        {/* Cloudflare Alert */}
-        <CloudflareStatus onSettings={() => setShowCloudflareSettings(true)} />
-
         {/* Toolbar */}
         <div className="flex items-center gap-2">
           <Button onClick={() => setIsAddDomainOpen(true)} className="!px-3 !py-1.5 !text-sm">
@@ -227,21 +224,6 @@ export default function DomainsPage() {
         )}
       </div>
     </Layout>
-  );
-}
-
-function CloudflareStatus({ onSettings }) {
-  return (
-    <div className="p-3 bg-blue-50 border border-blue-200 rounded text-[13px] text-blue-800 flex items-start gap-2">
-      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-      <div className="flex-1">
-        <div className="font-medium">Cloudflare Setup</div>
-        <div className="text-[12px] mt-1">Configure your Cloudflare API credentials to auto-sync domains (optional). Manual CSV import also available.</div>
-      </div>
-      <Button onClick={onSettings} variant="secondary" className="!px-2 !py-0.5 !text-[11px] flex-shrink-0">
-        Setup
-      </Button>
-    </div>
   );
 }
 
