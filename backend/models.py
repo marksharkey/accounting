@@ -219,7 +219,7 @@ class BillingSchedule(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     client = relationship("Client", back_populates="billing_schedules")
-    line_items = relationship("BillingScheduleLineItem", back_populates="billing_schedule", cascade="all, delete-orphan")
+    line_items = relationship("BillingScheduleLineItem", back_populates="billing_schedule", cascade="all, delete-orphan", order_by="BillingScheduleLineItem.sort_order")
 
 
 class BillingScheduleLineItem(Base):
@@ -228,6 +228,7 @@ class BillingScheduleLineItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     billing_schedule_id = Column(Integer, ForeignKey("billing_schedules.id"), nullable=False)
     service_id = Column(Integer, ForeignKey("service_catalog.id"), nullable=True)
+    domain_id = Column(Integer, ForeignKey("domains.id"), nullable=True)
 
     description = Column(String(255), nullable=False)
     quantity = Column(Numeric(10, 4), default=1.0000)
@@ -237,6 +238,7 @@ class BillingScheduleLineItem(Base):
 
     billing_schedule = relationship("BillingSchedule", back_populates="line_items")
     service = relationship("ServiceCatalog")
+    domain = relationship("Domain")
 
 
 # ─────────────────────────────────────────────
@@ -274,7 +276,7 @@ class Invoice(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     client = relationship("Client", back_populates="invoices")
-    line_items = relationship("InvoiceLineItem", back_populates="invoice", cascade="all, delete-orphan")
+    line_items = relationship("InvoiceLineItem", back_populates="invoice", cascade="all, delete-orphan", order_by="InvoiceLineItem.sort_order")
     payments = relationship("Payment", back_populates="invoice")
     credit_memos = relationship("CreditMemo", back_populates="applied_invoice")
     collections_events = relationship("CollectionsEvent", back_populates="invoice")
@@ -327,7 +329,7 @@ class Estimate(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     client = relationship("Client")
-    line_items = relationship("EstimateLineItem", back_populates="estimate", cascade="all, delete-orphan")
+    line_items = relationship("EstimateLineItem", back_populates="estimate", cascade="all, delete-orphan", order_by="EstimateLineItem.sort_order")
     converted_invoice = relationship("Invoice")
     created_by = relationship("User")
 
@@ -375,7 +377,7 @@ class CreditMemo(Base):
 
     client = relationship("Client", back_populates="credit_memos")
     applied_invoice = relationship("Invoice", back_populates="credit_memos")
-    line_items = relationship("CreditLineItem", back_populates="credit_memo", cascade="all, delete-orphan")
+    line_items = relationship("CreditLineItem", back_populates="credit_memo", cascade="all, delete-orphan", order_by="CreditLineItem.sort_order")
     created_by = relationship("User")
 
 

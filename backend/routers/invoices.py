@@ -443,28 +443,110 @@ def prefill_invoice(
         models.BillingSchedule.next_bill_date <= due_date
     ).all()
 
-    # Extract line items from matching billing schedules
-    line_items = []
+    # Extract line items from matching billing schedules with cycle info
     schedule_ids = []
+    items_with_cycle = []
     for schedule in schedules:
         schedule_ids.append(schedule.id)
         for item in schedule.line_items:
-            line_items.append({
+            items_with_cycle.append({
+                "cycle_order": _get_cycle_sort_order(schedule.cycle),
+                "cycle": schedule.cycle,
                 "description": item.description,
                 "quantity": float(item.quantity),
                 "unit_amount": float(item.unit_amount),
                 "amount": float(item.amount),
                 "service_id": item.service_id,
+                "domain_id": item.domain_id,
+                "sort_order": item.sort_order,
             })
 
-    # Sort by description
-    line_items = sorted(line_items, key=lambda x: x["description"])
+    # Group by cycle, with domains grouped together at the end of each cycle
+    line_items = []
+    current_cycle = None
+    domain_items = []
+    domain_total = Decimal("0.00")
+
+    # Sort by cycle first, then by original sort_order (domains last within cycle)
+    items_with_cycle.sort(key=lambda x: (x["cycle_order"], x["domain_id"] is not None, x["sort_order"]))
+
+    for item in items_with_cycle:
+        # If we switched cycles or hit a non-domain after domains, flush accumulated domains
+        if current_cycle is not None and item["cycle"] != current_cycle and domain_items:
+            domain_names = ", ".join([_extract_domain_name(d["description"]) for d in domain_items])
+            line_items.append({
+                "description": f"Domain renewals: {domain_names}",
+                "quantity": float(len(domain_items)),
+                "unit_amount": float(domain_total / len(domain_items)),
+                "amount": float(domain_total),
+                "service_id": None,
+            })
+            domain_items = []
+            domain_total = Decimal("0.00")
+
+        current_cycle = item["cycle"]
+
+        if item["domain_id"]:
+            domain_items.append(item)
+            domain_total += Decimal(str(item["amount"]))
+        else:
+            # Flush any domain items before adding a non-domain in same cycle
+            if domain_items:
+                domain_names = ", ".join([_extract_domain_name(d["description"]) for d in domain_items])
+                line_items.append({
+                    "description": f"Domain renewals: {domain_names}",
+                    "quantity": float(len(domain_items)),
+                    "unit_amount": float(domain_total / len(domain_items)),
+                    "amount": float(domain_total),
+                    "service_id": None,
+                })
+                domain_items = []
+                domain_total = Decimal("0.00")
+
+            line_items.append({
+                "description": item["description"],
+                "quantity": item["quantity"],
+                "unit_amount": item["unit_amount"],
+                "amount": item["amount"],
+                "service_id": item["service_id"],
+            })
+
+    # Add any remaining domain items
+    if domain_items:
+        domain_names = ", ".join([_extract_domain_name(d["description"]) for d in domain_items])
+        line_items.append({
+            "description": f"Domain renewals: {domain_names}",
+            "quantity": float(len(domain_items)),
+            "unit_amount": float(domain_total / len(domain_items)),
+            "amount": float(domain_total),
+            "service_id": None,
+        })
+
     return {
         "client": client,
         "suggested_due_date": due_date,
         "line_items": line_items,
         "billing_schedule_ids": schedule_ids,
     }
+
+
+def _extract_domain_name(description: str) -> str:
+    """Extract domain name from 'Domain renewal: example.com' format."""
+    if description.startswith("Domain renewal: "):
+        return description[len("Domain renewal: "):]
+    return description
+
+
+def _get_cycle_sort_order(cycle: models.BillingCycle) -> int:
+    """Return sort order for billing cycles (monthly first, then others)."""
+    cycle_order = {
+        models.BillingCycle.monthly: 0,
+        models.BillingCycle.quarterly: 1,
+        models.BillingCycle.semi_annual: 2,
+        models.BillingCycle.annual: 3,
+        models.BillingCycle.multi_year: 4,
+    }
+    return cycle_order.get(cycle, 999)
 
 
 @router.get("/duplicate-previous/{client_id}")
