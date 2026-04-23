@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
@@ -333,41 +333,41 @@ export default function ReportsPage() {
 
                   <h3 className="text-lg font-semibold mb-4 text-gray-900">Expenses by Category</h3>
                   {plData?.expenses && plData.expenses.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Account</TableHead>
-                          <TableHead>Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {plData.expenses.map((expense, idx) => (
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr>
+                          <th className="text-left font-semibold text-gray-900 py-2 px-0">Account</th>
+                          <th className="text-right font-semibold text-gray-900 py-2 px-0">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plData.expenses.map((expense, idx) =>
                           expense.type === 'category' ? (
-                            <div key={idx} className="border-b">
-                              <TableRow className="bg-gray-50">
-                                <TableCell className="font-semibold text-gray-700">{expense.name}</TableCell>
-                                <TableCell className="text-right font-mono text-gray-600"></TableCell>
-                              </TableRow>
+                            <React.Fragment key={idx}>
+                              <tr className="bg-gray-50 border-b border-gray-200">
+                                <td className="font-semibold text-gray-700 py-2 px-0">{expense.name}</td>
+                                <td className="text-right text-gray-600 py-2 px-0"></td>
+                              </tr>
                               {expense.items.map((item, itemIdx) => (
-                                <TableRow key={`${idx}-${itemIdx}`} className="pl-8">
-                                  <TableCell className="pl-8 text-gray-700">{item.line_item || item.name}</TableCell>
-                                  <TableCell className="text-right font-mono">${item.amount.toFixed(2)}</TableCell>
-                                </TableRow>
+                                <tr key={`${idx}-${itemIdx}`} className="border-b border-gray-100">
+                                  <td className="text-gray-700 py-2 px-0 pl-6">{item.line_item || item.name}</td>
+                                  <td className="text-right font-mono text-gray-700 py-2 px-0">${item.amount.toFixed(2)}</td>
+                                </tr>
                               ))}
-                              <TableRow className="bg-gray-100 font-semibold">
-                                <TableCell className="text-gray-800">Total for {expense.name}</TableCell>
-                                <TableCell className="text-right font-mono text-gray-800">${expense.subtotal.toFixed(2)}</TableCell>
-                              </TableRow>
-                            </div>
+                              <tr className="bg-gray-100 border-b border-gray-300 font-semibold">
+                                <td className="text-gray-800 py-2 px-0">Total for {expense.name}</td>
+                                <td className="text-right font-mono text-gray-800 py-2 px-0">${expense.subtotal.toFixed(2)}</td>
+                              </tr>
+                            </React.Fragment>
                           ) : (
-                            <TableRow key={idx}>
-                              <TableCell>{expense.name}</TableCell>
-                              <TableCell className="text-right font-mono">${expense.amount.toFixed(2)}</TableCell>
-                            </TableRow>
+                            <tr key={idx} className="border-b border-gray-100">
+                              <td className="text-gray-900 py-2 px-0">{expense.name}</td>
+                              <td className="text-right font-mono text-gray-700 py-2 px-0">${expense.amount.toFixed(2)}</td>
+                            </tr>
                           )
-                        ))}
-                      </TableBody>
-                    </Table>
+                        )}
+                      </tbody>
+                    </table>
                   ) : (
                     <p className="text-gray-500 italic py-4">No expenses recorded for this period.</p>
                   )}

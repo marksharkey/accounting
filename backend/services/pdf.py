@@ -330,6 +330,7 @@ def generate_pl_pdf(data, company_info=None):
         from_date = data['from_date'].strftime("%b %d, %Y")
         to_date = data['to_date'].strftime("%b %d, %Y")
         now = datetime.now()
+        generated_date = now.strftime("%b %d, %Y at %I:%M %p")
 
         # Render template
         template = env.get_template('profit_loss.html')
@@ -342,13 +343,13 @@ def generate_pl_pdf(data, company_info=None):
             from_date=from_date,
             to_date=to_date,
             income=data['income'],
-            total_income=f"${data['total_income']:.2f}",
+            total_income=data['total_income'],
             expenses=data['expenses'],
-            total_expenses=f"${data['total_expenses']:.2f}",
+            total_expenses=data['total_expenses'],
             net_income=data['net_income'],
             net_income_formatted=f"${abs(data['net_income']):.2f}",
             is_profitable=data['net_income'] >= 0,
-            now=now,
+            generated_date=generated_date,
         )
 
         # Convert HTML to PDF

@@ -230,7 +230,7 @@
             <table class="line-items">
                 <tr class="subtotal-row">
                     <td class="description">Total Income</td>
-                    <td class="amount">{{ total_income }}</td>
+                    <td class="amount">${{ "%.2f"|format(total_income) }}</td>
                 </tr>
             </table>
         </div>
@@ -241,10 +241,31 @@
             {% if expenses %}
                 <table class="line-items">
                     {% for item in expenses %}
-                    <tr>
-                        <td class="description">{{ item.name }}</td>
-                        <td class="amount">${{ "%.2f"|format(item.amount) }}</td>
-                    </tr>
+                        {% if item.type == 'category' %}
+                            <!-- Category header -->
+                            <tr style="background-color: #f9f9f9; font-weight: 600;">
+                                <td class="description">{{ item.name }}</td>
+                                <td class="amount"></td>
+                            </tr>
+                            <!-- Category items -->
+                            {% for subitem in item['items'] %}
+                            <tr>
+                                <td class="description" style="padding-left: 24px;">{{ subitem.line_item or subitem.name }}</td>
+                                <td class="amount">${{ "%.2f"|format(subitem.amount) }}</td>
+                            </tr>
+                            {% endfor %}
+                            <!-- Category subtotal -->
+                            <tr class="subtotal-row">
+                                <td class="description">Total for {{ item.name }}</td>
+                                <td class="amount">${{ "%.2f"|format(item.subtotal) }}</td>
+                            </tr>
+                        {% else %}
+                            <!-- Single line item -->
+                            <tr>
+                                <td class="description">{{ item.name }}</td>
+                                <td class="amount">${{ "%.2f"|format(item.amount) }}</td>
+                            </tr>
+                        {% endif %}
                     {% endfor %}
                 </table>
             {% else %}
@@ -253,9 +274,10 @@
             <table class="line-items">
                 <tr class="subtotal-row">
                     <td class="description">Total Expenses</td>
-                    <td class="amount">{{ total_expenses }}</td>
+                    <td class="amount">${{ "%.2f"|format(total_expenses) }}</td>
                 </tr>
             </table>
+        </div>
         </div>
 
         <!-- Net Income -->
@@ -268,7 +290,7 @@
 
         <!-- Footer -->
         <div class="footer">
-            <p>This Profit & Loss statement was generated on {{ now.strftime("%b %d, %Y at %I:%M %p") }}</p>
+            <p>This Profit & Loss statement was generated on {{ generated_date }}</p>
         </div>
     </div>
 </body>
