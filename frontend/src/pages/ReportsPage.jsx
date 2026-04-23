@@ -342,10 +342,29 @@ export default function ReportsPage() {
                       </TableHeader>
                       <TableBody>
                         {plData.expenses.map((expense, idx) => (
-                          <TableRow key={idx}>
-                            <TableCell>{expense.name}</TableCell>
-                            <TableCell className="text-right font-mono">${expense.amount.toFixed(2)}</TableCell>
-                          </TableRow>
+                          expense.type === 'category' ? (
+                            <div key={idx} className="border-b">
+                              <TableRow className="bg-gray-50">
+                                <TableCell className="font-semibold text-gray-700">{expense.name}</TableCell>
+                                <TableCell className="text-right font-mono text-gray-600"></TableCell>
+                              </TableRow>
+                              {expense.items.map((item, itemIdx) => (
+                                <TableRow key={`${idx}-${itemIdx}`} className="pl-8">
+                                  <TableCell className="pl-8 text-gray-700">{item.line_item || item.name}</TableCell>
+                                  <TableCell className="text-right font-mono">${item.amount.toFixed(2)}</TableCell>
+                                </TableRow>
+                              ))}
+                              <TableRow className="bg-gray-100 font-semibold">
+                                <TableCell className="text-gray-800">Total for {expense.name}</TableCell>
+                                <TableCell className="text-right font-mono text-gray-800">${expense.subtotal.toFixed(2)}</TableCell>
+                              </TableRow>
+                            </div>
+                          ) : (
+                            <TableRow key={idx}>
+                              <TableCell>{expense.name}</TableCell>
+                              <TableCell className="text-right font-mono">${expense.amount.toFixed(2)}</TableCell>
+                            </TableRow>
+                          )
                         ))}
                       </TableBody>
                     </Table>

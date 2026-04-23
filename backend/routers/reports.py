@@ -166,16 +166,56 @@ def profit_loss(
         models.JournalEntry.gl_account_name
     ).order_by(models.JournalEntry.gl_account_code).all()
 
+    # Group expenses by category (A&G, Server Management Fees, etc.)
+    expenses_by_category = {}
+    for r in expense_results:
+        # Extract category from account name (prefix before ":")
+        if ':' in r.name:
+            category = r.name.split(':')[0]
+            line_item = r.name.split(':', 1)[1].strip()
+        else:
+            category = r.name
+            line_item = None
+
+        if category not in expenses_by_category:
+            expenses_by_category[category] = []
+
+        expenses_by_category[category].append({
+            "code": r.code,
+            "name": r.name,
+            "line_item": line_item,
+            "amount": float(r.total or 0)
+        })
+
+    # Build hierarchical expense structure
+    expense_data = []
+    for category in sorted(expenses_by_category.keys()):
+        items = expenses_by_category[category]
+
+        # If category has sub-items (contains colons), show as group
+        if any(':' in item['name'] for item in items):
+            expense_data.append({
+                "type": "category",
+                "name": category,
+                "items": items,
+                "subtotal": sum(item["amount"] for item in items)
+            })
+        else:
+            # Single item categories, add as individual lines
+            for item in items:
+                expense_data.append({
+                    "type": "line",
+                    "name": item["name"],
+                    "amount": item["amount"]
+                })
+
     total_expenses = sum(float(r.total or 0) for r in expense_results)
 
     return {
         "period": {"from": from_date, "to": to_date},
         "income": income_data,
         "total_income": total_income,
-        "expenses": [
-            {"code": r.code, "name": r.name, "amount": float(r.total or 0)}
-            for r in expense_results
-        ],
+        "expenses": expense_data,
         "total_expenses": total_expenses,
         "net_income": total_income - total_expenses,
     }
@@ -234,6 +274,49 @@ def profit_loss_pdf(
         models.JournalEntry.gl_account_name
     ).order_by(models.JournalEntry.gl_account_code).all()
 
+    # Group expenses by category (A&G, Server Management Fees, etc.)
+    expenses_by_category = {}
+    for r in expense_results:
+        # Extract category from account name (prefix before ":")
+        if ':' in r.name:
+            category = r.name.split(':')[0]
+            line_item = r.name.split(':', 1)[1].strip()
+        else:
+            category = r.name
+            line_item = None
+
+        if category not in expenses_by_category:
+            expenses_by_category[category] = []
+
+        expenses_by_category[category].append({
+            "code": r.code,
+            "name": r.name,
+            "line_item": line_item,
+            "amount": float(r.total or 0)
+        })
+
+    # Build hierarchical expense structure
+    expense_data = []
+    for category in sorted(expenses_by_category.keys()):
+        items = expenses_by_category[category]
+
+        # If category has sub-items (contains colons), show as group
+        if any(':' in item['name'] for item in items):
+            expense_data.append({
+                "type": "category",
+                "name": category,
+                "items": items,
+                "subtotal": sum(item["amount"] for item in items)
+            })
+        else:
+            # Single item categories, add as individual lines
+            for item in items:
+                expense_data.append({
+                    "type": "line",
+                    "name": item["name"],
+                    "amount": item["amount"]
+                })
+
     total_expenses = sum(float(r.total or 0) for r in expense_results)
 
     # Get company info for header
@@ -244,7 +327,7 @@ def profit_loss_pdf(
         "to_date": to_date,
         "income": income_data,
         "total_income": total_income,
-        "expenses": [{"code": r.code, "name": r.name, "amount": float(r.total or 0)} for r in expense_results],
+        "expenses": expense_data,
         "total_expenses": total_expenses,
         "net_income": total_income - total_expenses,
     }
