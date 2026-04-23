@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from pydantic import BaseModel
-from datetime import date
+from datetime import date, timedelta
 import csv
 import io
 
@@ -481,3 +481,171 @@ def sync_cloudflare_domains(
         error_msg = str(e)
         print(f"SYNC ERROR: {error_msg}")
         raise HTTPException(status_code=400, detail=f"Cloudflare sync failed: {error_msg}")
+
+
+@router.get("/scheduling/unscheduled")
+def get_unscheduled_domains_with_recommendations(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get unscheduled domains with recommended billing schedule info."""
+    # Find domains not in any billing schedule
+    scheduled_domain_ids = db.query(models.BillingScheduleLineItem.domain_id).filter(
+        models.BillingScheduleLineItem.domain_id != None
+    ).all()
+    scheduled_ids = set(d[0] for d in scheduled_domain_ids)
+
+    query = db.query(models.Domain)
+    if scheduled_ids:
+        query = query.filter(~models.Domain.id.in_(scheduled_ids))
+
+    unscheduled = query.order_by(models.Domain.expiration_date).all()
+
+    recommendations = []
+    for domain in unscheduled:
+        if not domain.client_id:
+            continue
+
+        client = domain.client
+        # Calculate due date: 60 days before expiration
+        invoice_due_date = domain.expiration_date - timedelta(days=60)
+
+        # Round down to 1st of month (invoice due dates are always 1st)
+        if invoice_due_date.day != 1:
+            if invoice_due_date.month == 12:
+                invoice_due_date = invoice_due_date.replace(year=invoice_due_date.year + 1, month=1, day=1)
+            else:
+                invoice_due_date = invoice_due_date.replace(month=invoice_due_date.month + 1, day=1)
+
+        # Check if client has existing annual schedule near this date
+        existing_schedules = db.query(models.BillingSchedule).filter(
+            models.BillingSchedule.client_id == domain.client_id,
+            models.BillingSchedule.is_active == True,
+            models.BillingSchedule.cycle == models.BillingCycle.annual
+        ).all()
+
+        recommended_schedule = None
+        for sched in existing_schedules:
+            if sched.next_bill_date <= invoice_due_date:
+                recommended_schedule = {
+                    "schedule_id": sched.id,
+                    "cycle": "annual",
+                    "action": "add_to_existing"
+                }
+                break
+
+        if not recommended_schedule:
+            recommended_schedule = {
+                "schedule_id": None,
+                "cycle": "annual",
+                "action": "create_new"
+            }
+
+        recommendations.append({
+            "domain_id": domain.id,
+            "domain_name": domain.domain_name,
+            "expiration_date": domain.expiration_date.isoformat(),
+            "renewal_cost": float(domain.renewal_cost),
+            "client_id": domain.client_id,
+            "client_name": client.company_name if client else None,
+            "recommended_due_date": invoice_due_date.isoformat(),
+            "recommended_schedule": recommended_schedule,
+        })
+
+    return {"unscheduled_count": len(recommendations), "domains": recommendations}
+
+
+class BatchScheduleRequest(BaseModel):
+    domain_ids: List[int]
+
+
+@router.post("/scheduling/batch-schedule")
+def batch_schedule_domains(
+    request: BatchScheduleRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Schedule multiple domains to their recommended billing schedules."""
+    from decimal import Decimal
+
+    results = {
+        "scheduled": [],
+        "failed": [],
+        "created_schedules": []
+    }
+
+    for domain_id in request.domain_ids:
+        try:
+            domain = db.query(models.Domain).filter_by(id=domain_id).first()
+            if not domain or not domain.client_id:
+                results["failed"].append({"domain_id": domain_id, "reason": "Domain or client not found"})
+                continue
+
+            # Calculate invoice due date
+            invoice_due_date = domain.expiration_date - timedelta(days=60)
+            if invoice_due_date.day != 1:
+                if invoice_due_date.month == 12:
+                    invoice_due_date = invoice_due_date.replace(year=invoice_due_date.year + 1, month=1, day=1)
+                else:
+                    invoice_due_date = invoice_due_date.replace(month=invoice_due_date.month + 1, day=1)
+
+            # Find or create annual schedule for this specific due date
+            schedule = db.query(models.BillingSchedule).filter(
+                models.BillingSchedule.client_id == domain.client_id,
+                models.BillingSchedule.is_active == True,
+                models.BillingSchedule.cycle == models.BillingCycle.annual,
+                models.BillingSchedule.next_bill_date == invoice_due_date
+            ).first()
+
+            if not schedule:
+                # Create new annual schedule with this domain's due date
+                schedule = models.BillingSchedule(
+                    client_id=domain.client_id,
+                    cycle=models.BillingCycle.annual,
+                    next_bill_date=invoice_due_date,
+                    autocc_recurring=domain.client.autocc_recurring if domain.client else False,
+                    amount=0,
+                    notes=f"Domain renewal - due {invoice_due_date.isoformat()}"
+                )
+                db.add(schedule)
+                db.flush()
+                results["created_schedules"].append({
+                    "client_id": domain.client_id,
+                    "due_date": invoice_due_date.isoformat(),
+                    "schedule_id": schedule.id
+                })
+
+            # Add domain as line item
+            line_item = models.BillingScheduleLineItem(
+                billing_schedule_id=schedule.id,
+                domain_id=domain.id,
+                description=f"Domain renewal: {domain.domain_name}",
+                quantity=1,
+                unit_amount=Decimal(str(domain.renewal_cost)),
+                amount=Decimal(str(domain.renewal_cost)),
+                sort_order=0
+            )
+            db.add(line_item)
+
+            results["scheduled"].append({
+                "domain_id": domain_id,
+                "domain_name": domain.domain_name,
+                "schedule_id": schedule.id,
+                "due_date": invoice_due_date.isoformat()
+            })
+
+        except Exception as e:
+            results["failed"].append({"domain_id": domain_id, "reason": str(e)})
+
+    # Update all schedule amounts based on their line items
+    unique_schedules = set(r["schedule_id"] for r in results["scheduled"])
+    for schedule_id in unique_schedules:
+        schedule = db.query(models.BillingSchedule).filter_by(id=schedule_id).first()
+        if schedule:
+            schedule.amount = sum(
+                Decimal(str(item.quantity)) * Decimal(str(item.unit_amount))
+                for item in schedule.line_items
+            )
+
+    db.commit()
+    return results

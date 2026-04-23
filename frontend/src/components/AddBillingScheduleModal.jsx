@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../api/client';
 import Modal from './ui/Modal';
 import Input from './ui/Input';
 import Button from './ui/Button';
 
-export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
+export default function AddBillingScheduleModal({ isOpen, onClose, clientId, schedule = null }) {
   const queryClient = useQueryClient();
   const [lineItems, setLineItems] = useState([]);
   const [cycle, setCycle] = useState('monthly');
@@ -13,7 +13,30 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
   const [autoccRecurring, setAutoccRecurring] = useState(false);
   const [notes, setNotes] = useState('');
   const [catalogSelectOpen, setCatalogSelectOpen] = useState(false);
+  const [domainSelectOpen, setDomainSelectOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const isEditMode = !!schedule;
+
+  // Populate form when editing
+  useEffect(() => {
+    if (isEditMode && schedule) {
+      setCycle(schedule.cycle);
+      setNextBillDate(schedule.next_bill_date);
+      setAutoccRecurring(schedule.autocc_recurring || false);
+      setNotes(schedule.notes || '');
+      if (schedule.line_items && schedule.line_items.length > 0) {
+        setLineItems(schedule.line_items.map(item => ({
+          id: crypto.randomUUID(),
+          service_id: item.service_id || null,
+          domain_id: item.domain_id || null,
+          description: item.description,
+          qty: item.quantity,
+          unitPrice: item.unit_amount,
+        })));
+      }
+    }
+  }, [isEditMode, schedule, isOpen]);
 
   // Fetch services
   const { data: serviceData } = useQuery({
@@ -25,19 +48,35 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
     enabled: isOpen,
   });
 
-  const services = Array.isArray(serviceData) ? serviceData : serviceData?.items || [];
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await apiClient.post(`/clients/${clientId}/billing-schedules`, data);
+  // Fetch domains for this client
+  const { data: domainData } = useQuery({
+    queryKey: ['clients', clientId, 'domains'],
+    queryFn: async () => {
+      const response = await apiClient.get('/domains/', { params: { client_id: clientId } });
       return response.data;
+    },
+    enabled: isOpen && !!clientId,
+  });
+
+  const services = Array.isArray(serviceData) ? serviceData : serviceData?.items || [];
+  const domains = Array.isArray(domainData) ? domainData : domainData?.items || [];
+
+  const mutation = useMutation({
+    mutationFn: async (data) => {
+      if (isEditMode) {
+        const response = await apiClient.put(`/clients/${clientId}/billing-schedules/${schedule.id}`, data);
+        return response.data;
+      } else {
+        const response = await apiClient.post(`/clients/${clientId}/billing-schedules`, data);
+        return response.data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients', clientId, 'schedules'] });
       handleClose();
     },
     onError: (error) => {
-      setErrorMessage(error.response?.data?.detail || 'Failed to create billing schedule');
+      setErrorMessage(error.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} billing schedule`);
     },
   });
 
@@ -49,12 +88,31 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
         {
           id: crypto.randomUUID(),
           service_id: service.id,
+          domain_id: null,
           description: service.name,
           qty: 1,
           unitPrice: service.default_amount,
         },
       ]);
       setCatalogSelectOpen(false);
+    }
+  };
+
+  const handleAddDomain = (domainId) => {
+    const domain = domains.find(d => d.id === parseInt(domainId));
+    if (domain) {
+      setLineItems([
+        ...lineItems,
+        {
+          id: crypto.randomUUID(),
+          service_id: null,
+          domain_id: domain.id,
+          description: `Domain renewal: ${domain.domain_name}`,
+          qty: 1,
+          unitPrice: parseFloat(domain.renewal_cost),
+        },
+      ]);
+      setDomainSelectOpen(false);
     }
   };
 
@@ -105,6 +163,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
       quantity: item.qty || 1,
       unit_amount: item.unitPrice || 0,
       service_id: item.service_id || null,
+      domain_id: item.domain_id || null,
       sort_order: idx,
     }));
 
@@ -116,7 +175,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
       line_items: formattedItems,
     };
 
-    createMutation.mutate(submitData);
+    mutation.mutate(submitData);
   };
 
   const handleClose = () => {
@@ -126,6 +185,7 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
     setAutoccRecurring(false);
     setNotes('');
     setCatalogSelectOpen(false);
+    setDomainSelectOpen(false);
     setErrorMessage('');
     onClose();
   };
@@ -135,9 +195,9 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
       {errorMessage && (
         <div className="text-red-600 text-sm">Error: {errorMessage}</div>
       )}
-      {createMutation.isError && (
+      {mutation.isError && (
         <div className="text-red-600 text-sm">
-          Error: {createMutation.error?.response?.data?.detail || 'Failed to create billing schedule'}
+          Error: {mutation.error?.response?.data?.detail || `Failed to ${isEditMode ? 'update' : 'create'} billing schedule`}
         </div>
       )}
       <div className="flex gap-3 justify-end">
@@ -145,23 +205,25 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
           type="button"
           variant="secondary"
           onClick={handleClose}
-          disabled={createMutation.isPending}
+          disabled={mutation.isPending}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          disabled={createMutation.isPending || lineItems.length === 0}
+          disabled={mutation.isPending || lineItems.length === 0}
           form="billing-schedule-form"
         >
-          {createMutation.isPending ? 'Creating...' : 'Create Schedule'}
+          {mutation.isPending ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Schedule' : 'Create Schedule')}
         </Button>
       </div>
     </div>
   );
 
+  const modalTitle = isEditMode ? 'Edit Billing Schedule' : 'Add Billing Schedule';
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Billing Schedule" footer={footerContent}>
+    <Modal isOpen={isOpen} onClose={handleClose} title={modalTitle} footer={footerContent}>
       <form id="billing-schedule-form" onSubmit={handleSubmit} className="space-y-4">
         {/* Schedule Details */}
         <div className="space-y-4 border-b pb-4">
@@ -237,6 +299,15 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
             <div className="flex-1">
               <button
                 type="button"
+                onClick={() => setDomainSelectOpen(!domainSelectOpen)}
+                className="w-full px-3 py-2 text-sm bg-green-50 border border-green-200 text-green-700 rounded-md hover:bg-green-100"
+              >
+                + Domain
+              </button>
+            </div>
+            <div className="flex-1">
+              <button
+                type="button"
                 onClick={handleAddCustomItem}
                 className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-200 text-gray-700 rounded-md hover:bg-gray-100"
               >
@@ -256,6 +327,23 @@ export default function AddBillingScheduleModal({ isOpen, onClose, clientId }) {
                 {services.map(service => (
                   <option key={service.id} value={service.id}>
                     {service.name} (${parseFloat(service.default_amount).toFixed(2)})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {domainSelectOpen && (
+            <div>
+              <select
+                onChange={(e) => handleAddDomain(e.target.value)}
+                defaultValue=""
+                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              >
+                <option value="">Select a domain...</option>
+                {domains.map(domain => (
+                  <option key={domain.id} value={domain.id}>
+                    {domain.domain_name} (${parseFloat(domain.renewal_cost).toFixed(2)})
                   </option>
                 ))}
               </select>

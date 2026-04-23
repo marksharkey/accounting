@@ -14,10 +14,12 @@ export default function ClientDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [searchInput, setSearchInput] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const searchInputRef = useRef(null);
 
   const { data: client, isLoading: clientLoading } = useQuery({
@@ -59,6 +61,16 @@ export default function ClientDetailPage() {
         params: { limit: 10000 },
       });
       return response.data?.items || response.data || [];
+    },
+  });
+
+  const deleteScheduleMutation = useMutation({
+    mutationFn: async (scheduleId) => {
+      await apiClient.delete(`/clients/${id}/billing-schedules/${scheduleId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients', id, 'schedules'] });
+      setDeleteConfirm(null);
     },
   });
 
@@ -162,6 +174,36 @@ export default function ClientDetailPage() {
     if (status === 'overdue') return 'text-red-700 bg-red-50';
     if (status === 'suspended') return 'text-yellow-700 bg-yellow-50';
     return 'text-gray-700 bg-gray-50';
+  };
+
+  const getNextInvoiceDueDate = () => {
+    const today = new Date();
+    let nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    return new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 1);
+  };
+
+  const groupSchedulesByInvoice = (schedules) => {
+    if (!schedules || schedules.length === 0) {
+      return { nextInvoice: [], futureInvoices: [] };
+    }
+
+    const nextInvoiceDueDate = getNextInvoiceDueDate();
+    const nextInvoice = [];
+    const futureInvoices = [];
+
+    schedules.forEach((schedule) => {
+      const scheduleDate = new Date(schedule.next_bill_date);
+      if (scheduleDate <= nextInvoiceDueDate) {
+        nextInvoice.push(schedule);
+      } else {
+        futureInvoices.push(schedule);
+      }
+    });
+
+    nextInvoice.sort((a, b) => new Date(a.next_bill_date) - new Date(b.next_bill_date));
+    futureInvoices.sort((a, b) => new Date(a.next_bill_date) - new Date(b.next_bill_date));
+
+    return { nextInvoice, futureInvoices };
   };
 
   if (isLoading) {
@@ -281,7 +323,7 @@ export default function ClientDetailPage() {
           </div>
         </div>
 
-        {/* Billing Schedules Table */}
+        {/* Billing Schedules */}
         <div className="border border-gray-200 rounded overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
             <div className="font-semibold text-[13px]">Billing Schedules</div>
@@ -294,36 +336,132 @@ export default function ClientDetailPage() {
             </Button>
           </div>
           {schedules && schedules.length > 0 ? (
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-3 py-1 font-semibold text-[12px]">Frequency</th>
-                  <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
-                  <th className="text-left px-3 py-1 font-semibold text-[12px]">Next Date</th>
-                  <th className="text-left px-3 py-1 font-semibold text-[12px]">Components</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedules.map((schedule) => (
-                  <tr key={schedule.id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-3 py-1 font-medium">{schedule.cycle.replace('_', ' ').toUpperCase()}</td>
-                    <td className="text-right px-3 py-1 font-mono">${parseFloat(schedule.amount).toFixed(2)}</td>
-                    <td className="px-3 py-1 text-gray-600">{new Date(schedule.next_bill_date).toLocaleDateString()}</td>
-                    <td className="px-3 py-1 text-gray-600">
-                      {schedule.line_items && schedule.line_items.length > 0 ? (
-                        <div className="text-[12px]">
-                          {schedule.line_items.map((item, idx) => (
-                            <div key={item.id}>{item.description} ×{parseFloat(item.quantity).toFixed(2)}</div>
-                          ))}
+            <div className="text-[13px]">
+              {(() => {
+                const { nextInvoice, futureInvoices } = groupSchedulesByInvoice(schedules);
+                const nextInvoiceDueDate = getNextInvoiceDueDate();
+
+                return (
+                  <>
+                    {/* Next Invoice Section */}
+                    {nextInvoice.length > 0 && (
+                      <div className="border-b border-gray-200">
+                        <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
+                          <div className="font-semibold text-[12px] text-blue-900">
+                            Next Invoice Due {nextInvoiceDueDate.toLocaleDateString()}
+                          </div>
                         </div>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-gray-200 bg-gray-50">
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/6">Frequency</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/12">Amount</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/6">Next Due Date</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] flex-1">Components</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/12">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {nextInvoice.map((schedule) => (
+                              <tr key={schedule.id} className="border-b border-gray-200 hover:bg-gray-50">
+                                <td className="text-left px-3 py-1 font-medium w-1/6">{schedule.cycle.replace('_', ' ').toUpperCase()}</td>
+                                <td className="text-left px-3 py-1 font-mono w-1/12">${parseFloat(schedule.amount).toFixed(2)}</td>
+                                <td className="text-left px-3 py-1 text-gray-600 w-1/6">{new Date(schedule.next_bill_date).toLocaleDateString()}</td>
+                                <td className="text-left px-3 py-1 text-gray-600 flex-1">
+                                  {schedule.line_items && schedule.line_items.length > 0 ? (
+                                    <div className="text-[12px]">
+                                      {schedule.line_items.map((item, idx) => (
+                                        <div key={item.id}>{item.description} ×{parseFloat(item.quantity).toFixed(2)}</div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                                <td className="text-left px-3 py-1 w-1/12">
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => setEditingSchedule(schedule)}
+                                      className="text-blue-600 hover:text-blue-800 text-[12px] font-medium"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteConfirm(schedule.id)}
+                                      className="text-red-600 hover:text-red-800 text-[12px] font-medium"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Future Invoices Section */}
+                    {futureInvoices.length > 0 && (
+                      <div className="border-t-4 border-gray-300">
+                        <div className="px-3 py-2 bg-white border-b border-gray-200">
+                          <div className="font-semibold text-[12px] text-gray-700">
+                            Future Invoices
+                          </div>
+                        </div>
+                        <table className="w-full bg-gray-50">
+                          <thead>
+                            <tr className="border-b border-gray-200 bg-gray-100">
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/6">Frequency</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/12">Amount</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/6">Next Due Date</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] flex-1">Components</th>
+                              <th className="text-left px-3 py-1 font-semibold text-[12px] w-1/12">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {futureInvoices.map((schedule) => (
+                              <tr key={schedule.id} className="border-b border-gray-200 bg-gray-50 hover:bg-gray-100">
+                                <td className="text-left px-3 py-1 font-medium w-1/6">{schedule.cycle.replace('_', ' ').toUpperCase()}</td>
+                                <td className="text-left px-3 py-1 font-mono w-1/12">${parseFloat(schedule.amount).toFixed(2)}</td>
+                                <td className="text-left px-3 py-1 text-gray-600 w-1/6">{new Date(schedule.next_bill_date).toLocaleDateString()}</td>
+                                <td className="text-left px-3 py-1 text-gray-600 flex-1">
+                                  {schedule.line_items && schedule.line_items.length > 0 ? (
+                                    <div className="text-[12px]">
+                                      {schedule.line_items.map((item, idx) => (
+                                        <div key={item.id}>{item.description} ×{parseFloat(item.quantity).toFixed(2)}</div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                                <td className="text-left px-3 py-1 w-1/12">
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => setEditingSchedule(schedule)}
+                                      className="text-blue-600 hover:text-blue-800 text-[12px] font-medium"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => setDeleteConfirm(schedule.id)}
+                                      className="text-red-600 hover:text-red-800 text-[12px] font-medium"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           ) : (
             <div className="px-3 py-2 text-gray-500 text-[13px]">No billing schedules</div>
           )}
@@ -468,10 +606,39 @@ export default function ClientDetailPage() {
       </div>
 
       <AddBillingScheduleModal
-        isOpen={isAddScheduleOpen}
-        onClose={() => setIsAddScheduleOpen(false)}
+        isOpen={isAddScheduleOpen || !!editingSchedule}
+        onClose={() => {
+          setIsAddScheduleOpen(false);
+          setEditingSchedule(null);
+        }}
         clientId={id}
+        schedule={editingSchedule}
       />
+
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-4 max-w-sm">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Billing Schedule?</h3>
+            <p className="text-gray-600 text-sm mb-4">This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleteScheduleMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteScheduleMutation.mutate(deleteConfirm)}
+                disabled={deleteScheduleMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleteScheduleMutation.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <EditClientModal
         isOpen={isEditClientOpen}

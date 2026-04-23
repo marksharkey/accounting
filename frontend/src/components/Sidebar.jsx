@@ -14,6 +14,8 @@ import {
   Zap,
   Mail,
   Globe,
+  CreditCard,
+  CheckSquare,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -105,6 +107,10 @@ export default function Sidebar() {
     { label: 'Reports', href: '/reports', icon: BarChart3 },
   ];
 
+  const accountingItems = [
+    { label: 'Check Register', href: '/check-register', icon: CheckSquare },
+  ];
+
   const accountItems = [
     { label: 'Settings', href: '/settings/company', icon: Settings },
     { label: 'Email Templates', href: '/settings/email-templates', icon: Mail },
@@ -119,6 +125,7 @@ export default function Sidebar() {
         <NavSection items={clientsItems} isCollapsed={isCollapsed} />
         <NavSection items={businessItems} isCollapsed={isCollapsed} />
         <NavSection items={insightsItems} isCollapsed={isCollapsed} />
+        <NavSection items={accountingItems} isCollapsed={isCollapsed} />
         <NavSection items={accountItems} isCollapsed={isCollapsed} />
       </nav>
 

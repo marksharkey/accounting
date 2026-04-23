@@ -10,7 +10,7 @@ from config import get_settings
 from database import get_db, engine
 import models
 from auth import authenticate_user, create_access_token, get_current_user, get_password_hash
-from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos, company_info, email_templates, domains
+from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions
 
 settings = get_settings()
 
@@ -76,6 +76,7 @@ app.include_router(collections.router,    prefix="/api/collections",    tags=["C
 app.include_router(company_info.router,   prefix="/api/company-info",   tags=["Company Info"])
 app.include_router(domains.router,        prefix="/api/domains",        tags=["Domains"])
 app.include_router(email_templates.router, tags=["Email Templates"])
+app.include_router(bank_transactions.router, prefix="/api/bank", tags=["Bank Transactions"])
 
 # Mount static files for uploads
 uploads_dir = Path("uploads")

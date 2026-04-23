@@ -81,6 +81,23 @@ async def record_payment(
         notes=f"${data.amount:.2f} via {data.method.value} — Invoice {invoice.invoice_number}"
     )
     db.add(log)
+
+    # Automatically create corresponding bank transaction in Chase Checking
+    chase_checking = db.query(models.BankAccount).filter_by(account_name='Chase Checking').first()
+    if chase_checking:
+        bank_txn = models.BankTransaction(
+            bank_account_id=chase_checking.id,
+            transaction_date=data.payment_date,
+            transaction_type=models.TransactionType.payment,
+            description=client.company_name,
+            gl_account='Accounts Receivable',
+            amount=Decimal(str(data.amount)),  # Positive amount for deposit
+            matched_payment_id=payment.id,
+            reconciled=False,
+            import_batch='manual_entry'
+        )
+        db.add(bank_txn)
+
     db.commit()
     db.refresh(payment)
 
@@ -111,3 +128,56 @@ def list_payments(
     total = query.count()
     payments = query.order_by(models.Payment.payment_date.desc()).offset(skip).limit(limit).all()
     return {"total": total, "items": payments}
+
+
+@router.delete("/{payment_id}")
+def delete_payment(
+    payment_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    payment = db.query(models.Payment).filter_by(id=payment_id).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    invoice = db.query(models.Invoice).filter_by(id=payment.invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    client = db.query(models.Client).filter_by(id=payment.client_id).first()
+
+    # Delete associated bank transaction
+    db.query(models.BankTransaction).filter_by(matched_payment_id=payment_id).delete()
+
+    # Update client balance
+    if client:
+        client.account_balance = Decimal(str(client.account_balance)) + Decimal(str(payment.amount))
+
+    # Recalculate invoice status
+    remaining_payments = db.query(models.Payment).filter_by(invoice_id=invoice.id).filter(
+        models.Payment.id != payment_id
+    ).all()
+    total_paid = sum(Decimal(str(p.amount)) for p in remaining_payments)
+    invoice.amount_paid = total_paid
+    invoice.balance_due = Decimal(str(invoice.total)) - total_paid
+
+    if invoice.balance_due >= invoice.total:
+        invoice.status = models.InvoiceStatus.sent
+    elif total_paid > 0:
+        invoice.status = models.InvoiceStatus.partially_paid
+    else:
+        invoice.status = models.InvoiceStatus.sent
+
+    # Log the action
+    log = models.ActivityLog(
+        entity_type="payment", entity_id=payment_id, client_id=payment.client_id,
+        action="payment_deleted", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes=f"${payment.amount:.2f} via {payment.method.value} — Invoice {invoice.invoice_number}"
+    )
+    db.add(log)
+
+    db.delete(payment)
+    db.commit()
+
+    return {"status": "deleted", "payment_id": payment_id}

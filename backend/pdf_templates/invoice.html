@@ -14,8 +14,8 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
             color: #333;
             background: white;
-            padding: 16px 32px;
-            line-height: 1.3;
+            padding: 12px 24px;
+            line-height: 1.2;
         }
 
         .page {
@@ -28,8 +28,8 @@
         .header {
             display: table;
             width: 100%;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
             border-bottom: 4px solid #1a3a52;
         }
 
@@ -67,7 +67,8 @@
         }
 
         .company-details p {
-            margin: 0px 0;
+            margin: 0;
+            padding: 0;
         }
 
         .invoice-title {
@@ -139,7 +140,7 @@
 
         /* Bill To Section */
         .bill-to {
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .section-label {
@@ -164,15 +165,17 @@
         }
 
         .bill-to-content p {
-            margin: 1px 0;
+            margin: 0;
+            padding: 0;
             color: #666;
         }
 
         /* Line Items Table */
         table {
             width: 100%;
-            margin-bottom: 8px;
+            margin-bottom: 0;
             border-collapse: collapse;
+            line-height: 1.1;
         }
 
         thead {
@@ -181,7 +184,7 @@
         }
 
         th {
-            padding: 6px 8px;
+            padding: 4px 6px;
             text-align: left;
             font-size: 11px;
             font-weight: 600;
@@ -194,7 +197,7 @@
         }
 
         td {
-            padding: 5px 8px;
+            padding: 3px 6px;
             border-bottom: 1px solid #f0f0f0;
             font-size: 11px;
         }
@@ -228,7 +231,8 @@
         .totals-section {
             display: table;
             width: 100%;
-            margin-bottom: 8px;
+            margin-top: 4px;
+            margin-bottom: 2px;
         }
 
         .totals-spacer {
@@ -243,6 +247,7 @@
 
         .totals-block table {
             margin: 0;
+            margin-bottom: 2px;
             font-size: 11px;
         }
 
@@ -305,7 +310,7 @@
             background-color: #f8f9fa;
             padding: 6px 8px;
             border-left: 3px solid #1a3a52;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             font-size: 11px;
         }
 
@@ -323,14 +328,16 @@
         /* Footer */
         .footer {
             border-top: 1px solid #e0e0e0;
-            padding-top: 6px;
+            margin-top: 4px;
+            padding-top: 2px;
             font-size: 10px;
             color: #999;
             text-align: center;
         }
 
         .footer p {
-            margin: 1px 0;
+            margin: 0;
+            padding: 0;
         }
 
         .footer-primary {
@@ -362,7 +369,7 @@
 
         /* Account Summary Section (inline with totals) */
         .account-summary-inline {
-            margin-top: 3px;
+            margin-top: 1px;
             font-size: 11px;
         }
 
@@ -415,6 +422,10 @@
             font-weight: 700;
             color: #1a3a52;
             font-size: 12px;
+        }
+
+        .account-summary-inline table {
+            margin-bottom: 1px !important;
         }
     </style>
 </head>

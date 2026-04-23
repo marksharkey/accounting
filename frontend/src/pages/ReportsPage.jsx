@@ -260,24 +260,36 @@ export default function ReportsPage() {
         </div>
       ) : selectedReport === 'pl' ? (
         <div>
-          <div className="mb-6 flex items-center gap-4">
-            <Button size="sm" variant="ghost" onClick={closeDetail}>
-              ← Back
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button size="sm" variant="ghost" onClick={closeDetail}>
+                ← Back
+              </Button>
+              <label className="text-sm font-medium">From:</label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-40"
+              />
+              <label className="text-sm font-medium">To:</label>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <Button
+              onClick={() => {
+                const params = new URLSearchParams({ from_date: fromDate, to_date: toDate });
+                window.open(`/api/reports/profit-loss/pdf?${params.toString()}`, '_blank');
+              }}
+              disabled={plLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              📥 Download PDF
             </Button>
-            <label className="text-sm font-medium">From:</label>
-            <Input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="w-40"
-            />
-            <label className="text-sm font-medium">To:</label>
-            <Input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="w-40"
-            />
           </div>
           <Card>
             <CardHeader>
@@ -288,44 +300,74 @@ export default function ReportsPage() {
                 <p>Loading...</p>
               ) : (
                 <div>
-                  <div className="bg-blue-50 p-4 rounded mb-6">
-                    <p className="text-sm text-gray-600">Total Income</p>
-                    <p className="text-3xl font-bold text-blue-600">
-                      ${(plData?.total_income || 0).toFixed(2)}
-                    </p>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Income by Category</h3>
+                  {plData?.income && plData.income.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Account</TableHead>
+                          <TableHead>Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {plData.income.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell className="text-right font-mono">${item.amount.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-gray-500 italic py-4">No income recorded for this period.</p>
+                  )}
+
+                  <div className="bg-blue-50 p-4 rounded my-6">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-600">Total Income</p>
+                      <p className="text-3xl font-bold text-blue-600">
+                        ${(plData?.total_income || 0).toFixed(2)}
+                      </p>
+                    </div>
                   </div>
 
-                  <h3 className="text-lg font-semibold mb-3">Expenses by Category</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {plData?.expenses?.map((expense, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>{expense.code}</TableCell>
-                          <TableCell>{expense.name}</TableCell>
-                          <TableCell>${expense.total.toFixed(2)}</TableCell>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Expenses by Category</h3>
+                  {plData?.expenses && plData.expenses.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Account</TableHead>
+                          <TableHead>Amount</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {plData.expenses.map((expense, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>{expense.name}</TableCell>
+                            <TableCell className="text-right font-mono">${expense.amount.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-gray-500 italic py-4">No expenses recorded for this period.</p>
+                  )}
 
-                  <div className="mt-6 pt-4 border-t space-y-2">
-                    <div className="flex justify-between">
-                      <span>Total Expenses:</span>
-                      <span className="font-semibold">${(plData?.total_expenses || 0).toFixed(2)}</span>
+                  <div className="bg-gray-50 p-4 rounded my-6">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-600">Total Expenses</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        ${(plData?.total_expenses || 0).toFixed(2)}
+                      </p>
                     </div>
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Net Income:</span>
-                      <span className={plData?.net_income >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        ${(plData?.net_income || 0).toFixed(2)}
-                      </span>
-                    </div>
+                  </div>
+
+                  <div className={`p-6 rounded text-white text-center ${plData?.net_income >= 0 ? 'bg-green-600' : 'bg-red-600'}`}>
+                    <p className="text-sm opacity-90 mb-2">NET INCOME</p>
+                    <p className="text-4xl font-bold">
+                      ${Math.abs(plData?.net_income || 0).toFixed(2)}
+                    </p>
+                    {plData?.net_income < 0 && <p className="text-sm opacity-90 mt-1">(Loss)</p>}
                   </div>
                 </div>
               )}

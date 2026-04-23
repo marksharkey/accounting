@@ -10,11 +10,20 @@ export default function AutoccBatchPage() {
   const [phase, setPhase] = useState('checklist'); // 'checklist', 'summary', 'done'
   const [checkedItems, setCheckedItems] = useState({});
   const [summary, setSummary] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
   const { data: autoccClients, isLoading } = useQuery({
-    queryKey: ['autocc-batch'],
+    queryKey: ['autocc-batch', selectedDate.getFullYear(), selectedDate.getMonth() + 1],
     queryFn: async () => {
-      const response = await apiClient.get('/invoices/autocc-batch');
+      const response = await apiClient.get('/invoices/autocc-batch', {
+        params: {
+          year: selectedDate.getFullYear(),
+          month: selectedDate.getMonth() + 1,
+        }
+      });
       return response.data;
     },
   });
@@ -22,11 +31,16 @@ export default function AutoccBatchPage() {
   const processMutation = useMutation({
     mutationFn: async () => {
       const items = (autoccClients || []).map(client => ({
+        client_id: client.id,
         invoice_id: client.invoice_id,
         paid: checkedItems[client.id] === true,
-      })).filter(item => item.invoice_id);
+      }));
 
-      const response = await apiClient.post('/invoices/autocc-batch/process', { items });
+      const response = await apiClient.post('/invoices/autocc-batch/process', {
+        items,
+        year: selectedDate.getFullYear(),
+        month: selectedDate.getMonth() + 1,
+      });
       return response.data;
     },
     onSuccess: (data) => {
@@ -60,21 +74,52 @@ export default function AutoccBatchPage() {
     setSummary(null);
   };
 
+  const handlePrevMonth = () => {
+    setSelectedDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    setPhase('checklist');
+    setCheckedItems({});
+    setSummary(null);
+  };
+
+  const handleNextMonth = () => {
+    setSelectedDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setPhase('checklist');
+    setCheckedItems({});
+    setSummary(null);
+  };
+
   if (isLoading) {
     return <Layout title="AutoCC Batch">Loading...</Layout>;
   }
 
-  const now = new Date();
-  const monthYear = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+  const monthYear = selectedDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
   // Phase 1: Checklist
   if (phase === 'checklist') {
-    const clientsWithInvoices = (autoccClients || []).filter(c => c.invoice_id);
+    const clientsWithInvoices = (autoccClients || []).filter(c => c.invoice_total);
 
     return (
       <Layout title="AutoCC Batch">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">AutoCC Batch — {monthYear}</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold">AutoCC Batch — {monthYear}</h1>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handlePrevMonth}
+                variant="outline"
+                className="px-3 py-2"
+              >
+                ← Previous
+              </Button>
+              <Button
+                onClick={handleNextMonth}
+                variant="outline"
+                className="px-3 py-2"
+              >
+                Next →
+              </Button>
+            </div>
+          </div>
           <p className="text-gray-600">Mark each client as paid or declined, then generate a summary.</p>
         </div>
 
@@ -106,7 +151,7 @@ export default function AutoccBatchPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {client.invoice_id ? (
+                      {client.invoice_total ? (
                         <div className="flex gap-2">
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -161,9 +206,9 @@ export default function AutoccBatchPage() {
   // Phase 2: Summary
   if (phase === 'summary') {
     const paidItems = (autoccClients || [])
-      .filter(c => c.invoice_id && checkedItems[c.id] === true);
+      .filter(c => c.invoice_total && checkedItems[c.id] === true);
     const declinedItems = (autoccClients || [])
-      .filter(c => c.invoice_id && checkedItems[c.id] === false);
+      .filter(c => c.invoice_total && checkedItems[c.id] === false);
 
     return (
       <Layout title="AutoCC Batch">

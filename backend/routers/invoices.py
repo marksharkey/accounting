@@ -62,9 +62,9 @@ class LineItemIn(BaseModel):
 
     @field_validator('unit_amount')
     @classmethod
-    def unit_amount_must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError('Unit amount must be greater than 0')
+    def unit_amount_must_be_nonzero(cls, v):
+        if v == 0:
+            raise ValueError('Unit amount cannot be zero')
         return v
 
     @field_validator('description')
@@ -183,12 +183,15 @@ class InvoiceCreate(BaseModel):
 
 
 class AutoccBatchItem(BaseModel):
-    invoice_id: int
+    client_id: int
+    invoice_id: Optional[int] = None
     paid: bool
 
 
 class AutoccBatchRequest(BaseModel):
     items: List[AutoccBatchItem]
+    year: Optional[int] = None
+    month: Optional[int] = None
 
 
 class AutoccBatchClient(BaseModel):
@@ -285,12 +288,140 @@ def clients_due_for_billing(
     return list(client_map.values())
 
 
+def _calculate_autocc_invoice_items(client_id: int, year: int, month: int, db: Session):
+    """Calculate what invoice line items should be for a client in a given month."""
+    from datetime import date as date_type
+
+    client = db.query(models.Client).filter_by(id=client_id).first()
+    if not client:
+        return None
+
+    # Check if invoice already exists for this month
+    from sqlalchemy import func
+    existing_invoice = db.query(models.Invoice).filter(
+        models.Invoice.client_id == client_id,
+        func.year(models.Invoice.created_date) == year,
+        func.month(models.Invoice.created_date) == month
+    ).first()
+
+    if existing_invoice:
+        return {
+            "invoice_id": existing_invoice.id,
+            "invoice_number": existing_invoice.invoice_number,
+            "total": existing_invoice.total,
+            "status": existing_invoice.status,
+            "schedule_ids": []
+        }
+
+    # Calculate due date as first of next month
+    if month == 12:
+        due_date = date_type(year + 1, 1, 1)
+    else:
+        due_date = date_type(year, month + 1, 1)
+
+    # Get active billing schedules due by the invoice due date
+    schedules = db.query(models.BillingSchedule).filter(
+        models.BillingSchedule.client_id == client_id,
+        models.BillingSchedule.is_active == True,
+        models.BillingSchedule.next_bill_date <= due_date
+    ).all()
+
+    if not schedules:
+        return None
+
+    # Extract line items from billing schedules
+    schedule_ids = [s.id for s in schedules]
+    items_with_cycle = []
+    for schedule in schedules:
+        for item in schedule.line_items:
+            items_with_cycle.append({
+                "cycle_order": _get_cycle_sort_order(schedule.cycle),
+                "cycle": schedule.cycle,
+                "description": item.description,
+                "quantity": float(item.quantity),
+                "unit_amount": float(item.unit_amount),
+                "amount": float(item.amount),
+                "service_id": item.service_id,
+                "domain_id": item.domain_id,
+                "sort_order": item.sort_order,
+            })
+
+    # Build line items, grouping domains by cycle
+    line_items = []
+    current_cycle = None
+    domain_items = []
+    domain_total = Decimal("0.00")
+
+    items_with_cycle.sort(key=lambda x: (x["cycle_order"], x["domain_id"] is not None, x["sort_order"]))
+
+    for item in items_with_cycle:
+        if current_cycle is not None and item["cycle"] != current_cycle and domain_items:
+            domain_names = ", ".join([_extract_domain_name(d["description"]) for d in domain_items])
+            line_items.append({
+                "description": f"Domain renewals: {domain_names}",
+                "quantity": len(domain_items),
+                "unit_amount": float(domain_total / len(domain_items)),
+                "amount": float(domain_total),
+                "service_id": None,
+            })
+            domain_items = []
+            domain_total = Decimal("0.00")
+
+        if item["domain_id"] is not None:
+            domain_items.append(item)
+            domain_total += Decimal(str(item["amount"]))
+        else:
+            current_cycle = item["cycle"]
+            line_items.append({
+                "description": item["description"],
+                "quantity": item["quantity"],
+                "unit_amount": item["unit_amount"],
+                "amount": item["amount"],
+                "service_id": item["service_id"],
+            })
+
+    # Flush remaining domains
+    if domain_items:
+        domain_names = ", ".join([_extract_domain_name(d["description"]) for d in domain_items])
+        line_items.append({
+            "description": f"Domain renewals: {domain_names}",
+            "quantity": len(domain_items),
+            "unit_amount": float(domain_total / len(domain_items)),
+            "amount": float(domain_total),
+            "service_id": None,
+        })
+
+    # Calculate total
+    total = Decimal("0.00")
+    for item in line_items:
+        total += Decimal(str(item["amount"]))
+
+    return {
+        "invoice_id": None,
+        "invoice_number": None,
+        "total": float(total),
+        "status": None,
+        "schedule_ids": schedule_ids,
+        "line_items": line_items
+    }
+
+
 @router.get("/autocc-batch")
 def get_anet_batch(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user),
+    year: int = None,
+    month: int = None
 ):
-    """Get all autocc_recurring clients with their latest invoice (for batch processing)."""
+    """Get all autocc_recurring clients with calculated invoice amounts for a given month (for batch processing)."""
+    from datetime import datetime
+
+    # Default to current month if not specified
+    if year is None or month is None:
+        now = datetime.now()
+        year = now.year
+        month = now.month
+
     # Get all autocc clients
     clients = db.query(models.Client).filter(
         models.Client.autocc_recurring == True,
@@ -300,35 +431,22 @@ def get_anet_batch(
     if not clients:
         return []
 
-    client_ids = [c.id for c in clients]
-
-    # Get the latest invoice for each client (any status, ordered by created_date)
-    invoices = db.query(models.Invoice).filter(
-        models.Invoice.client_id.in_(client_ids)
-    ).order_by(
-        models.Invoice.client_id,
-        models.Invoice.created_date.desc()
-    ).all()
-
-    # Build a dict of client_id -> latest invoice (since ordered by date desc, first match is latest)
-    latest_invoices = {}
-    for invoice in invoices:
-        if invoice.client_id not in latest_invoices:
-            latest_invoices[invoice.client_id] = invoice
-
+    # Calculate invoice amounts for each client
     result = []
     for client in clients:
-        invoice = latest_invoices.get(client.id)
-        batch_item = AutoccBatchClient(
-            id=client.id,
-            company_name=client.company_name,
-            email=client.email,
-            invoice_id=invoice.id if invoice else None,
-            invoice_number=invoice.invoice_number if invoice else None,
-            invoice_total=invoice.total if invoice else None,
-            invoice_status=invoice.status if invoice else None
-        )
-        result.append(batch_item)
+        invoice_data = _calculate_autocc_invoice_items(client.id, year, month, db)
+
+        if invoice_data:
+            batch_item = AutoccBatchClient(
+                id=client.id,
+                company_name=client.company_name,
+                email=client.email,
+                invoice_id=invoice_data["invoice_id"],
+                invoice_number=invoice_data["invoice_number"],
+                invoice_total=invoice_data["total"],
+                invoice_status=invoice_data["status"]
+            )
+            result.append(batch_item)
 
     return result
 
@@ -339,24 +457,94 @@ async def process_anet_batch(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    """Process AutoCC batch payment decisions."""
+    """Process AutoCC batch payment decisions - creates invoices and marks as paid/declined."""
     from services.email import send_invoice_email, send_cc_declined_email
+    from datetime import datetime, date as date_type
+    from services.billing import advance_billing_date
+
+    # Default to current month if not specified
+    year = request.year
+    month = request.month
+    if year is None or month is None:
+        now = datetime.now()
+        year = request.year or now.year
+        month = request.month or now.month
 
     paid_invoices = []
     declined_clients = []
 
     for item in request.items:
-        invoice = db.query(models.Invoice).filter_by(id=item.invoice_id).first()
-        if not invoice:
-            continue
+        invoice = db.query(models.Invoice).filter_by(id=item.invoice_id).first() if item.invoice_id else None
+        client = db.query(models.Client).filter_by(id=item.client_id).first()
 
-        client = invoice.client
-        if not client:
+        # If invoice doesn't exist, need to fetch client and create it
+        if not invoice and client:
+            # Calculate invoice data
+            invoice_data = _calculate_autocc_invoice_items(client.id, year, month, db)
+            if invoice_data and invoice_data.get("line_items"):
+                # Create invoice
+                invoice_number = next_invoice_number(db)
+                if month == 12:
+                    due_date = date_type(year + 1, 1, 1)
+                else:
+                    due_date = date_type(year, month + 1, 1)
+
+                invoice = models.Invoice(
+                    invoice_number=invoice_number,
+                    client_id=client.id,
+                    created_date=date_type(year, month, 1),
+                    due_date=due_date,
+                    status=models.InvoiceStatus.paid if item.paid else models.InvoiceStatus.draft,
+                    previous_balance=0.0,
+                    notes="",
+                    internal_notes="",
+                    created_by_id=current_user.id,
+                )
+                db.add(invoice)
+                db.flush()
+
+                # Add line items
+                subtotal = Decimal("0.00")
+                for i, line_item in enumerate(invoice_data["line_items"]):
+                    amount = Decimal(str(line_item["quantity"])) * Decimal(str(line_item["unit_amount"]))
+                    li = models.InvoiceLineItem(
+                        invoice_id=invoice.id,
+                        description=line_item["description"],
+                        quantity=line_item["quantity"],
+                        unit_amount=line_item["unit_amount"],
+                        amount=amount,
+                        service_id=line_item.get("service_id"),
+                        sort_order=i,
+                    )
+                    db.add(li)
+                    subtotal += amount
+
+                invoice.subtotal = subtotal
+                invoice.total = subtotal
+
+                if item.paid:
+                    invoice.balance_due = 0
+                    invoice.amount_paid = subtotal
+                else:
+                    invoice.balance_due = subtotal
+                    invoice.amount_paid = 0
+
+                db.flush()
+
+                # Advance billing schedules
+                if invoice_data.get("schedule_ids"):
+                    schedules = db.query(models.BillingSchedule).filter(
+                        models.BillingSchedule.id.in_(invoice_data["schedule_ids"])
+                    ).all()
+                    for schedule in schedules:
+                        schedule.next_bill_date = advance_billing_date(schedule.next_bill_date, schedule.cycle)
+                    db.flush()
+
+        if not invoice or not client:
             continue
 
         if item.paid:
             # Mark invoice as paid
-            # Calculate amount still owed before updating amount_paid
             current_amount_paid = Decimal(str(invoice.amount_paid or 0))
             remaining_amount = invoice.total - current_amount_paid
 

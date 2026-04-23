@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import Button from '../components/ui/Button';
@@ -10,24 +11,61 @@ export default function DomainsPage() {
   const [isAddDomainOpen, setIsAddDomainOpen] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showCloudflareSettings, setShowCloudflareSettings] = useState(false);
+  const [showSchedulingModal, setShowSchedulingModal] = useState(false);
+  const [selectedForScheduling, setSelectedForScheduling] = useState(new Set());
   const [filterClient, setFilterClient] = useState('');
   const [filterRegistrar, setFilterRegistrar] = useState('');
+  const [sortColumn, setSortColumn] = useState('expiration_date');
+  const [sortDirection, setSortDirection] = useState('asc');
 
-  const { data: domains, isLoading: domainsLoading } = useQuery({
+  const { data: domains = [], isLoading: domainsLoading, error: domainsError } = useQuery({
     queryKey: ['domains'],
     queryFn: async () => {
       const response = await apiClient.get('/domains/');
       return response.data?.items || [];
     },
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    refetchOnMount: 'always',
   });
 
-  const { data: clients } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ['clients-all'],
     queryFn: async () => {
       const response = await apiClient.get('/clients/', { params: { limit: 10000 } });
       return response.data?.items || [];
     },
+    refetchOnMount: 'always',
+    gcTime: 0,
   });
+
+  const { data: unscheduledData = null, isLoading: unscheduledLoading } = useQuery({
+    queryKey: ['domains-unscheduled'],
+    queryFn: async () => {
+      const response = await apiClient.get('/domains/scheduling/unscheduled');
+      return response.data;
+    },
+    enabled: showSchedulingModal,
+  });
+
+  const batchScheduleMutation = useMutation({
+    mutationFn: async (domainIds) => {
+      const response = await apiClient.post('/domains/scheduling/batch-schedule', {
+        domain_ids: Array.from(domainIds)
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['domains'] });
+      queryClient.invalidateQueries({ queryKey: ['domains-unscheduled'] });
+      setShowSchedulingModal(false);
+      setSelectedForScheduling(new Set());
+    },
+  });
+
+  const clientsList = Array.isArray(clients) ? clients : [];
+  const domainsList = Array.isArray(domains) ? domains : [];
+  const unscheduled = unscheduledData?.domains || [];
 
   const deleteMutation = useMutation({
     mutationFn: async (domainId) => {
@@ -39,7 +77,7 @@ export default function DomainsPage() {
   });
 
   const getClientName = (clientId) => {
-    return clients?.find(c => c.id === clientId)?.company_name || 'Unknown';
+    return clientsList?.find(c => c.id === clientId)?.company_name || 'Unknown';
   };
 
   const getDaysUntilExpiry = (expirationDate) => {
@@ -59,8 +97,22 @@ export default function DomainsPage() {
     return getDaysUntilExpiry(expirationDate) <= 0;
   };
 
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortIndicator = ({ column }) => {
+    if (sortColumn !== column) return <span className="text-gray-300 ml-1">⇅</span>;
+    return <span className="text-blue-600 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+  };
+
   // Filter domains
-  let filtered = domains || [];
+  let filtered = domainsList || [];
   if (filterClient) {
     filtered = filtered.filter(d => d.client_id === parseInt(filterClient));
   }
@@ -68,10 +120,52 @@ export default function DomainsPage() {
     filtered = filtered.filter(d => d.registrar === filterRegistrar);
   }
 
-  const registrars = [...new Set((domains || []).map(d => d.registrar))];
+  // Sort domains
+  filtered = [...filtered].sort((a, b) => {
+    let aVal, bVal;
+
+    switch (sortColumn) {
+      case 'domain_name':
+        aVal = a.domain_name.toLowerCase();
+        bVal = b.domain_name.toLowerCase();
+        break;
+      case 'client_id':
+        aVal = getClientName(a.client_id);
+        bVal = getClientName(b.client_id);
+        break;
+      case 'registrar':
+        aVal = a.registrar;
+        bVal = b.registrar;
+        break;
+      case 'expiration_date':
+        aVal = new Date(a.expiration_date);
+        bVal = new Date(b.expiration_date);
+        break;
+      case 'renewal_cost':
+        aVal = parseFloat(a.renewal_cost);
+        bVal = parseFloat(b.renewal_cost);
+        break;
+      default:
+        return 0;
+    }
+
+    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const registrars = [...new Set(domainsList.map(d => d.registrar))];
 
   if (domainsLoading) {
     return <Layout title="Domains">Loading...</Layout>;
+  }
+
+  if (domainsError) {
+    return <Layout title="Domains">
+      <div className="text-center text-red-600 py-8">
+        <p>Failed to load domains. Please try again.</p>
+      </div>
+    </Layout>;
   }
 
   return (
@@ -82,6 +176,10 @@ export default function DomainsPage() {
           <Button onClick={() => setIsAddDomainOpen(true)} className="!px-3 !py-1.5 !text-sm">
             <Plus className="w-4 h-4 mr-1" />
             Add Domain
+          </Button>
+          <Button onClick={() => setShowSchedulingModal(true)} variant="secondary" className="!px-3 !py-1.5 !text-sm">
+            <AlertCircle className="w-4 h-4 mr-1" />
+            Schedule Renewals
           </Button>
           <SyncCloudflareButton />
           <Button onClick={() => setShowImportModal(true)} variant="secondary" className="!px-3 !py-1.5 !text-sm">
@@ -105,7 +203,7 @@ export default function DomainsPage() {
             className="px-2 py-1 border border-gray-300 rounded text-[13px] focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">All Clients</option>
-            {clients && clients.map(c => (
+            {clientsList.map(c => (
               <option key={c.id} value={c.id}>{c.company_name}</option>
             ))}
           </select>
@@ -124,16 +222,41 @@ export default function DomainsPage() {
 
         {/* Domains Table */}
         <div className="border border-gray-200 rounded overflow-hidden">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[12px] border-collapse">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-3 py-2 font-semibold text-[12px]">Domain</th>
-                <th className="text-left px-3 py-2 font-semibold text-[12px]">Client</th>
-                <th className="text-left px-3 py-2 font-semibold text-[12px]">Registrar</th>
-                <th className="text-left px-3 py-2 font-semibold text-[12px]">Expiration</th>
-                <th className="text-right px-3 py-2 font-semibold text-[12px]">Renewal Cost</th>
-                <th className="text-center px-3 py-2 font-semibold text-[12px]">Status</th>
-                <th className="text-right px-3 py-2 font-semibold text-[12px]">Actions</th>
+                <th
+                  onClick={() => handleSort('domain_name')}
+                  className="text-left px-1.5 py-1 font-semibold text-[10px] cursor-pointer hover:bg-gray-100 select-none flex-1"
+                >
+                  Domain{sortColumn === 'domain_name' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th
+                  onClick={() => handleSort('client_id')}
+                  className="text-left px-1.5 py-1 font-semibold text-[10px] cursor-pointer hover:bg-gray-100 select-none"
+                >
+                  Client{sortColumn === 'client_id' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th
+                  onClick={() => handleSort('registrar')}
+                  className="text-left px-1.5 py-1 font-semibold text-[10px] cursor-pointer hover:bg-gray-100 select-none hidden sm:table-cell"
+                >
+                  Reg{sortColumn === 'registrar' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th
+                  onClick={() => handleSort('expiration_date')}
+                  className="text-left px-1.5 py-1 font-semibold text-[10px] cursor-pointer hover:bg-gray-100 select-none"
+                >
+                  Exp{sortColumn === 'expiration_date' && (sortDirection === 'asc' ? '↑' : '↓')}
+                </th>
+                <th
+                  onClick={() => handleSort('renewal_cost')}
+                  className="text-right px-1.5 py-1 font-semibold text-[10px] cursor-pointer hover:bg-gray-100 select-none"
+                >
+                  $
+                </th>
+                <th className="text-center px-1.5 py-1 font-semibold text-[10px]">Status</th>
+                <th className="text-center px-1.5 py-1 font-semibold text-[10px]">Del</th>
               </tr>
             </thead>
             <tbody>
@@ -145,35 +268,35 @@ export default function DomainsPage() {
 
                   return (
                     <tr key={domain.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-2 font-mono text-blue-600">{domain.domain_name}</td>
-                      <td className="px-3 py-2 text-gray-700">{getClientName(domain.client_id)}</td>
-                      <td className="px-3 py-2 text-gray-600">{domain.registrar.replace(/_/g, '.')}</td>
-                      <td className="px-3 py-2 font-mono text-[12px]">{expiryStr}</td>
-                      <td className="text-right px-3 py-2 font-mono">${parseFloat(domain.renewal_cost).toFixed(2)}</td>
-                      <td className="text-center px-3 py-2">
-                        {isExpired(domain.expiration_date) ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-700">
-                            <AlertCircle className="w-3 h-3" />
-                            Expired
-                          </span>
-                        ) : isExpiringSoon(domain.expiration_date) ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-yellow-50 text-yellow-700">
-                            <AlertCircle className="w-3 h-3" />
-                            {daysUntil}d
-                          </span>
+                      <td className="text-left px-1.5 py-1 font-mono text-gray-900 text-[11px] truncate">{domain.domain_name}</td>
+                      <td className="text-left px-1.5 py-1 text-[11px] truncate">
+                        {domain.client_id ? (
+                          <Link to={`/clients/${domain.client_id}`} className="text-blue-600 hover:text-blue-800 hover:underline">
+                            {getClientName(domain.client_id)}
+                          </Link>
                         ) : (
-                          <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-green-50 text-green-700">
-                            {daysUntil}d
-                          </span>
+                          <span className="text-gray-700">Unknown</span>
                         )}
                       </td>
-                      <td className="text-right px-3 py-2">
+                      <td className="text-left px-1.5 py-1 text-gray-600 text-[10px] hidden sm:table-cell">{domain.registrar === 'cloudflare' ? 'CF' : domain.registrar.replace(/_/g, '.')}</td>
+                      <td className="text-left px-1.5 py-1 font-mono text-[10px] whitespace-nowrap">{expiryStr}</td>
+                      <td className="text-right px-1.5 py-1 font-mono text-[11px]">${parseFloat(domain.renewal_cost).toFixed(2)}</td>
+                      <td className="text-left px-1.5 py-1">
+                        {isExpired(domain.expiration_date) ? (
+                          <span className="inline-block px-1 py-0 rounded text-[9px] font-medium bg-red-100 text-red-700">Exp</span>
+                        ) : isExpiringSoon(domain.expiration_date) ? (
+                          <span className="inline-block px-1 py-0 rounded text-[9px] font-medium bg-yellow-100 text-yellow-700">{daysUntil}d</span>
+                        ) : (
+                          <span className="inline-block px-1 py-0 rounded text-[9px] font-medium bg-green-100 text-green-700">{daysUntil}d</span>
+                        )}
+                      </td>
+                      <td className="text-left px-1.5 py-1">
                         <button
                           onClick={() => deleteMutation.mutate(domain.id)}
                           disabled={deleteMutation.isPending}
-                          className="text-red-600 hover:text-red-800 text-[12px] font-medium"
+                          className="text-red-600 hover:text-red-800 text-[10px] font-medium hover:underline"
                         >
-                          Delete
+                          Del
                         </button>
                       </td>
                     </tr>
@@ -181,7 +304,7 @@ export default function DomainsPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-3 py-4 text-center text-gray-500">
+                  <td colSpan="7" className="px-3 py-8 text-center text-gray-500">
                     No domains found
                   </td>
                 </tr>
@@ -207,7 +330,7 @@ export default function DomainsPage() {
           <AddDomainModal
             isOpen={isAddDomainOpen}
             onClose={() => setIsAddDomainOpen(false)}
-            clients={clients}
+            clients={clientsList}
             onSuccess={() => {
               queryClient.invalidateQueries({ queryKey: ['domains'] });
               setIsAddDomainOpen(false);
@@ -220,6 +343,23 @@ export default function DomainsPage() {
           <CloudflareSettingsModal
             isOpen={showCloudflareSettings}
             onClose={() => setShowCloudflareSettings(false)}
+          />
+        )}
+
+        {/* Domain Scheduling Modal */}
+        {showSchedulingModal && (
+          <SchedulingModal
+            isOpen={showSchedulingModal}
+            onClose={() => {
+              setShowSchedulingModal(false);
+              setSelectedForScheduling(new Set());
+            }}
+            unscheduled={unscheduled}
+            isLoading={unscheduledLoading}
+            selectedForScheduling={selectedForScheduling}
+            setSelectedForScheduling={setSelectedForScheduling}
+            onSchedule={() => batchScheduleMutation.mutate(selectedForScheduling)}
+            isScheduling={batchScheduleMutation.isPending}
           />
         )}
       </div>
@@ -684,6 +824,147 @@ function CloudflareSettingsModal({ isOpen, onClose }) {
               Close
             </Button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SchedulingModal({
+  isOpen,
+  onClose,
+  unscheduled,
+  isLoading,
+  selectedForScheduling,
+  setSelectedForScheduling,
+  onSchedule,
+  isScheduling,
+}) {
+  const [schedulingComplete, setSchedulingComplete] = useState(false);
+  const [schedulingResult, setSchedulingResult] = useState(null);
+
+  const toggleDomain = (domainId) => {
+    const newSelected = new Set(selectedForScheduling);
+    if (newSelected.has(domainId)) {
+      newSelected.delete(domainId);
+    } else {
+      newSelected.add(domainId);
+    }
+    setSelectedForScheduling(newSelected);
+  };
+
+  const toggleAll = () => {
+    if (selectedForScheduling.size === unscheduled.length) {
+      setSelectedForScheduling(new Set());
+    } else {
+      setSelectedForScheduling(new Set(unscheduled.map(d => d.domain_id)));
+    }
+  };
+
+  const handleSchedule = async () => {
+    try {
+      await onSchedule();
+      setSchedulingComplete(true);
+      setSchedulingResult({ success: true, count: selectedForScheduling.size });
+      setTimeout(() => onClose(), 2000);
+    } catch (error) {
+      setSchedulingResult({ success: false, error: error.message });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  if (schedulingComplete && schedulingResult?.success) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6 text-center">
+          <div className="text-green-600 text-4xl mb-4">✓</div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Success!</h2>
+          <p className="text-gray-600 mb-4">
+            {schedulingResult.count} domain{schedulingResult.count !== 1 ? 's' : ''} scheduled to billing calendars.
+          </p>
+          <p className="text-sm text-gray-500">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-96 overflow-hidden flex flex-col">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-900">Schedule Domain Renewals</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Select domains to add to their recommended annual billing schedules
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="text-gray-500">Loading unscheduled domains...</div>
+            </div>
+          ) : unscheduled.length === 0 ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="text-gray-500">All domains are scheduled!</div>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
+                <tr>
+                  <th className="px-4 py-2 text-left">
+                    <input
+                      type="checkbox"
+                      checked={selectedForScheduling.size === unscheduled.length && unscheduled.length > 0}
+                      onChange={toggleAll}
+                      className="h-4 w-4"
+                    />
+                  </th>
+                  <th className="px-4 py-2 text-left font-medium">Domain</th>
+                  <th className="px-4 py-2 text-left font-medium">Client</th>
+                  <th className="px-4 py-2 text-left font-medium">Expires</th>
+                  <th className="px-4 py-2 text-left font-medium">Due Date</th>
+                  <th className="px-4 py-2 text-right font-medium">Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unscheduled.map(domain => (
+                  <tr key={domain.domain_id} className="border-b border-gray-200 hover:bg-gray-50">
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedForScheduling.has(domain.domain_id)}
+                        onChange={() => toggleDomain(domain.domain_id)}
+                        className="h-4 w-4"
+                      />
+                    </td>
+                    <td className="px-4 py-2 font-mono text-sm">{domain.domain_name}</td>
+                    <td className="px-4 py-2 text-sm">{domain.client_name}</td>
+                    <td className="px-4 py-2 text-sm">{new Date(domain.expiration_date).toLocaleDateString()}</td>
+                    <td className="px-4 py-2 text-sm">{new Date(domain.recommended_due_date).toLocaleDateString()}</td>
+                    <td className="px-4 py-2 text-right font-mono text-sm">${parseFloat(domain.renewal_cost).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            disabled={isScheduling}
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 text-sm font-medium disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSchedule}
+            disabled={isScheduling || selectedForScheduling.size === 0}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium disabled:opacity-50"
+          >
+            {isScheduling ? 'Scheduling...' : `Schedule ${selectedForScheduling.size} Domain${selectedForScheduling.size !== 1 ? 's' : ''}`}
+          </button>
         </div>
       </div>
     </div>

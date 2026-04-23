@@ -47,6 +47,7 @@ class LineItemIn(BaseModel):
     quantity: float = 1.0
     unit_amount: float
     service_id: Optional[int] = None
+    domain_id: Optional[int] = None
     sort_order: int = 0
 
 
@@ -163,6 +164,22 @@ def get_billing_schedules(
     ).order_by(models.BillingSchedule.next_bill_date).all()
 
 
+def validate_domain_billing_window(db: Session, line_items: List[LineItemIn], due_date: date):
+    """Validate that domains are billed at least 60 days before expiration."""
+    from datetime import timedelta
+    min_due_date = due_date + timedelta(days=60)
+
+    warnings = []
+    for item in line_items:
+        if item.domain_id:
+            domain = db.query(models.Domain).filter_by(id=item.domain_id).first()
+            if domain and domain.expiration_date < min_due_date:
+                days_short = (min_due_date - domain.expiration_date).days
+                warnings.append(f"Domain {domain.domain_name} expires {days_short} days before the 60-day buffer (expires {domain.expiration_date})")
+
+    return warnings
+
+
 @router.post("/{client_id}/billing-schedules", response_model=BillingScheduleResponse, status_code=status.HTTP_201_CREATED)
 def create_billing_schedule(
     client_id: int,
@@ -173,6 +190,12 @@ def create_billing_schedule(
     client = db.query(models.Client).filter_by(id=client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
+
+    # Validate domain billing windows
+    warnings = validate_domain_billing_window(db, data.line_items, data.next_bill_date)
+    for warning in warnings:
+        import logging
+        logging.warning(f"Billing schedule warning for client {client_id}: {warning}")
 
     # Calculate total amount from line items
     total_amount = sum(
@@ -201,6 +224,7 @@ def create_billing_schedule(
             unit_amount=item.unit_amount,
             amount=line_amount,
             service_id=item.service_id,
+            domain_id=item.domain_id,
             sort_order=item.sort_order if item.sort_order else idx
         )
         db.add(line_item)
@@ -229,6 +253,12 @@ def update_billing_schedule(
     ).first()
     if not schedule:
         raise HTTPException(status_code=404, detail="Billing schedule not found")
+
+    # Validate domain billing windows
+    warnings = validate_domain_billing_window(db, data.line_items, data.next_bill_date)
+    for warning in warnings:
+        import logging
+        logging.warning(f"Billing schedule warning for client {client_id}: {warning}")
 
     # Calculate total amount from line items
     total_amount = sum(
@@ -269,6 +299,7 @@ def update_billing_schedule(
             unit_amount=item.unit_amount,
             amount=line_amount,
             service_id=item.service_id,
+            domain_id=item.domain_id,
             sort_order=item.sort_order if item.sort_order else idx
         )
         db.add(line_item)

@@ -19,6 +19,8 @@ import ReportsPage from './pages/ReportsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import DomainsPage from './pages/DomainsPage';
+import CheckRegisterPage from './pages/CheckRegisterPage';
+import BankReconciliationPage from './pages/BankReconciliationPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -176,6 +178,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <DomainsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/check-register"
+            element={
+              <ProtectedRoute>
+                <CheckRegisterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bank-reconciliation/:accountId"
+            element={
+              <ProtectedRoute>
+                <BankReconciliationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bank-reconciliation/:accountId/:reconciliationId"
+            element={
+              <ProtectedRoute>
+                <BankReconciliationPage />
               </ProtectedRoute>
             }
           />

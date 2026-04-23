@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Save, RotateCcw } from 'lucide-react';
+import Layout from '../components/Layout';
 import '../styles/EmailTemplatesPage.css';
 
 export default function EmailTemplatesPage() {
@@ -99,10 +100,11 @@ export default function EmailTemplatesPage() {
     }
   };
 
-  if (loading) return <div className="loading">Loading templates...</div>;
+  if (loading) return <Layout title="Email Templates"><div className="loading">Loading templates...</div></Layout>;
 
   return (
-    <div className="email-templates-page">
+    <Layout title="Email Templates">
+      <div className="email-templates-page">
       <div className="page-header">
         <h1>Email Templates</h1>
         <p>Customize email content sent to clients. Use variables like {'{client_name}'} in templates.</p>
@@ -204,6 +206,7 @@ export default function EmailTemplatesPage() {
           </div>
         ))}
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 }

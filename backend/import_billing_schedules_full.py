@@ -355,7 +355,7 @@ for company_name, (cycle, next_date_str, source_inv, override_lines) in SCHEDULE
     elif source_inv and source_inv in invoices_by_num:
         # Use raw invoice data — preserves all custom pricing
         raw = invoices_by_num[source_inv]["lines"]
-        lines = [l for l in raw if l["product"] != "Late Fee" and l["amount"] > 0]
+        lines = [l for l in raw if l["product"] != "Late Fee"]
     else:
         lines = []
 

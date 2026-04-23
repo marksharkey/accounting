@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Profit & Loss Statement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            background: white;
+            padding: 12px 24px;
+            line-height: 1.2;
+        }
+
+        .page {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+        }
+
+        /* Header */
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 4px solid #1a3a52;
+        }
+
+        .header-left {
+            display: table-cell;
+            width: 60%;
+            vertical-align: top;
+        }
+
+        .header-right {
+            display: table-cell;
+            width: 40%;
+            vertical-align: top;
+            text-align: right;
+        }
+
+        .company-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a3a52;
+            margin-bottom: 2px;
+            letter-spacing: -0.5px;
+        }
+
+        .company-details {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.3;
+            margin-top: 4px;
+        }
+
+        .company-details p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .report-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a3a52;
+            margin-bottom: 8px;
+        }
+
+        .report-period {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        /* Sections */
+        .section {
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: white;
+            background-color: #1a3a52;
+            padding: 6px 8px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tables */
+        .line-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+
+        .line-items tr {
+            border-bottom: 1px solid #ddd;
+        }
+
+        .line-items td {
+            padding: 6px 8px;
+            font-size: 11px;
+        }
+
+        .line-items .description {
+            width: 70%;
+            color: #333;
+        }
+
+        .line-items .amount {
+            width: 30%;
+            text-align: right;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Subtotal rows */
+        .subtotal-row {
+            background-color: #f5f5f5;
+            font-weight: 600;
+            border-top: 2px solid #ddd !important;
+            border-bottom: 2px solid #ddd !important;
+        }
+
+        .subtotal-row .description {
+            color: #333;
+        }
+
+        .subtotal-row .amount {
+            color: #1a3a52;
+        }
+
+        /* Bottom line */
+        .net-income-section {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 3px solid #1a3a52;
+            text-align: right;
+        }
+
+        .net-income-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1a3a52;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .net-income-value {
+            font-size: 22px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            margin-top: 4px;
+        }
+
+        .net-income-value.profitable {
+            color: #27ae60;
+        }
+
+        .net-income-value.loss {
+            color: #e74c3c;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 24px;
+            padding-top: 12px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+        }
+
+        /* Empty state */
+        .empty {
+            padding: 12px 8px;
+            color: #999;
+            font-style: italic;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="company-name">{{ company_name }}</div>
+                <div class="company-details">
+                    {% if company_address1 %}<p>{{ company_address1 }}</p>{% endif %}
+                    {% if company_address2 %}<p>{{ company_address2 }}</p>{% endif %}
+                    {% if company_phone %}<p>{{ company_phone }}</p>{% endif %}
+                    {% if company_email %}<p>{{ company_email }}</p>{% endif %}
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="report-title">Profit & Loss</div>
+                <div class="report-period">
+                    <strong>Period:</strong><br>
+                    {{ from_date }} to {{ to_date }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Income Section -->
+        <div class="section">
+            <div class="section-title">Income</div>
+            {% if income %}
+                <table class="line-items">
+                    {% for item in income %}
+                    <tr>
+                        <td class="description">{{ item.name }}</td>
+                        <td class="amount">${{ "%.2f"|format(item.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <div class="empty">No income recorded for this period.</div>
+            {% endif %}
+            <table class="line-items">
+                <tr class="subtotal-row">
+                    <td class="description">Total Income</td>
+                    <td class="amount">{{ total_income }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Expenses Section -->
+        <div class="section">
+            <div class="section-title">Expenses</div>
+            {% if expenses %}
+                <table class="line-items">
+                    {% for item in expenses %}
+                    <tr>
+                        <td class="description">{{ item.name }}</td>
+                        <td class="amount">${{ "%.2f"|format(item.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <div class="empty">No expenses recorded for this period.</div>
+            {% endif %}
+            <table class="line-items">
+                <tr class="subtotal-row">
+                    <td class="description">Total Expenses</td>
+                    <td class="amount">{{ total_expenses }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Net Income -->
+        <div class="net-income-section">
+            <div class="net-income-label">Net Income</div>
+            <div class="net-income-value {% if is_profitable %}profitable{% else %}loss{% endif %}">
+                {% if is_profitable %}+{% endif %}{{ net_income_formatted }}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>This Profit & Loss statement was generated on {{ now.strftime("%b %d, %Y at %I:%M %p") }}</p>
+        </div>
+    </div>
+</body>
+</html>

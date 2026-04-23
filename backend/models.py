@@ -97,6 +97,16 @@ class EmailTemplateType(str, enum.Enum):
     default = "default"
 
 
+class TransactionType(str, enum.Enum):
+    check = "check"
+    deposit = "deposit"
+    transfer = "transfer"
+    payment = "payment"
+    fee = "fee"
+    interest = "interest"
+    other = "other"
+
+
 # ─────────────────────────────────────────────
 # Users
 # ─────────────────────────────────────────────
@@ -577,16 +587,74 @@ class EmailTemplate(Base):
 # Phase 2 — Bank Reconciliation
 # ─────────────────────────────────────────────
 
+class BankAccount(Base):
+    __tablename__ = "bank_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    account_name = Column(String(100), nullable=False)
+    account_number = Column(String(20), nullable=True)
+    account_type = Column(String(50), nullable=False)
+    opening_balance = Column(Numeric(12, 2), default=0, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    transactions = relationship("BankTransaction", back_populates="bank_account")
+    reconciliations = relationship("BankReconciliation", back_populates="bank_account")
+
+
 class BankTransaction(Base):
     __tablename__ = "bank_transactions"
 
     id = Column(Integer, primary_key=True, index=True)
+    bank_account_id = Column(Integer, ForeignKey("bank_accounts.id"), nullable=False)
     transaction_date = Column(Date, nullable=False)
-    description = Column(String(255), nullable=True)
+    transaction_type = Column(Enum(TransactionType), default=TransactionType.other, nullable=False)
+    transaction_number = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)
+    gl_account = Column(String(100), nullable=True)
     amount = Column(Numeric(10, 2), nullable=False)
+    balance = Column(Numeric(12, 2), nullable=True)
     matched_payment_id = Column(Integer, ForeignKey("payments.id"), nullable=True)
     reconciled = Column(Boolean, default=False)
     imported_date = Column(DateTime, server_default=func.now())
     import_batch = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    bank_account = relationship("BankAccount", back_populates="transactions")
     matched_payment = relationship("Payment")
+
+
+class BankReconciliation(Base):
+    __tablename__ = "bank_reconciliations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bank_account_id = Column(Integer, ForeignKey("bank_accounts.id"), nullable=False)
+    reconciliation_date = Column(Date, nullable=False)
+    statement_balance = Column(Numeric(12, 2), nullable=False)
+    cleared_amount = Column(Numeric(12, 2), default=0, nullable=False)
+    difference = Column(Numeric(12, 2), default=0, nullable=False)
+    is_complete = Column(Boolean, default=False)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    bank_account = relationship("BankAccount", back_populates="reconciliations")
+
+
+class JournalEntry(Base):
+    """GL journal entry for accrual-basis P&L reporting"""
+    __tablename__ = "journal_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_date = Column(Date, nullable=False, index=True)
+    gl_account_code = Column(String(10), nullable=False, index=True)
+    gl_account_name = Column(String(255), nullable=False)
+    debit = Column(Numeric(12, 2), default=0, nullable=False)
+    credit = Column(Numeric(12, 2), default=0, nullable=False)
+    description = Column(Text, nullable=True)
+    reference_number = Column(String(50), nullable=True)
+    source = Column(String(50), default="qbo_journal", nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

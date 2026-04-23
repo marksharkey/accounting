@@ -249,7 +249,14 @@ export default function InvoiceBuilderPage() {
       setTimeout(() => setSuccessMessage(''), 3000);
       resetForm();
     } catch (error) {
-      setErrorMessage(error.response?.data?.detail || error.message);
+      const detail = error.response?.data?.detail;
+      let message = error.message;
+      if (Array.isArray(detail)) {
+        message = detail.map(e => `${e.msg}`).join(', ');
+      } else if (typeof detail === 'string') {
+        message = detail;
+      }
+      setErrorMessage(message);
       setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setIsLoading(false);
@@ -296,7 +303,14 @@ export default function InvoiceBuilderPage() {
       setTimeout(() => setSuccessMessage(''), 3000);
       resetForm();
     } catch (error) {
-      setErrorMessage(error.response?.data?.detail || error.message);
+      const detail = error.response?.data?.detail;
+      let message = error.message;
+      if (Array.isArray(detail)) {
+        message = detail.map(e => `${e.msg}`).join(', ');
+      } else if (typeof detail === 'string') {
+        message = detail;
+      }
+      setErrorMessage(message);
       setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setIsLoading(false);
@@ -383,40 +397,40 @@ export default function InvoiceBuilderPage() {
 
       {/* Invoice Canvas */}
       <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white shadow-lg rounded-lg p-6 sm:p-8 lg:p-10 space-y-6">
+        <div className="bg-white shadow-lg rounded-lg p-4 sm:p-5 lg:p-6 space-y-3">
           {/* Header */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start pb-6 border-b border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pb-3 border-b border-gray-200">
             {/* Company Info */}
             <div>
               {companyInfo ? (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-900">{companyInfo.company_name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900">{companyInfo.company_name}</h3>
                   {(companyInfo.address_line1 || companyInfo.city) && (
                     <>
-                      {companyInfo.address_line1 && <p className="text-sm text-gray-600 mt-1">{companyInfo.address_line1}</p>}
-                      {companyInfo.address_line2 && <p className="text-sm text-gray-600">{companyInfo.address_line2}</p>}
+                      {companyInfo.address_line1 && <p className="text-xs text-gray-600 mt-0.5">{companyInfo.address_line1}</p>}
+                      {companyInfo.address_line2 && <p className="text-xs text-gray-600">{companyInfo.address_line2}</p>}
                       {(companyInfo.city || companyInfo.state || companyInfo.zip_code) && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs text-gray-600">
                           {[companyInfo.city, companyInfo.state, companyInfo.zip_code].filter(Boolean).join(' ')}
                         </p>
                       )}
                     </>
                   )}
-                  {companyInfo.phone && <p className="text-sm text-gray-600 mt-2">{companyInfo.phone}</p>}
-                  {companyInfo.email && <p className="text-sm text-gray-600">{companyInfo.email}</p>}
+                  {companyInfo.phone && <p className="text-xs text-gray-600 mt-1">{companyInfo.phone}</p>}
+                  {companyInfo.email && <p className="text-xs text-gray-600">{companyInfo.email}</p>}
                 </>
               ) : (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-900">Your Company</h3>
-                  <p className="text-sm text-gray-500 mt-2">Set up your company information in Settings</p>
+                  <h3 className="text-xl font-bold text-gray-900">Your Company</h3>
+                  <p className="text-xs text-gray-500 mt-1">Set up your company information in Settings</p>
                 </>
               )}
             </div>
 
             {/* Invoice Meta */}
-            <div className="space-y-2 text-right md:text-right text-left">
+            <div className="space-y-1 text-right md:text-right text-left">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Invoice</p>
-              <p className="text-sm font-semibold text-gray-900">Draft</p>
+              <p className="text-xs font-semibold text-gray-900">Draft</p>
               <p className="text-xs text-gray-600">Created: {today}</p>
               <p className="text-xs text-gray-600">Due: {dueDate}</p>
             </div>
@@ -424,7 +438,7 @@ export default function InvoiceBuilderPage() {
 
           {/* Bill To */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Bill To</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Bill To</p>
             {selectedClientObj ? (
               <div className="text-sm text-gray-700 space-y-1">
                 <p className="font-semibold text-gray-900">{selectedClientObj.company_name}</p>
@@ -474,10 +488,10 @@ export default function InvoiceBuilderPage() {
 
           {/* Line Items */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Items</p>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Items</p>
 
             {/* Desktop Table Header */}
-            <div className="hidden md:grid grid-cols-[1fr_60px_90px_80px_36px] gap-3 text-xs font-medium text-gray-600 pb-2 border-b border-gray-300 mb-2">
+            <div className="hidden md:grid grid-cols-[1fr_60px_90px_80px_36px] gap-3 text-xs font-medium text-gray-600 pb-1 border-b border-gray-300 mb-1">
               <div>Description</div>
               <div className="text-center">Qty</div>
               <div className="text-right">Unit Price</div>
@@ -487,11 +501,11 @@ export default function InvoiceBuilderPage() {
 
             {/* Line Items */}
             {lineItems.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {lineItems.map((item) => (
                   <div
                     key={item.id}
-                    className="grid grid-cols-1 md:grid-cols-[1fr_60px_90px_80px_36px] gap-2 md:gap-3 items-start md:items-center p-3 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200"
+                    className="grid grid-cols-1 md:grid-cols-[1fr_60px_90px_80px_36px] gap-2 md:gap-3 items-start md:items-center p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200"
                   >
                     {/* Description */}
                     <textarea
@@ -544,11 +558,11 @@ export default function InvoiceBuilderPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic py-6 text-center">No items yet</p>
+              <p className="text-sm text-gray-500 italic py-3 text-center">No items yet</p>
             )}
 
             {/* Add Item Row */}
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-2 mt-2">
               <div className="relative">
                 {catalogSelectOpen ? (
                   <select
@@ -594,7 +608,7 @@ export default function InvoiceBuilderPage() {
 
           {/* Account Balance Banner */}
           {previousBalance !== 0 && (
-            <div className={`p-3 rounded-lg text-sm ${previousBalance > 0 ? 'bg-amber-50 border border-amber-200 text-amber-900' : 'bg-green-50 border border-green-200 text-green-900'}`}>
+            <div className={`p-2 rounded-lg text-xs ${previousBalance > 0 ? 'bg-amber-50 border border-amber-200 text-amber-900' : 'bg-green-50 border border-green-200 text-green-900'}`}>
               {previousBalance > 0 ? (
                 <span>ℹ️ Previous balance due: <strong>${previousBalance.toFixed(2)}</strong></span>
               ) : (
@@ -605,12 +619,12 @@ export default function InvoiceBuilderPage() {
 
           {/* Totals */}
           {lineItems.length > 0 && (
-            <div className="ml-auto w-full max-w-xs space-y-1 text-right border-t border-gray-200 pt-4">
-              <div className="flex justify-between text-sm">
+            <div className="ml-auto w-full max-w-xs space-y-0.5 text-right border-t border-gray-200 pt-2">
+              <div className="flex justify-between text-xs">
                 <span className="text-gray-600">Subtotal:</span>
                 <span>${calculateTotal().toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-base font-bold text-gray-900 border-t border-gray-300 pt-2">
+              <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-300 pt-1">
                 <span>Total:</span>
                 <span>${calculateTotal().toFixed(2)}</span>
               </div>
@@ -619,15 +633,15 @@ export default function InvoiceBuilderPage() {
 
           {/* Notes to Client */}
           {lineItems.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
                 Notes to Client
               </label>
               <textarea
                 value={notesToClient}
                 onChange={(e) => setNotesToClient(e.target.value)}
                 placeholder="Visible on the invoice..."
-                className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y"
+                className="w-full min-h-[60px] px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y"
               />
             </div>
           )}
@@ -635,14 +649,14 @@ export default function InvoiceBuilderPage() {
           {/* Internal Notes */}
           {lineItems.length > 0 && (
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-2">
+              <label className="text-xs font-medium text-gray-600 block mb-1">
                 🔒 Internal Notes — not included on invoice
               </label>
               <textarea
                 value={internalNotes}
                 onChange={(e) => setInternalNotes(e.target.value)}
                 placeholder="For your reference only..."
-                className="w-full min-h-[80px] px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm resize-y"
+                className="w-full min-h-[60px] px-3 py-2 border border-amber-200 bg-amber-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm resize-y"
               />
             </div>
           )}
