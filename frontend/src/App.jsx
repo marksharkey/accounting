@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
 import LoginPage from './pages/LoginPage';
+import AccountRecoveryPage from './pages/AccountRecoveryPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import ClientsListPage from './pages/ClientsListPage';
 import ClientDetailPage from './pages/ClientDetailPage';
@@ -54,6 +56,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/account-recovery" element={<AccountRecoveryPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/dashboard"
             element={

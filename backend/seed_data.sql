@@ -33,11 +33,11 @@ INSERT INTO service_catalog (name, description, default_amount, default_cycle, c
 -- =====================================================
 -- 3. Clients
 -- =====================================================
-INSERT INTO clients (company_name, contact_name, email, email_cc, phone, autocc_recurring, account_status, account_balance, late_fee_type, late_fee_amount, late_fee_grace_days, notes, is_active, created_at, updated_at) VALUES
-('Acme Corporation', 'John Smith', 'john@acmecorp.com', NULL, '555-0001', FALSE, 'active', -1500.00, 'flat', 50.00, 15, 'Long-time client, always pays on time', TRUE, NOW(), NOW()),
-('Global Tech Solutions', 'Sarah Johnson', 'billing@globaltech.com', 'sarah@globaltech.com', '555-0002', FALSE, 'active', -2850.00, 'percentage', 5.00, 10, 'Large account, multiple services', TRUE, NOW(), NOW()),
-('Small Business LLC', 'Mike Davis', 'admin@smallbiz.com', NULL, '555-0003', TRUE, 'active', -400.00, 'none', 0.00, 0, 'New client, started in March 2026', TRUE, NOW(), NOW()),
-('Enterprise Solutions Inc', 'Patricia Brown', 'pat@enterprise.com', 'finance@enterprise.com', '555-0004', FALSE, 'active', -5200.00, 'flat', 75.00, 5, 'Premium client with multiple contracts', TRUE, NOW(), NOW());
+INSERT INTO clients (company_name, display_name, full_name, email, email_cc, phone, autocc_recurring, account_status, account_balance, late_fee_type, late_fee_amount, late_fee_grace_days, notes, is_active, created_at, updated_at) VALUES
+('Acme Corporation', 'Acme Corp', 'John Smith', 'john@acmecorp.com', NULL, '555-0001', FALSE, 'active', -1500.00, 'flat', 50.00, 15, 'Long-time client, always pays on time', TRUE, NOW(), NOW()),
+('Global Tech Solutions', 'Global Tech', 'Sarah Johnson', 'billing@globaltech.com', 'sarah@globaltech.com', '555-0002', FALSE, 'active', -2850.00, 'percentage', 5.00, 10, 'Large account, multiple services', TRUE, NOW(), NOW()),
+('Small Business LLC', 'Small Biz', 'Mike Davis', 'admin@smallbiz.com', NULL, '555-0003', TRUE, 'active', -400.00, 'none', 0.00, 0, 'New client, started in March 2026', TRUE, NOW(), NOW()),
+('Enterprise Solutions Inc', 'Enterprise', 'Patricia Brown', 'pat@enterprise.com', 'finance@enterprise.com', '555-0004', FALSE, 'active', -5200.00, 'flat', 75.00, 5, 'Premium client with multiple contracts', TRUE, NOW(), NOW());
 
 -- =====================================================
 -- 4. Billing Schedules

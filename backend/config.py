@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     app_version: str = "1.0.0"
     debug: bool = False
     api_base_url: str = "http://localhost:8010"
+    frontend_url: str = "http://localhost:5174"
 
     # Email
     smtp_host: str = ""

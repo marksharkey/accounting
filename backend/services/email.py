@@ -390,3 +390,41 @@ async def send_deletion_warning_email(client):
         },
         to_name=client.display_name,
     )
+
+
+# ─────────────────────────────────────────────
+# Account Recovery Emails
+# ─────────────────────────────────────────────
+
+async def send_forgot_username_email(user):
+    """Send username reminder to user."""
+    subject = "Your PrecisionPros Username"
+    html_body = f"""
+    <p>Hi {user.full_name},</p>
+    <p>Your username is: <strong>{user.username}</strong></p>
+    <p>If you did not request this, you can ignore this email.</p>
+    """
+    return await send_email(
+        to_email=user.email,
+        subject=subject,
+        html_body=html_body,
+        to_name=user.full_name,
+    )
+
+
+async def send_password_reset_email(user, token: str):
+    """Send password reset link to user."""
+    reset_url = f"{settings.frontend_url}/reset-password?token={token}"
+    subject = "Reset Your PrecisionPros Password"
+    html_body = f"""
+    <p>Hi {user.full_name},</p>
+    <p>Click the link below to reset your password. This link expires in 1 hour.</p>
+    <p><a href="{reset_url}">{reset_url}</a></p>
+    <p>If you did not request this, ignore this email.</p>
+    """
+    return await send_email(
+        to_email=user.email,
+        subject=subject,
+        html_body=html_body,
+        to_name=user.full_name,
+    )

@@ -121,6 +121,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False, nullable=False)
+    reset_token = Column(String(64), nullable=True, unique=True)
+    reset_token_expiry = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
 
