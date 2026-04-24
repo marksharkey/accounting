@@ -441,7 +441,7 @@ export default function InvoiceBuilderPage() {
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Bill To</p>
             {selectedClientObj ? (
               <div className="text-sm text-gray-700 space-y-1">
-                <p className="font-semibold text-gray-900">{selectedClientObj.company_name}</p>
+                <p className="font-semibold text-gray-900">{selectedClientObj.display_name}</p>
                 {selectedClientObj.display_name && <p>{selectedClientObj.display_name}</p>}
                 {selectedClientObj.email && <p>{selectedClientObj.email}</p>}
                 {selectedClientObj.phone && <p>{selectedClientObj.phone}</p>}

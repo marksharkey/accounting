@@ -257,7 +257,7 @@ export default function CreditMemoBuilderPage() {
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Bill To</p>
               {selectedClientObj ? (
                 <div className="text-sm text-gray-700">
-                  <p className="font-semibold text-gray-900">{selectedClientObj.company_name}</p>
+                  <p className="font-semibold text-gray-900">{selectedClientObj.display_name}</p>
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 italic">Select a client above</p>

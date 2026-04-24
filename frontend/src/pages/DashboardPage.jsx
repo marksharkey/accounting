@@ -244,7 +244,7 @@ export default function DashboardPage() {
                   {dueBillingList.map((item, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="text-gray-900">
-                        {item.client.company_name}
+                        {item.client.display_name}
                       </TableCell>
                       <TableCell className="text-gray-900">
                         {item.client.autocc_recurring ? 'Auto-charge' : 'Fixed recurring'}

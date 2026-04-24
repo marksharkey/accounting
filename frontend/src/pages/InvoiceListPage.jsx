@@ -314,7 +314,7 @@ export default function InvoiceListPage() {
                       {invoice.invoice_number}
                     </Link>
                   </TableCell>
-                  <TableCell>{invoice.client?.company_name || 'N/A'}</TableCell>
+                  <TableCell>{invoice.client?.display_name || 'N/A'}</TableCell>
                   <TableCell>${invoice.total.toFixed(2)}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(invoice.status)}`}>

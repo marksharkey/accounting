@@ -138,7 +138,7 @@ export default function AutoccBatchPage() {
               {autoccClients && autoccClients.length > 0 ? (
                 autoccClients.map((client) => (
                   <TableRow key={client.id} className={!client.invoice_id ? 'opacity-60' : ''}>
-                    <TableCell className="font-medium">{client.company_name}</TableCell>
+                    <TableCell className="font-medium">{client.display_name}</TableCell>
                     <TableCell>{client.invoice_number || '—'}</TableCell>
                     <TableCell>{client.invoice_total ? `$${client.invoice_total.toFixed(2)}` : '—'}</TableCell>
                     <TableCell>

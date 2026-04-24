@@ -77,7 +77,7 @@ export default function ClientDetailPage() {
   const toggleAutoccMutation = useMutation({
     mutationFn: async (newValue) => {
       const response = await apiClient.put(`/clients/${id}`, {
-        company_name: client.company_name,
+        company_name: client.display_name,
         display_name: client.display_name,
         full_name: client.full_name,
         email: client.email,
@@ -216,7 +216,7 @@ export default function ClientDetailPage() {
   }
 
   return (
-    <Layout title={client.company_name} onBack={() => navigate(-1)}>
+    <Layout title={client.display_name} onBack={() => navigate(-1)}>
       {/* Toolbar */}
       <div className="mb-3">
         <div className="flex items-center gap-2">
@@ -236,7 +236,7 @@ export default function ClientDetailPage() {
           {/* Toolbar Items */}
           <div className="flex items-center gap-3 flex-1 px-2 py-1 border-l border-gray-300">
             {/* Name */}
-            <span className="font-medium text-[14px] text-gray-900">{client.company_name}</span>
+            <span className="font-medium text-[14px] text-gray-900">{client.display_name}</span>
 
             {/* Status Badge */}
             <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${getStatusColor(client.account_status)}`}>

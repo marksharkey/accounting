@@ -161,7 +161,7 @@ export default function ClientsListPage() {
                       to={`/clients/${client.id}`}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                     >
-                      {client.company_name}
+                      {client.display_name}
                     </Link>
                   </TableCell>
                   <TableCell className="text-gray-900">{client.email || '—'}</TableCell>

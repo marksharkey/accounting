@@ -337,7 +337,7 @@ export default function InvoiceDetailPage() {
         <div className="px-8 pt-6 pb-3">
           <div className="text-xs font-bold uppercase text-gray-500 tracking-wider mb-2">Bill To</div>
           <div className="text-sm text-gray-700 space-y-0.5">
-            <div className="font-semibold text-[#1a3a52]">{invoice.client?.company_name}</div>
+            <div className="font-semibold text-[#1a3a52]">{invoice.client?.display_name}</div>
             {invoice.client?.display_name && <div>{invoice.client.display_name}</div>}
             {invoice.client?.address_line1 && <div>{invoice.client.address_line1}</div>}
             {invoice.client?.address_line2 && <div>{invoice.client.address_line2}</div>}

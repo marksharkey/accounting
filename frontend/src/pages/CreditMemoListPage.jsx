@@ -200,7 +200,7 @@ export default function CreditMemoListPage() {
             {memos && memos.length > 0 ? (
               memos.map((memo) => (
                 <TableRow key={memo.id}>
-                  <TableCell>{memo.client?.company_name || 'N/A'}</TableCell>
+                  <TableCell>{memo.client?.display_name || 'N/A'}</TableCell>
                   <TableCell>${memo.total.toFixed(2)}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(memo.status)}`}>
