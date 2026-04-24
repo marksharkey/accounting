@@ -46,6 +46,22 @@ export default function AddClientModal({ isOpen, onClose }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!formData.company_name.trim()) {
+      alert('Company Name is required');
+      return;
+    }
+
+    if (!formData.display_name.trim()) {
+      alert('Display Name is required');
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      alert('Email is required');
+      return;
+    }
+
     const submitData = {
       ...formData,
       late_fee_amount: formData.late_fee_amount === '' ? 0 : parseFloat(formData.late_fee_amount),
@@ -117,7 +133,7 @@ export default function AddClientModal({ isOpen, onClose }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Display Name
+            Display Name *
           </label>
           <Input
             type="text"
@@ -125,6 +141,7 @@ export default function AddClientModal({ isOpen, onClose }) {
             value={formData.display_name}
             onChange={handleChange}
             placeholder="e.g. 'Smith, John'"
+            required
           />
         </div>
 

@@ -172,7 +172,7 @@ class Client(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_name = Column(String(150), nullable=False)
-    display_name = Column(String(150), nullable=True)
+    display_name = Column(String(150), nullable=False)
     full_name = Column(String(150), nullable=True)
     email = Column(String(150), nullable=False)
     email_cc = Column(String(255), nullable=True)

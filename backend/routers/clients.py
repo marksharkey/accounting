@@ -15,7 +15,7 @@ router = APIRouter()
 
 class ClientBase(BaseModel):
     company_name: str
-    display_name: Optional[str] = None
+    display_name: str
     full_name: Optional[str] = None
     email: str
     email_cc: Optional[str] = None

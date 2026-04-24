@@ -62,6 +62,11 @@ export default function EditClientModal({ isOpen, onClose, client }) {
       return;
     }
 
+    if (!form.display_name.trim()) {
+      setErrorMessage('Display name is required');
+      return;
+    }
+
     if (!form.email.trim()) {
       setErrorMessage('Email is required');
       return;
@@ -121,7 +126,7 @@ export default function EditClientModal({ isOpen, onClose, client }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Display Name
+              Display Name *
             </label>
             <Input
               type="text"
@@ -129,6 +134,7 @@ export default function EditClientModal({ isOpen, onClose, client }) {
               value={form.display_name}
               onChange={handleInputChange}
               placeholder="e.g. 'Smith, John'"
+              required
             />
           </div>
 

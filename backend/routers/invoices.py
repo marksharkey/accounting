@@ -102,7 +102,7 @@ class PaymentOut(BaseModel):
 class ClientOut(BaseModel):
     id: int
     company_name: str
-    display_name: Optional[str]
+    display_name: str
     full_name: Optional[str]
     email: str
     phone: Optional[str]
