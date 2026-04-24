@@ -10,8 +10,7 @@ export default function AddClientModal({ isOpen, onClose }) {
   const [formData, setFormData] = useState({
     company_name: '',
     display_name: '',
-    first_name: '',
-    last_name: '',
+    full_name: '',
     email: '',
     phone: '',
     autocc_recurring: false,
@@ -59,8 +58,7 @@ export default function AddClientModal({ isOpen, onClose }) {
     setFormData({
       company_name: '',
       display_name: '',
-      first_name: '',
-      last_name: '',
+      full_name: '',
       email: '',
       phone: '',
       autocc_recurring: false,
@@ -130,31 +128,17 @@ export default function AddClientModal({ isOpen, onClose }) {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              First Name
-            </label>
-            <Input
-              type="text"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              placeholder="First name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Last Name
-            </label>
-            <Input
-              type="text"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              placeholder="Last name"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Full Name
+          </label>
+          <Input
+            type="text"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            placeholder="Full name"
+          />
         </div>
 
         <div>

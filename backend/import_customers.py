@@ -86,8 +86,7 @@ for idx, row in df.iterrows():
     client = {
         "company_name":         company_name,
         "display_name":         str(row["Name"]).strip() if not pd.isna(row["Name"]) else None,
-        "first_name":           None,
-        "last_name":            None,
+        "full_name":            None,
         "email":                email or "",
         "email_cc":             email_cc,
         "phone":                clean_phone(row.get("Phone")),

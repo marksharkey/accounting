@@ -19,8 +19,7 @@ function ClientSwitcherComponent({ currentClientId, currentClientName, allClient
     const results = (allClients || []).filter(c => {
       const companyName = c.company_name?.toLowerCase() || '';
       const displayName = c.display_name?.toLowerCase() || '';
-      const firstName = c.first_name?.toLowerCase() || '';
-      const lastName = c.last_name?.toLowerCase() || '';
+      const fullName = c.full_name?.toLowerCase() || '';
       const email = c.email?.toLowerCase() || '';
       const phone = c.phone?.toLowerCase() || '';
       const address1 = c.address_line1?.toLowerCase() || '';
@@ -32,8 +31,7 @@ function ClientSwitcherComponent({ currentClientId, currentClientName, allClient
       return (
         companyName.includes(query) ||
         displayName.includes(query) ||
-        firstName.includes(query) ||
-        lastName.includes(query) ||
+        fullName.includes(query) ||
         email.includes(query) ||
         phone.includes(query) ||
         address1.includes(query) ||

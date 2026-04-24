@@ -16,8 +16,7 @@ router = APIRouter()
 class ClientBase(BaseModel):
     company_name: str
     display_name: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
+    full_name: Optional[str] = None
     email: str
     email_cc: Optional[str] = None
     phone: Optional[str] = None
@@ -132,8 +131,7 @@ def list_clients(
             or_(
                 models.Client.company_name.ilike(f"%{search}%"),
                 models.Client.display_name.ilike(f"%{search}%"),
-                models.Client.first_name.ilike(f"%{search}%"),
-                models.Client.last_name.ilike(f"%{search}%"),
+                models.Client.full_name.ilike(f"%{search}%"),
                 models.Client.email.ilike(f"%{search}%"),
             )
         )

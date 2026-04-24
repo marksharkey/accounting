@@ -103,8 +103,7 @@ class ClientOut(BaseModel):
     id: int
     company_name: str
     display_name: Optional[str]
-    first_name: Optional[str]
-    last_name: Optional[str]
+    full_name: Optional[str]
     email: str
     phone: Optional[str]
     address_line1: Optional[str]

@@ -79,8 +79,7 @@ export default function ClientDetailPage() {
       const response = await apiClient.put(`/clients/${id}`, {
         company_name: client.company_name,
         display_name: client.display_name,
-        first_name: client.first_name,
-        last_name: client.last_name,
+        full_name: client.full_name,
         email: client.email,
         email_cc: client.email_cc,
         phone: client.phone,
