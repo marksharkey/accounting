@@ -260,7 +260,46 @@ export default function InvoiceDetailPage() {
       )}
 
       {/* PDF-like Invoice Document */}
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md relative overflow-hidden">
+        {/* Watermark stamp for paid/voided invoices */}
+        {invoice.status === 'paid' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{ top: '20%' }}>
+            <div style={{
+              transform: 'rotate(-35deg)',
+              fontSize: '96px',
+              fontWeight: '900',
+              color: 'rgba(22, 163, 74, 0.15)',
+              letterSpacing: '0.05em',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+              textTransform: 'uppercase',
+              border: '12px solid rgba(22, 163, 74, 0.15)',
+              padding: '0 24px',
+              lineHeight: 1.1,
+            }}>
+              PAID
+            </div>
+          </div>
+        )}
+        {invoice.status === 'voided' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10" style={{ top: '20%' }}>
+            <div style={{
+              transform: 'rotate(-35deg)',
+              fontSize: '96px',
+              fontWeight: '900',
+              color: 'rgba(220, 38, 38, 0.15)',
+              letterSpacing: '0.05em',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+              textTransform: 'uppercase',
+              border: '12px solid rgba(220, 38, 38, 0.15)',
+              padding: '0 24px',
+              lineHeight: 1.1,
+            }}>
+              VOID
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="border-b-4 border-[#1a3a52] p-8 flex justify-between">
           <div>
@@ -274,18 +313,18 @@ export default function InvoiceDetailPage() {
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-[#1a3a52] mb-3">INVOICE</div>
-            <div className="text-sm text-gray-600 space-y-1 mb-3">
-              <div className="flex justify-between gap-8">
-                <span className="font-semibold text-gray-800">Invoice #:</span>
-                <span>{invoice.invoice_number}</span>
+            <div className="text-sm text-gray-600 space-y-1 mb-3 ml-auto w-fit">
+              <div className="grid grid-cols-[auto_auto] gap-x-3">
+                <span className="font-semibold text-gray-800 text-right">Invoice #:</span>
+                <span className="text-right">{invoice.invoice_number}</span>
               </div>
-              <div className="flex justify-between gap-8">
-                <span className="font-semibold text-gray-800">Date:</span>
-                <span>{formatLocalDate(invoice.created_date)}</span>
+              <div className="grid grid-cols-[auto_auto] gap-x-3">
+                <span className="font-semibold text-gray-800 text-right">Date:</span>
+                <span className="text-right">{formatLocalDate(invoice.created_date)}</span>
               </div>
-              <div className="flex justify-between gap-8">
-                <span className="font-semibold text-gray-800">Due:</span>
-                <span>{formatLocalDate(invoice.due_date)}</span>
+              <div className="grid grid-cols-[auto_auto] gap-x-3">
+                <span className="font-semibold text-gray-800 text-right">Due:</span>
+                <span className="text-right">{formatLocalDate(invoice.due_date)}</span>
               </div>
             </div>
             <span className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${getStatusBadgeClass(invoice.status)}`}>

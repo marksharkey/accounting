@@ -33,7 +33,7 @@ TableRow.displayName = 'TableRow';
 const TableHead = forwardRef(({ className = '', ...props }, ref) => (
   <th
     ref={ref}
-    className={`h-12 px-4 text-left align-middle font-medium text-gray-700 [&:has([role=checkbox])]:pr-0 ${className}`}
+    className={`h-8 px-3 text-left align-middle font-medium text-gray-700 [&:has([role=checkbox])]:pr-0 ${className}`}
     {...props}
   />
 ));
@@ -42,7 +42,7 @@ TableHead.displayName = 'TableHead';
 const TableCell = forwardRef(({ className = '', ...props }, ref) => (
   <td
     ref={ref}
-    className={`px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0 ${className}`}
+    className={`px-3 py-1 align-middle [&:has([role=checkbox])]:pr-0 ${className}`}
     {...props}
   />
 ));

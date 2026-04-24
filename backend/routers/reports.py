@@ -29,29 +29,58 @@ def ar_aging(
         ])
     ).all()
 
-    buckets = {"current": [], "1_30": [], "31_60": [], "61_90": [], "over_90": []}
+    # Group by client
+    client_data = {}
     for inv in invoices:
         days_overdue = (as_of - inv.due_date).days
-        entry = {
-            "invoice_number": inv.invoice_number,
-            "client": inv.client.company_name,
-            "due_date": inv.due_date,
-            "days_overdue": max(0, days_overdue),
-            "balance": float(inv.balance_due),
-        }
-        if days_overdue <= 0:
-            buckets["current"].append(entry)
-        elif days_overdue <= 30:
-            buckets["1_30"].append(entry)
-        elif days_overdue <= 60:
-            buckets["31_60"].append(entry)
-        elif days_overdue <= 90:
-            buckets["61_90"].append(entry)
-        else:
-            buckets["over_90"].append(entry)
+        client_name = inv.client.company_name
+        if client_name not in client_data:
+            client_data[client_name] = {
+                "current": 0,
+                "1_30": 0,
+                "31_60": 0,
+                "61_90": 0,
+                "over_90": 0,
+            }
 
-    totals = {k: sum(e["balance"] for e in v) for k, v in buckets.items()}
-    return {"as_of": as_of, "buckets": buckets, "totals": totals, "grand_total": sum(totals.values())}
+        balance = float(inv.balance_due)
+
+        if days_overdue <= 0:
+            client_data[client_name]["current"] += balance
+        elif days_overdue <= 30:
+            client_data[client_name]["1_30"] += balance
+        elif days_overdue <= 60:
+            client_data[client_name]["31_60"] += balance
+        elif days_overdue <= 90:
+            client_data[client_name]["61_90"] += balance
+        else:
+            client_data[client_name]["over_90"] += balance
+
+    # Build client rows
+    clients = []
+    totals = {"current": 0, "1_30": 0, "31_60": 0, "61_90": 0, "over_90": 0}
+    for client_name in sorted(client_data.keys()):
+        amounts = client_data[client_name]
+        balance = sum(amounts.values())
+        clients.append({
+            "name": client_name,
+            "current": amounts["current"],
+            "1_30": amounts["1_30"],
+            "31_60": amounts["31_60"],
+            "61_90": amounts["61_90"],
+            "over_90": amounts["over_90"],
+            "balance": balance,
+        })
+        for period in totals:
+            totals[period] += amounts[period]
+
+    grand_total = sum(totals.values())
+    return {
+        "as_of": as_of,
+        "clients": clients,
+        "totals": totals,
+        "grand_total": grand_total
+    }
 
 
 @router.get("/revenue-by-period")

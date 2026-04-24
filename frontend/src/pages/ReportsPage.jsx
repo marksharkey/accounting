@@ -184,75 +184,41 @@ export default function ReportsPage() {
                 <p>Loading...</p>
               ) : (
                 <div>
-                  <div className="grid grid-cols-5 gap-4 mb-6">
-                    <div className="p-3 bg-green-50 rounded">
-                      <p className="text-xs text-gray-600">Current</p>
-                      <p className="text-lg font-bold">${(arAgingData?.totals?.current || 0).toFixed(2)}</p>
-                    </div>
-                    <div className="p-3 bg-yellow-50 rounded">
-                      <p className="text-xs text-gray-600">1-30 Days</p>
-                      <p className="text-lg font-bold">${(arAgingData?.totals?.['1_30'] || 0).toFixed(2)}</p>
-                    </div>
-                    <div className="p-3 bg-orange-50 rounded">
-                      <p className="text-xs text-gray-600">31-60 Days</p>
-                      <p className="text-lg font-bold">${(arAgingData?.totals?.['31_60'] || 0).toFixed(2)}</p>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded">
-                      <p className="text-xs text-gray-600">61-90 Days</p>
-                      <p className="text-lg font-bold">${(arAgingData?.totals?.['61_90'] || 0).toFixed(2)}</p>
-                    </div>
-                    <div className="p-3 bg-red-100 rounded">
-                      <p className="text-xs text-gray-600">Over 90 Days</p>
-                      <p className="text-lg font-bold">${(arAgingData?.totals?.over_90 || 0).toFixed(2)}</p>
-                    </div>
-                  </div>
-
-                  {['current', '1_30', '31_60', '61_90', 'over_90'].map((bucket) => {
-                    const bucketData = arAgingData?.buckets?.[bucket] || [];
-                    if (bucketData.length === 0) return null;
-
-                    const bucketLabels = {
-                      'current': 'Current',
-                      '1_30': '1-30 Days Overdue',
-                      '31_60': '31-60 Days Overdue',
-                      '61_90': '61-90 Days Overdue',
-                      'over_90': 'Over 90 Days Overdue'
-                    };
-
-                    return (
-                      <div key={bucket} className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3">{bucketLabels[bucket]}</h3>
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Invoice</TableHead>
-                              <TableHead>Client</TableHead>
-                              <TableHead>Due Date</TableHead>
-                              <TableHead>Days Overdue</TableHead>
-                              <TableHead>Balance</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {bucketData.map((invoice, idx) => (
-                              <TableRow key={idx}>
-                                <TableCell>{invoice.invoice_number}</TableCell>
-                                <TableCell>{invoice.client}</TableCell>
-                                <TableCell>{new Date(invoice.due_date).toLocaleDateString()}</TableCell>
-                                <TableCell>{invoice.days_overdue}</TableCell>
-                                <TableCell>${invoice.balance.toFixed(2)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    );
-                  })}
-
-                  <div className="mt-6 pt-4 border-t">
-                    <p className="text-lg font-semibold">
-                      Grand Total: ${(arAgingData?.grand_total || 0).toFixed(2)}
-                    </p>
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Client</TableHead>
+                        <TableHead className="text-right">Current</TableHead>
+                        <TableHead className="text-right">1-30 Days</TableHead>
+                        <TableHead className="text-right">31-60 Days</TableHead>
+                        <TableHead className="text-right">61-90 Days</TableHead>
+                        <TableHead className="text-right">Over 90 Days</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {arAgingData?.clients?.map((client, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>{client.name}</TableCell>
+                          <TableCell className="text-right">${client.current.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${client['1_30'].toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${client['31_60'].toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${client['61_90'].toFixed(2)}</TableCell>
+                          <TableCell className="text-right">${client.over_90.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-semibold">${client.balance.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="border-t-2 bg-gray-50 font-semibold">
+                        <TableCell>Total</TableCell>
+                        <TableCell className="text-right">${(arAgingData?.totals?.current || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${(arAgingData?.totals?.['1_30'] || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${(arAgingData?.totals?.['31_60'] || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${(arAgingData?.totals?.['61_90'] || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${(arAgingData?.totals?.over_90 || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${(arAgingData?.grand_total || 0).toFixed(2)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </CardContent>

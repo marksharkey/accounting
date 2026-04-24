@@ -7,9 +7,9 @@ export default function Layout({ children, title, onBack }) {
 
       {/* Main content area — offset for sidebar, minimal side padding */}
       <main className="flex-1 min-w-0 pt-20 md:pt-0 md:ml-64">
-        <div className="px-4 py-6">
+        <div className="px-4 py-3">
           {(title || onBack) && (
-            <div className="relative flex items-center justify-center mb-6">
+            <div className="relative flex items-center justify-center mb-3">
               {onBack && (
                 <button
                   onClick={onBack}
@@ -18,7 +18,7 @@ export default function Layout({ children, title, onBack }) {
                   ← Back
                 </button>
               )}
-              {title && <h2 className="text-2xl font-bold">{title}</h2>}
+              {title && <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</h2>}
             </div>
           )}
           {children}

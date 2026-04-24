@@ -10,14 +10,14 @@ const Card = forwardRef(({ className = '', ...props }, ref) => (
 Card.displayName = 'Card';
 
 const CardHeader = forwardRef(({ className = '', ...props }, ref) => (
-  <div ref={ref} className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props} />
+  <div ref={ref} className={`flex flex-col space-y-1.5 px-4 py-3 ${className}`} {...props} />
 ));
 CardHeader.displayName = 'CardHeader';
 
 const CardTitle = forwardRef(({ className = '', ...props }, ref) => (
   <h2
     ref={ref}
-    className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
+    className={`text-sm font-semibold uppercase tracking-wide text-gray-500 ${className}`}
     {...props}
   />
 ));
@@ -29,7 +29,7 @@ const CardDescription = forwardRef(({ className = '', ...props }, ref) => (
 CardDescription.displayName = 'CardDescription';
 
 const CardContent = forwardRef(({ className = '', ...props }, ref) => (
-  <div ref={ref} className={`p-6 pt-0 ${className}`} {...props} />
+  <div ref={ref} className={`px-4 pb-3 pt-0 ${className}`} {...props} />
 ));
 CardContent.displayName = 'CardContent';
 

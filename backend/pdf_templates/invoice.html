@@ -345,6 +345,35 @@
             font-weight: 600;
         }
 
+        /* Watermark */
+        .watermark {
+            position: fixed;
+            top: 38%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-50%) rotate(-35deg);
+            font-size: 100px;
+            font-weight: 900;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1000;
+            border-width: 10px;
+            border-style: solid;
+            padding: 4px 20px;
+            line-height: 1.1;
+        }
+
+        .watermark-paid {
+            color: rgba(22, 163, 74, 0.18);
+            border-color: rgba(22, 163, 74, 0.18);
+        }
+
+        .watermark-voided {
+            color: rgba(220, 38, 38, 0.18);
+            border-color: rgba(220, 38, 38, 0.18);
+        }
+
         /* Utility Classes */
         .text-right {
             text-align: right;
@@ -430,6 +459,12 @@
     </style>
 </head>
 <body>
+    {% if status == 'paid' %}
+    <div class="watermark watermark-paid">PAID</div>
+    {% elif status == 'voided' %}
+    <div class="watermark watermark-voided">VOID</div>
+    {% endif %}
+
     <div class="page">
         <!-- Header -->
         <div class="header">

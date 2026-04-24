@@ -218,86 +218,63 @@ export default function InvoiceListPage() {
 
   return (
     <Layout title="Invoices">
-      <div className="mb-6 space-y-4">
-        <div className="flex gap-4">
-          <Button
-            onClick={() => navigate('/invoices/new')}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            + New Invoice
-          </Button>
-          <Button
-            onClick={handleReset}
-            variant="outline"
-          >
-            Reset Filters
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number</label>
-            <Input
-              type="text"
-              placeholder="Search..."
-              value={invoiceNumberInput}
-              onChange={(e) => handleFilterChange('invoice_number', e.target.value)}
-              onKeyPress={handleKeyPress}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={filters.open ? 'open' : filters.overdue ? 'overdue' : filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="overdue">Overdue</option>
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="partially_paid">Partially Paid</option>
-              <option value="paid">Paid</option>
-              <option value="voided">Voided</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-            <Input
-              type="date"
-              value={filters.from_date}
-              onChange={(e) => handleFilterChange('from_date', e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-            <Input
-              type="date"
-              value={filters.to_date}
-              onChange={(e) => handleFilterChange('to_date', e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client</label>
-            <select
-              value={filters.client}
-              onChange={(e) => handleFilterChange('client', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Clients</option>
-              {clientsData?.items?.map((client) => (
-                <option key={client.id} value={client.company_name}>
-                  {client.company_name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+      <div className="mb-4 flex gap-2 items-center">
+        <Input
+          type="text"
+          placeholder="Invoice #"
+          value={invoiceNumberInput}
+          onChange={(e) => handleFilterChange('invoice_number', e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-24"
+        />
+        <select
+          value={filters.open ? 'open' : filters.overdue ? 'overdue' : filters.status}
+          onChange={(e) => handleFilterChange('status', e.target.value)}
+          className="px-2 py-1 h-7 border border-gray-300 rounded text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Status</option>
+          <option value="open">Open</option>
+          <option value="overdue">Overdue</option>
+          <option value="draft">Draft</option>
+          <option value="sent">Sent</option>
+          <option value="partially_paid">Partially Paid</option>
+          <option value="paid">Paid</option>
+          <option value="voided">Voided</option>
+        </select>
+        <select
+          value={filters.client}
+          onChange={(e) => handleFilterChange('client', e.target.value)}
+          className="px-2 py-1 h-7 border border-gray-300 rounded text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">Client</option>
+          {clientsData?.items?.map((client) => (
+            <option key={client.id} value={client.company_name}>
+              {client.company_name}
+            </option>
+          ))}
+        </select>
+        <Input
+          type="date"
+          value={filters.from_date}
+          onChange={(e) => handleFilterChange('from_date', e.target.value)}
+          className="w-28"
+        />
+        <Input
+          type="date"
+          value={filters.to_date}
+          onChange={(e) => handleFilterChange('to_date', e.target.value)}
+          className="w-28"
+        />
+        <Button onClick={handleReset} size="sm" variant="outline">
+          Reset
+        </Button>
+        <Button
+          onClick={() => navigate('/invoices/new')}
+          size="sm"
+          className="ml-auto"
+        >
+          + New
+        </Button>
       </div>
 
       <Card>

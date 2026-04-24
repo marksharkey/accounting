@@ -109,17 +109,22 @@ class ClientResponse(ClientBase):
 def list_clients(
     search: Optional[str] = None,
     active_only: bool = True,
-    status: Optional[models.AccountStatus] = None,
+    status: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     query = db.query(models.Client)
-    if active_only:
-        query = query.filter(models.Client.is_active == True)
-    if status:
-        query = query.filter(models.Client.account_status == status)
+
+    if status == 'inactive':
+        query = query.filter(models.Client.is_active == False)
+    else:
+        if active_only:
+            query = query.filter(models.Client.is_active == True)
+        if status and status != 'inactive':
+            query = query.filter(models.Client.account_status == status)
+
     if search:
         query = query.filter(
             or_(

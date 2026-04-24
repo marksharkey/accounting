@@ -9,18 +9,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import { formatLocalDate } from '../utils/dateFormat';
 
 export default function ClientsListPage() {
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
-  const [accountStatusFilter, setAccountStatusFilter] = useState('active');
+  const [clientStatusFilter, setClientStatusFilter] = useState('active');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [skip, setSkip] = useState(0);
   const [allClients, setAllClients] = useState([]);
   const navigate = useNavigate();
 
   const { data: clientData, isLoading } = useQuery({
-    queryKey: ['clients', search, accountStatusFilter, skip],
+    queryKey: ['clients', search, clientStatusFilter, skip],
     queryFn: async () => {
       const params = {
         skip,
@@ -31,17 +32,46 @@ export default function ClientsListPage() {
         params.search = search;
       }
 
-      if (accountStatusFilter === 'all') {
+      if (clientStatusFilter === 'all') {
         params.active_only = false;
+      } else if (clientStatusFilter === 'inactive') {
+        params.active_only = false;
+        params.status = 'inactive';
+      } else if (clientStatusFilter === 'active') {
+        params.active_only = true;
       } else {
         params.active_only = true;
-        params.status = accountStatusFilter;
+        params.status = clientStatusFilter;
       }
 
       const response = await apiClient.get('/clients/', { params });
       return response.data;
     },
   });
+
+  const { data: invoiceData } = useQuery({
+    queryKey: ['invoices-all'],
+    queryFn: async () => {
+      const response = await apiClient.get('/invoices/', { params: { limit: 10000 } });
+      return response.data;
+    },
+  });
+
+  const getEarliestDueDate = (clientId) => {
+    if (!invoiceData?.items) return null;
+    const unpaidStatuses = ['draft', 'sent', 'partially_paid', 'overdue'];
+    const clientInvoices = invoiceData.items.filter(
+      inv => inv.client_id === clientId && unpaidStatuses.includes(inv.status)
+    );
+    if (clientInvoices.length === 0) return null;
+    const dates = clientInvoices.map(inv => new Date(inv.due_date));
+    return new Date(Math.min(...dates));
+  };
+
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false;
+    return dueDate < new Date();
+  };
 
   const handleSearch = () => {
     setSearch(searchInput);
@@ -57,7 +87,7 @@ export default function ClientsListPage() {
   React.useEffect(() => {
     setSkip(0);
     setAllClients([]);
-  }, [search, accountStatusFilter]);
+  }, [search, clientStatusFilter]);
 
   // When clientData changes, update the all clients list
   React.useEffect(() => {
@@ -80,40 +110,33 @@ export default function ClientsListPage() {
   return (
     <Layout title="Clients">
       <AddClientModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
-      <div className="mb-6">
-        <div className="flex gap-4 mb-4">
-          <Input
-            type="text"
-            placeholder="Search clients..."
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-          />
-          <Button onClick={handleSearch}>Search</Button>
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            + Add Client
-          </Button>
-        </div>
-        <div className="flex gap-4 items-center">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={accountStatusFilter}
-              onChange={(e) => setAccountStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="active">Active</option>
-              <option value="overdue">Overdue</option>
-              <option value="suspended">Suspended</option>
-              <option value="all">All (including deleted)</option>
-            </select>
+      <div className="mb-4 flex gap-2 items-center">
+        <Input
+          type="text"
+          placeholder="Search..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          className="w-48"
+        />
+        <select
+          value={clientStatusFilter}
+          onChange={(e) => setClientStatusFilter(e.target.value)}
+          className="px-2 py-1 h-7 border border-gray-300 rounded text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="active">Active</option>
+          <option value="overdue">Overdue</option>
+          <option value="inactive">Inactive</option>
+          <option value="all">All</option>
+        </select>
+        <Button onClick={() => setIsAddModalOpen(true)} size="sm">
+          + Add
+        </Button>
+        {total > 0 && (
+          <div className="text-xs text-gray-500 ml-auto">
+            {allClients.length} of {total}
           </div>
-          {total > 0 && (
-            <div className="text-sm text-gray-600 mt-6">
-              Showing {allClients.length} of {total} clients
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <Card>
@@ -121,10 +144,12 @@ export default function ClientsListPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>AutoCC</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>City</TableHead>
+              <TableHead>Next Due Date</TableHead>
+              <TableHead>Billing Type</TableHead>
               <TableHead>Balance</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -139,14 +164,21 @@ export default function ClientsListPage() {
                       {client.company_name}
                     </Link>
                   </TableCell>
+                  <TableCell className="text-gray-900">{client.email || '—'}</TableCell>
+                  <TableCell className="text-gray-900">{client.city || '—'}</TableCell>
                   <TableCell>
-                    {client.autocc_recurring ? (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-sm">—</span>
-                    )}
+                    {(() => {
+                      const dueDate = getEarliestDueDate(client.id);
+                      if (!dueDate) return '—';
+                      return (
+                        <span className={isOverdue(dueDate) ? 'text-red-600 font-medium' : ''}>
+                          {formatLocalDate(dueDate.toISOString().split('T')[0])}
+                        </span>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell className="text-gray-900">
+                    {client.autocc_recurring ? 'Auto-charge' : 'Fixed recurring'}
                   </TableCell>
                   <TableCell>
                     <span
@@ -160,24 +192,15 @@ export default function ClientsListPage() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
+                    <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-700 rounded">
                       {client.account_status || 'Active'}
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => navigate(`/clients/${client.id}`)}
-                    >
-                      View
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan="6" className="text-center py-8 text-gray-500">
+                <TableCell colSpan="7" className="text-center py-8 text-gray-500">
                   No clients found
                 </TableCell>
               </TableRow>
