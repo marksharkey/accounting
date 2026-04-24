@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   FileText,
   Users,
+  UserCog,
   DollarSign,
   Package,
   BarChart3,
@@ -114,6 +115,7 @@ export default function Sidebar() {
   const accountItems = [
     { label: 'Settings', href: '/settings/company', icon: Settings },
     { label: 'Email Templates', href: '/settings/email-templates', icon: Mail },
+    ...(user?.is_admin ? [{ label: 'Users', href: '/settings/users', icon: UserCog }] : []),
   ];
 
   // Desktop & Tablet Sidebar

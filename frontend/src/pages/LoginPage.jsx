@@ -77,10 +77,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-
-        <p className="mt-4 text-center text-sm text-gray-600">
-          For development: username and password are the same (e.g., mark/mark)
-        </p>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ from config import get_settings
 from database import get_db, engine
 import models
 from auth import authenticate_user, create_access_token, get_current_user, get_password_hash
-from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions
+from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions, users
 
 settings = get_settings()
 
@@ -67,6 +67,7 @@ async def get_me(current_user: models.User = Depends(get_current_user)):
         "username": current_user.username,
         "full_name": current_user.full_name,
         "email": current_user.email,
+        "is_admin": current_user.is_admin,
     }
 
 
@@ -82,6 +83,7 @@ app.include_router(company_info.router,   prefix="/api/company-info",   tags=["C
 app.include_router(domains.router,        prefix="/api/domains",        tags=["Domains"])
 app.include_router(email_templates.router, tags=["Email Templates"])
 app.include_router(bank_transactions.router, prefix="/api/bank", tags=["Bank Transactions"])
+app.include_router(users.router, prefix="/api/users", tags=["Users"])
 
 # Mount static files for uploads
 uploads_dir = Path("uploads")

@@ -21,6 +21,7 @@ import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import DomainsPage from './pages/DomainsPage';
 import CheckRegisterPage from './pages/CheckRegisterPage';
 import BankReconciliationPage from './pages/BankReconciliationPage';
+import UsersPage from './pages/UsersPage';
 import './App.css';
 
 const queryClient = new QueryClient();
@@ -202,6 +203,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <BankReconciliationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/users"
+            element={
+              <ProtectedRoute>
+                <UsersPage />
               </ProtectedRoute>
             }
           />
