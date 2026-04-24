@@ -1,4 +1,10 @@
-from weasyprint import HTML, CSS
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError):
+    WEASYPRINT_AVAILABLE = False
+    HTML = CSS = None
+
 from jinja2 import Environment, FileSystemLoader
 from io import BytesIO
 import os
