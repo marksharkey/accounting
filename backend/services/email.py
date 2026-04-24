@@ -167,7 +167,7 @@ def _build_invoice_context(invoice, client):
     """Build template context for invoice emails."""
     company_name = getattr(settings, 'company_name', None) or "Our Company"
     return {
-        "client_name": client.company_name,
+        "client_name": client.display_name,
         "invoice_number": invoice.invoice_number,
         "amount_due": f"${invoice.total:.2f}",
         "due_date": invoice.due_date.strftime("%B %d, %Y"),
@@ -192,7 +192,7 @@ async def send_invoice_email_with_type(invoice, client, template_type=EmailTempl
             to_email=client.email,
             template_type=template_type,
             context=_build_invoice_context(invoice, client),
-            to_name=client.company_name,
+            to_name=client.display_name,
             attachment_bytes=pdf_bytes,
             attachment_filename=f"{invoice.invoice_number}.pdf"
         )
@@ -203,7 +203,7 @@ async def send_invoice_email_with_type(invoice, client, template_type=EmailTempl
             to_email=client.email,
             template_type=template_type,
             context=_build_invoice_context(invoice, client),
-            to_name=client.company_name,
+            to_name=client.display_name,
         )
 
 
@@ -213,13 +213,13 @@ async def send_reminder_email(invoice, client):
         to_email=client.email,
         template_type=EmailTemplateType.reminder_invoice,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "invoice_number": invoice.invoice_number,
             "balance_due": f"${invoice.balance_due:.2f}",
             "due_date": invoice.due_date.strftime("%B %d, %Y"),
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -229,13 +229,13 @@ async def send_past_due_email(invoice, client):
         to_email=client.email,
         template_type=EmailTemplateType.invoice_past_due,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "invoice_number": invoice.invoice_number,
             "balance_due": f"${invoice.balance_due:.2f}",
             "due_date": invoice.due_date.strftime("%B %d, %Y"),
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -245,11 +245,11 @@ async def send_suspension_warning_email(client):
         to_email=client.email,
         template_type=EmailTemplateType.suspension_invoice,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "amount_due": f"${client.account_balance:.2f}",
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -259,11 +259,11 @@ async def send_cancellation_email(client):
         to_email=client.email,
         template_type=EmailTemplateType.cancellation_invoice,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "amount_due": f"${client.account_balance:.2f}",
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -273,13 +273,13 @@ async def send_payment_received_email(payment, invoice, client):
         to_email=client.email,
         template_type=EmailTemplateType.paid_invoice,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "invoice_number": invoice.invoice_number,
             "payment_amount": f"${payment.amount:.2f}",
             "payment_date": datetime.utcnow().strftime("%B %d, %Y"),
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -295,13 +295,13 @@ async def send_credit_memo_email(memo, client):
             to_email=client.email,
             template_type=EmailTemplateType.credit_memo_issued,
             context={
-                "client_name": client.company_name,
+                "client_name": client.display_name,
                 "memo_number": memo.memo_number,
                 "credit_amount": f"${memo.total:.2f}",
                 "reason": memo.reason or "",
                 "company_name": settings.company_name or "Our Company",
             },
-            to_name=client.company_name,
+            to_name=client.display_name,
             attachment_bytes=pdf_bytes,
             attachment_filename=f"credit-memo-{memo.memo_number}.pdf"
         )
@@ -312,20 +312,20 @@ async def send_credit_memo_email(memo, client):
             to_email=client.email,
             template_type=EmailTemplateType.credit_memo_issued,
             context={
-                "client_name": client.company_name,
+                "client_name": client.display_name,
                 "memo_number": memo.memo_number,
                 "credit_amount": f"${memo.total:.2f}",
                 "reason": memo.reason or "",
                 "company_name": settings.company_name or "Our Company",
             },
-            to_name=client.company_name,
+            to_name=client.display_name,
         )
 
 
 async def send_payment_failed_email(client, invoice=None, amount_due=None):
     """Send payment failure notification (e.g., CC declined)."""
     context = {
-        "client_name": client.company_name,
+        "client_name": client.display_name,
         "company_name": settings.company_name or "Our Company",
     }
 
@@ -339,7 +339,7 @@ async def send_payment_failed_email(client, invoice=None, amount_due=None):
         to_email=client.email,
         template_type=EmailTemplateType.payment_failed,
         context=context,
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -368,13 +368,13 @@ async def send_late_fee_notice_email(invoice, client):
         to_email=client.email,
         template_type=EmailTemplateType.invoice_past_due,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "invoice_number": invoice.invoice_number,
             "balance_due": f"${invoice.balance_due:.2f}",
             "due_date": invoice.due_date.strftime("%B %d, %Y"),
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )
 
 
@@ -384,9 +384,9 @@ async def send_deletion_warning_email(client):
         to_email=client.email,
         template_type=EmailTemplateType.cancellation_invoice,
         context={
-            "client_name": client.company_name,
+            "client_name": client.display_name,
             "amount_due": f"${client.account_balance:.2f}",
             "company_name": settings.company_name or "Our Company",
         },
-        to_name=client.company_name,
+        to_name=client.display_name,
     )

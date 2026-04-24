@@ -93,8 +93,8 @@ def generate_invoice_pdf(invoice, client, db: Session = None):
             status_display=invoice.status.value.replace('_', ' ').title(),
 
             # Client info
-            client_name=client.company_name,
-            contact_name=client.display_name or '',
+            client_name=client.display_name,
+            contact_name=client.full_name or '',
             email=client.email,
             phone=format_phone(client.phone) if client.phone else '',
             address_line1=client.address_line1 or '',
@@ -275,8 +275,8 @@ def generate_credit_memo_pdf(memo, client, db: Session = None):
             status_display=memo.status.value.replace('_', ' ').title(),
 
             # Client info
-            client_name=client.company_name,
-            contact_name=client.display_name or '',
+            client_name=client.display_name,
+            contact_name=client.full_name or '',
             email=client.email,
             phone=format_phone(client.phone) if client.phone else '',
             address_line1=client.address_line1 or '',
