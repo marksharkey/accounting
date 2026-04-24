@@ -14,7 +14,9 @@ export default function EditClientModal({ isOpen, onClose, client }) {
     if (client) {
       setForm({
         company_name: client.company_name || '',
-        contact_name: client.contact_name || '',
+        display_name: client.display_name || '',
+        first_name: client.first_name || '',
+        last_name: client.last_name || '',
         email: client.email || '',
         email_cc: client.email_cc || '',
         phone: client.phone || '',
@@ -120,14 +122,40 @@ export default function EditClientModal({ isOpen, onClose, client }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contact Name
+              Display Name
             </label>
             <Input
               type="text"
-              name="contact_name"
-              value={form.contact_name}
+              name="display_name"
+              value={form.display_name}
               onChange={handleInputChange}
+              placeholder="e.g. 'Smith, John'"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                First Name
+              </label>
+              <Input
+                type="text"
+                name="first_name"
+                value={form.first_name}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Last Name
+              </label>
+              <Input
+                type="text"
+                name="last_name"
+                value={form.last_name}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
 
           <div>

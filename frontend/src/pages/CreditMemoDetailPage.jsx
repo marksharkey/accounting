@@ -144,8 +144,8 @@ export default function CreditMemoDetailPage() {
               <p className="text-lg">{memo.client?.company_name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600">Contact Name</p>
-              <p className="text-lg">{memo.client?.contact_name || 'N/A'}</p>
+              <p className="text-sm font-medium text-gray-600">Display Name</p>
+              <p className="text-lg">{memo.client?.display_name || 'N/A'}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600">Email</p>

@@ -78,7 +78,9 @@ export default function ClientDetailPage() {
     mutationFn: async (newValue) => {
       const response = await apiClient.put(`/clients/${id}`, {
         company_name: client.company_name,
-        contact_name: client.contact_name,
+        display_name: client.display_name,
+        first_name: client.first_name,
+        last_name: client.last_name,
         email: client.email,
         email_cc: client.email_cc,
         phone: client.phone,
@@ -287,8 +289,8 @@ export default function ClientDetailPage() {
         <div className="border border-gray-200 rounded text-[13px]">
           <div className="grid grid-cols-2 gap-2 p-2">
             <div>
-              <div className="text-[11px] font-semibold text-gray-600">CONTACT</div>
-              <div className="text-gray-900">{client.contact_name || '—'}</div>
+              <div className="text-[11px] font-semibold text-gray-600">DISPLAY NAME</div>
+              <div className="text-gray-900">{client.display_name || '—'}</div>
             </div>
             <div>
               <div className="text-[11px] font-semibold text-gray-600">EMAIL</div>

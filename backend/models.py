@@ -172,7 +172,9 @@ class Client(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_name = Column(String(150), nullable=False)
-    contact_name = Column(String(100), nullable=True)
+    display_name = Column(String(150), nullable=True)
+    first_name = Column(String(75), nullable=True)
+    last_name = Column(String(75), nullable=True)
     email = Column(String(150), nullable=False)
     email_cc = Column(String(255), nullable=True)
     phone = Column(String(20), nullable=True)

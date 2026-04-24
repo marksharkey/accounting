@@ -94,7 +94,7 @@ def generate_invoice_pdf(invoice, client, db: Session = None):
 
             # Client info
             client_name=client.company_name,
-            contact_name=client.contact_name or '',
+            contact_name=client.display_name or '',
             email=client.email,
             phone=format_phone(client.phone) if client.phone else '',
             address_line1=client.address_line1 or '',
@@ -276,7 +276,7 @@ def generate_credit_memo_pdf(memo, client, db: Session = None):
 
             # Client info
             client_name=client.company_name,
-            contact_name=client.contact_name or '',
+            contact_name=client.display_name or '',
             email=client.email,
             phone=format_phone(client.phone) if client.phone else '',
             address_line1=client.address_line1 or '',

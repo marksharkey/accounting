@@ -9,7 +9,9 @@ export default function AddClientModal({ isOpen, onClose }) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     company_name: '',
-    contact_name: '',
+    display_name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     autocc_recurring: false,
@@ -56,7 +58,9 @@ export default function AddClientModal({ isOpen, onClose }) {
   const handleClose = () => {
     setFormData({
       company_name: '',
-      contact_name: '',
+      display_name: '',
+      first_name: '',
+      last_name: '',
       email: '',
       phone: '',
       autocc_recurring: false,
@@ -115,15 +119,42 @@ export default function AddClientModal({ isOpen, onClose }) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Contact Name
+            Display Name
           </label>
           <Input
             type="text"
-            name="contact_name"
-            value={formData.contact_name}
+            name="display_name"
+            value={formData.display_name}
             onChange={handleChange}
-            placeholder="Contact name"
+            placeholder="e.g. 'Smith, John'"
           />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              First Name
+            </label>
+            <Input
+              type="text"
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleChange}
+              placeholder="First name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Last Name
+            </label>
+            <Input
+              type="text"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleChange}
+              placeholder="Last name"
+            />
+          </div>
         </div>
 
         <div>
