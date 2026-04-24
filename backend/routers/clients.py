@@ -136,7 +136,7 @@ def list_clients(
             )
         )
     total = query.count()
-    clients = query.order_by(models.Client.company_name).offset(skip).limit(limit).all()
+    clients = query.order_by(models.Client.display_name).offset(skip).limit(limit).all()
     return {"total": total, "items": clients}
 
 
