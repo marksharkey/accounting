@@ -92,24 +92,3 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 @app.get("/api/health")
 def health_check():
     return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
-
-
-@app.post("/api/setup/init-users", include_in_schema=False)
-def init_users(db: Session = Depends(get_db)):
-    """One-time setup only — remove after first run."""
-    users_data = [
-        {"username": "mark", "full_name": "Mark Sharkey", "email": "mark@precisionpros.com", "password": "mark"},
-        {"username": "candace", "full_name": "Candace Sharkey", "email": "candace@precisionpros.com", "password": "candace"},
-    ]
-    created = []
-    for u in users_data:
-        if not db.query(models.User).filter_by(username=u["username"]).first():
-            db.add(models.User(
-                username=u["username"],
-                full_name=u["full_name"],
-                email=u["email"],
-                hashed_password=get_password_hash(u["password"]),
-            ))
-            created.append(u["username"])
-    db.commit()
-    return {"created": created, "message": "Change passwords immediately and remove this endpoint."}
