@@ -13,7 +13,12 @@ from database import get_db
 from auth import get_current_user
 from services.billing import next_invoice_number
 from services.email import send_invoice_email, send_invoice_email_with_type, _get_template, _render_template_string, _build_invoice_context
-from services.pdf import generate_invoice_pdf
+try:
+    from services.pdf import generate_invoice_pdf
+except ImportError:
+    # WeasyPrint dependencies not available - create stub
+    def generate_invoice_pdf(*args, **kwargs):
+        raise RuntimeError("PDF generation not available - WeasyPrint dependencies missing")
 from config import get_settings
 
 settings = get_settings()
