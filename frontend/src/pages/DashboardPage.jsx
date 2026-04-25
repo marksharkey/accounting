@@ -256,7 +256,7 @@ export default function DashboardPage() {
                       </TableCell>
                       <TableCell className="text-gray-900">
                         {item.schedules && item.schedules.length > 0
-                          ? new Date(item.schedules[0].next_billing_date).toLocaleDateString()
+                          ? new Date(item.schedules[0].next_bill_date).toLocaleDateString()
                           : '—'}
                       </TableCell>
                       <TableCell>
