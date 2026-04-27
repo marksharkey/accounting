@@ -59,7 +59,7 @@ def ar_aging(
     # Build client rows
     clients = []
     totals = {"current": 0, "1_30": 0, "31_60": 0, "61_90": 0, "over_90": 0}
-    for client_name in sorted(client_data.keys()):
+    for client_name in sorted(client_data.keys(), key=str.lower):
         amounts = client_data[client_name]
         balance = sum(amounts.values())
         clients.append({
