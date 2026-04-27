@@ -33,7 +33,40 @@ settings = get_settings()
 
 # Mapping from QBO account names to our GL account codes
 QBO_TO_GL_MAPPING = {
-    # Revenue accounts
+    # Asset accounts (1xxx)
+    'Checking': '1000',
+    'Chase Checking': '1000',
+    'Checking Account': '1000',
+    'Checking-wcws (deleted)': '1000',
+    'Savings': '1100',
+    'Savings Account': '1100',
+    'Cash': '1010',
+    'Cash on Hand': '1010',
+    'Accounts Receivable': '1200',
+    'Accounts Receivable (A/R)': '1200',
+    'Other Current Asset': '1300',
+
+    # Liability accounts (2xxx)
+    'Accounts Payable': '2000',
+    'Accounts Payable (A/P)': '2000',
+    'Credit Card': '2100',
+    'Credit Cards': '2100',
+    'Other Current Liability': '2200',
+    'Short-term Loans': '2300',
+    'Loan From Sharkey\'s': '2300',
+    'Loan from Sharkey\'s': '2300',
+
+    # Equity accounts (3xxx)
+    'Owner Contribution': '3000',
+    'Owner Draw': '3100',
+    'Owner\'s Draw': '3100',
+    'Opening Bal Equity': '3200',
+    'Opening Balance Equity': '3200',
+    'Retained Earnings': '3300',
+    'Paid in Capital': '3400',
+    'Net Income': '3500',
+
+    # Revenue accounts (4xxx)
     'Managed Servers': '4200',
     'Web Hosting': '4100',
     'Email Hosting': '4020',
@@ -42,7 +75,7 @@ QBO_TO_GL_MAPPING = {
     'Uncategorized Income {23}': '4040',
     'Services': '4030',
 
-    # Expense accounts - A&G
+    # Expense accounts - A&G (5xxx)
     'A&G:Bank Fees': '5010',
     'A&G:credit card Fees': '5020',
     'A&G:Dial Up': '5030',
@@ -51,12 +84,12 @@ QBO_TO_GL_MAPPING = {
     'A&G:Telephone': '5050',
     'A&G:Postage': '5050',
 
-    # Expense accounts - Server Management
+    # Expense accounts - Server Management (6xxx)
     'Server Management Fees:servers': '6030',
     'Server Management Fees:Email Hosting': '6020',
     'Server Management Fees:domain registrations': '6010',
 
-    # Other expense accounts
+    # Other expense accounts (6xxx)
     'Marketing': '6300',
     'Supplies': '6040',
     'Purchased Services': '6100',

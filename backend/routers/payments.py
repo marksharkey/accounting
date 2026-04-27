@@ -10,6 +10,7 @@ import models
 from database import get_db
 from auth import get_current_user
 from services.email import send_receipt_email
+from services.journal import post_journal_entries, reverse_journal_entries
 
 router = APIRouter()
 
@@ -81,6 +82,31 @@ async def record_payment(
         notes=f"${data.amount:.2f} via {data.method.value} — Invoice {invoice.invoice_number}"
     )
     db.add(log)
+
+    # Create journal entries for payment
+    journal_entries = [
+        {
+            'date': data.payment_date,
+            'code': '1000',
+            'name': 'Cash - Chase Checking',
+            'debit': Decimal(str(data.amount)),
+            'credit': Decimal('0'),
+            'description': f'Payment for {invoice.invoice_number} — {client.company_name}',
+            'reference': invoice.invoice_number,
+            'source': 'payment'
+        },
+        {
+            'date': data.payment_date,
+            'code': '1200',
+            'name': 'Accounts Receivable',
+            'debit': Decimal('0'),
+            'credit': Decimal(str(data.amount)),
+            'description': f'Payment for {invoice.invoice_number} — {client.company_name}',
+            'reference': invoice.invoice_number,
+            'source': 'payment'
+        }
+    ]
+    post_journal_entries(db, journal_entries)
 
     # Automatically create corresponding bank transaction in Chase Checking
     chase_checking = db.query(models.BankAccount).filter_by(account_name='Chase Checking').first()
@@ -176,6 +202,9 @@ def delete_payment(
         notes=f"${payment.amount:.2f} via {payment.method.value} — Invoice {invoice.invoice_number}"
     )
     db.add(log)
+
+    # Reverse journal entries for the payment
+    reverse_journal_entries(db, invoice.invoice_number, "payment")
 
     db.delete(payment)
     db.commit()

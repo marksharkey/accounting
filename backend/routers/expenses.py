@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel
 from datetime import date
+from decimal import Decimal
 
 import models
 from database import get_db
 from auth import get_current_user
+from services.journal import post_journal_entries
 
 router = APIRouter()
 
@@ -74,6 +76,41 @@ def create_expense(
 ):
     expense = models.Expense(**data.model_dump(), recorded_by_id=current_user.id)
     db.add(expense)
+    db.flush()
+
+    # Create journal entries for expense
+    if expense.category:
+        expense_code = expense.category.code
+        expense_name = expense.category.name
+    else:
+        # Fallback to a generic expense account if no category specified
+        expense_code = '6100'  # Payroll as default
+        expense_name = 'Payroll'
+
+    journal_entries = [
+        {
+            'date': data.expense_date,
+            'code': expense_code,
+            'name': expense_name,
+            'debit': Decimal(str(data.amount)),
+            'credit': Decimal('0'),
+            'description': f'Expense: {data.vendor}{" - " + data.description if data.description else ""}',
+            'reference': data.reference_number or f'EXP-{expense.id}',
+            'source': 'expense'
+        },
+        {
+            'date': data.expense_date,
+            'code': '1000',
+            'name': 'Cash - Chase Checking',
+            'debit': Decimal('0'),
+            'credit': Decimal(str(data.amount)),
+            'description': f'Expense: {data.vendor}{" - " + data.description if data.description else ""}',
+            'reference': data.reference_number or f'EXP-{expense.id}',
+            'source': 'expense'
+        }
+    ]
+    post_journal_entries(db, journal_entries)
+
     db.commit()
     db.refresh(expense)
     return expense

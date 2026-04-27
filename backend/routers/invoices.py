@@ -13,6 +13,7 @@ from database import get_db
 from auth import get_current_user
 from services.billing import next_invoice_number
 from services.email import send_invoice_email, send_invoice_email_with_type, _get_template, _render_template_string, _build_invoice_context
+from services.journal import post_journal_entries
 try:
     from services.pdf import generate_invoice_pdf
 except ImportError:
@@ -1045,6 +1046,48 @@ async def send_invoice(
         notes=f"Invoice sent to {client.email}"
     )
     db.add(log)
+
+    # Create journal entries for revenue recognition (only when first sent)
+    if old_status in [models.InvoiceStatus.draft, models.InvoiceStatus.ready]:
+        journal_entries = [
+            {
+                'date': invoice.created_date,
+                'code': '1200',
+                'name': 'Accounts Receivable',
+                'debit': invoice.total,
+                'credit': Decimal('0'),
+                'description': f'Invoice {invoice.invoice_number}',
+                'reference': invoice.invoice_number,
+                'source': 'invoice'
+            }
+        ]
+        # Add credit entry for each line item's revenue account
+        for line_item in invoice.line_items:
+            if line_item.service and line_item.service.income_account:
+                journal_entries.append({
+                    'date': invoice.created_date,
+                    'code': line_item.service.income_account.code,
+                    'name': line_item.service.income_account.name,
+                    'debit': Decimal('0'),
+                    'credit': line_item.amount,
+                    'description': f'{invoice.invoice_number}: {line_item.description}',
+                    'reference': invoice.invoice_number,
+                    'source': 'invoice'
+                })
+            else:
+                # Fallback: if no service mapping, use a generic income account
+                journal_entries.append({
+                    'date': invoice.created_date,
+                    'code': '4030',  # Services account as fallback
+                    'name': 'Services',
+                    'debit': Decimal('0'),
+                    'credit': line_item.amount,
+                    'description': f'{invoice.invoice_number}: {line_item.description}',
+                    'reference': invoice.invoice_number,
+                    'source': 'invoice'
+                })
+        post_journal_entries(db, journal_entries)
+
     db.commit()
 
     if client.email:
@@ -1091,6 +1134,48 @@ def mark_invoice_sent(
         notes="Invoice marked as sent without email"
     )
     db.add(log)
+
+    # Create journal entries for revenue recognition (only when first sent)
+    if old_status in [models.InvoiceStatus.draft, models.InvoiceStatus.ready]:
+        journal_entries = [
+            {
+                'date': invoice.created_date,
+                'code': '1200',
+                'name': 'Accounts Receivable',
+                'debit': invoice.total,
+                'credit': Decimal('0'),
+                'description': f'Invoice {invoice.invoice_number}',
+                'reference': invoice.invoice_number,
+                'source': 'invoice'
+            }
+        ]
+        # Add credit entry for each line item's revenue account
+        for line_item in invoice.line_items:
+            if line_item.service and line_item.service.income_account:
+                journal_entries.append({
+                    'date': invoice.created_date,
+                    'code': line_item.service.income_account.code,
+                    'name': line_item.service.income_account.name,
+                    'debit': Decimal('0'),
+                    'credit': line_item.amount,
+                    'description': f'{invoice.invoice_number}: {line_item.description}',
+                    'reference': invoice.invoice_number,
+                    'source': 'invoice'
+                })
+            else:
+                # Fallback: if no service mapping, use a generic income account
+                journal_entries.append({
+                    'date': invoice.created_date,
+                    'code': '4030',  # Services account as fallback
+                    'name': 'Services',
+                    'debit': Decimal('0'),
+                    'credit': line_item.amount,
+                    'description': f'{invoice.invoice_number}: {line_item.description}',
+                    'reference': invoice.invoice_number,
+                    'source': 'invoice'
+                })
+        post_journal_entries(db, journal_entries)
+
     db.commit()
 
     return {"invoice_id": invoice_id, "status": models.InvoiceStatus.sent}

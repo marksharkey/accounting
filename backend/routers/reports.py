@@ -10,7 +10,7 @@ import io
 import models
 from database import get_db
 from auth import get_current_user
-from services.pdf import generate_pl_pdf
+from services.pdf import generate_pl_pdf, generate_balance_sheet_pdf
 
 router = APIRouter()
 
@@ -468,3 +468,201 @@ def recurring_revenue(
         "by_cycle": {k: {"count": v["count"], "total": float(v["total"])} for k, v in by_cycle.items()},
         "active_schedules": len(schedules),
     }
+
+
+@router.get("/balance-sheet")
+def balance_sheet(
+    as_of: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Balance sheet as of a specific date (default today).
+    Assets (1xxx): Debit balance = sum(debits) - sum(credits)
+    Liabilities (2xxx): Credit balance = sum(credits) - sum(debits)
+    Equity (3xxx): Credit balance = sum(credits) - sum(debits)
+    """
+    as_of = as_of or date.today()
+
+    def get_account_balances(account_prefix):
+        """Get account balances for accounts starting with prefix (e.g., '1' for assets)"""
+        results = db.query(
+            models.JournalEntry.gl_account_code.label('code'),
+            models.JournalEntry.gl_account_name.label('name'),
+            func.sum(models.JournalEntry.debit).label('total_debits'),
+            func.sum(models.JournalEntry.credit).label('total_credits')
+        ).filter(
+            and_(
+                models.JournalEntry.transaction_date <= as_of,
+                models.JournalEntry.gl_account_code.like(f'{account_prefix}%')
+            )
+        ).group_by(
+            models.JournalEntry.gl_account_code,
+            models.JournalEntry.gl_account_name
+        ).order_by(models.JournalEntry.gl_account_code).all()
+
+        return results
+
+    # Assets (1xxx): Debit balance
+    asset_results = get_account_balances('1')
+    assets = []
+    total_assets = 0.0
+    for r in asset_results:
+        balance = float((r.total_debits or 0) - (r.total_credits or 0))
+        assets.append({
+            "code": r.code,
+            "name": r.name,
+            "balance": balance
+        })
+        total_assets += balance
+
+    # Liabilities (2xxx): Credit balance
+    liability_results = get_account_balances('2')
+    liabilities = []
+    total_liabilities = 0.0
+    for r in liability_results:
+        balance = float((r.total_credits or 0) - (r.total_debits or 0))
+        liabilities.append({
+            "code": r.code,
+            "name": r.name,
+            "balance": balance
+        })
+        total_liabilities += balance
+
+    # Equity (3xxx): Most are credit balance, but Owner's Draw (3100) is debit and reduces equity
+    equity_results = get_account_balances('3')
+    equity = []
+    total_equity = 0.0
+    for r in equity_results:
+        # Owner's Draw (3100) is a debit account that reduces equity
+        if r.code == '3100':
+            balance = float((r.total_debits or 0) - (r.total_credits or 0))
+            # Subtract from equity (it's a reduction)
+            total_equity -= balance
+        else:
+            balance = float((r.total_credits or 0) - (r.total_debits or 0))
+            total_equity += balance
+        equity.append({
+            "code": r.code,
+            "name": r.name,
+            "balance": balance
+        })
+
+    total_liabilities_and_equity = total_liabilities + total_equity
+
+    return {
+        "as_of": as_of,
+        "assets": assets,
+        "total_assets": total_assets,
+        "liabilities": liabilities,
+        "total_liabilities": total_liabilities,
+        "equity": equity,
+        "total_equity": total_equity,
+        "total_liabilities_and_equity": total_liabilities_and_equity,
+        "balanced": abs(total_assets - total_liabilities_and_equity) < 0.01,
+    }
+
+
+@router.get("/balance-sheet/pdf")
+def balance_sheet_pdf(
+    as_of: Optional[date] = None,
+    db: Session = Depends(get_db),
+):
+    """Generate balance sheet as PDF (or HTML fallback)."""
+    as_of = as_of or date.today()
+
+    def get_account_balances(account_prefix):
+        """Get account balances for accounts starting with prefix (e.g., '1' for assets)"""
+        results = db.query(
+            models.JournalEntry.gl_account_code.label('code'),
+            models.JournalEntry.gl_account_name.label('name'),
+            func.sum(models.JournalEntry.debit).label('total_debits'),
+            func.sum(models.JournalEntry.credit).label('total_credits')
+        ).filter(
+            and_(
+                models.JournalEntry.transaction_date <= as_of,
+                models.JournalEntry.gl_account_code.like(f'{account_prefix}%')
+            )
+        ).group_by(
+            models.JournalEntry.gl_account_code,
+            models.JournalEntry.gl_account_name
+        ).order_by(models.JournalEntry.gl_account_code).all()
+
+        return results
+
+    # Assets (1xxx): Debit balance
+    asset_results = get_account_balances('1')
+    assets = []
+    total_assets = 0.0
+    for r in asset_results:
+        balance = float((r.total_debits or 0) - (r.total_credits or 0))
+        assets.append({
+            "code": r.code,
+            "name": r.name,
+            "balance": balance
+        })
+        total_assets += balance
+
+    # Liabilities (2xxx): Credit balance
+    liability_results = get_account_balances('2')
+    liabilities = []
+    total_liabilities = 0.0
+    for r in liability_results:
+        balance = float((r.total_credits or 0) - (r.total_debits or 0))
+        liabilities.append({
+            "code": r.code,
+            "name": r.name,
+            "balance": balance
+        })
+        total_liabilities += balance
+
+    # Equity (3xxx): Most are credit balance, but Owner's Draw (3100) is debit and reduces equity
+    equity_results = get_account_balances('3')
+    equity = []
+    total_equity = 0.0
+    for r in equity_results:
+        # Owner's Draw (3100) is a debit account that reduces equity
+        if r.code == '3100':
+            balance = float((r.total_debits or 0) - (r.total_credits or 0))
+            # Subtract from equity (it's a reduction)
+            total_equity -= balance
+        else:
+            balance = float((r.total_credits or 0) - (r.total_debits or 0))
+            total_equity += balance
+        equity.append({
+            "code": r.code,
+            "name": r.name,
+            "balance": balance
+        })
+
+    total_liabilities_and_equity = total_liabilities + total_equity
+
+    # Get company info
+    company = db.query(models.CompanyInfo).first()
+
+    data = {
+        "as_of": as_of,
+        "assets": assets,
+        "total_assets": total_assets,
+        "liabilities": liabilities,
+        "total_liabilities": total_liabilities,
+        "equity": equity,
+        "total_equity": total_equity,
+        "total_liabilities_and_equity": total_liabilities_and_equity,
+    }
+
+    output_type, output_bytes = generate_balance_sheet_pdf(data, company)
+
+    if output_type == "pdf":
+        return StreamingResponse(
+            output_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=balance_sheet.pdf"}
+        )
+    else:
+        # HTML output - user can print to PDF from browser
+        return StreamingResponse(
+            io.BytesIO(output_bytes),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": "inline; filename=balance_sheet.html"}
+        )

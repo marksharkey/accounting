@@ -14,6 +14,7 @@ from services.email import (
     send_suspension_warning_email,
     send_deletion_warning_email
 )
+from services.journal import post_journal_entries
 
 router = APIRouter()
 
@@ -155,6 +156,32 @@ async def apply_late_fee(
         notes=f"Late fee ${fee:.2f} applied to {invoice.invoice_number}"
     )
     db.add(log)
+
+    # Create journal entries for late fee
+    journal_entries = [
+        {
+            'date': date.today(),
+            'code': '1200',
+            'name': 'Accounts Receivable',
+            'debit': fee,
+            'credit': Decimal('0'),
+            'description': f'Late fee for {invoice.invoice_number}',
+            'reference': invoice.invoice_number,
+            'source': 'late_fee'
+        },
+        {
+            'date': date.today(),
+            'code': '4400',
+            'name': 'Late Fee Revenue',
+            'debit': Decimal('0'),
+            'credit': fee,
+            'description': f'Late fee for {invoice.invoice_number}',
+            'reference': invoice.invoice_number,
+            'source': 'late_fee'
+        }
+    ]
+    post_journal_entries(db, journal_entries)
+
     db.commit()
 
     if client.email:

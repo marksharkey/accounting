@@ -368,3 +368,64 @@ def generate_pl_pdf(data, company_info=None):
     else:
         print("Warning: WeasyPrint not available, returning HTML for browser printing")
         return ("html", html_content.encode('utf-8'))
+
+
+def generate_balance_sheet_pdf(data, company_info=None):
+    """Generate PDF for a Balance Sheet using WeasyPrint, with HTML fallback"""
+    # Set default company info
+    company_details = {
+        'name': 'PrecisionPros',
+        'address1': '6543 East Omega Street',
+        'address2': 'Mesa, AZ 85215',
+        'phone': '480-329-6176',
+        'email': 'billing@precisionpros.com',
+    }
+
+    # Override with provided company info
+    if company_info:
+        company_details['name'] = company_info.company_name
+        company_details['address1'] = company_info.address_line1 or ''
+        company_details['address2'] = (
+            f"{company_info.city or ''}, {company_info.state or ''} {company_info.zip_code or ''}".strip()
+            if company_info.city or company_info.state or company_info.zip_code else ''
+        )
+        if company_info.address_line2:
+            company_details['address1'] = f"{company_details['address1']}\n{company_info.address_line2}".strip()
+        company_details['phone'] = company_info.phone or company_details['phone']
+        company_details['email'] = company_info.email or company_details['email']
+
+    # Format date
+    as_of = data['as_of'].strftime("%b %d, %Y")
+    now = datetime.now()
+    generated_date = now.strftime("%b %d, %Y at %I:%M %p")
+
+    # Render template
+    template = env.get_template('balance_sheet.html')
+    html_content = template.render(
+        company_name=company_details['name'],
+        company_address1=company_details['address1'],
+        company_address2=company_details['address2'],
+        company_phone=company_details['phone'],
+        company_email=company_details['email'],
+        as_of=as_of,
+        assets=data['assets'],
+        total_assets=data['total_assets'],
+        liabilities=data['liabilities'],
+        total_liabilities=data['total_liabilities'],
+        equity=data['equity'],
+        total_equity=data['total_equity'],
+        total_liabilities_and_equity=data['total_liabilities_and_equity'],
+        generated_date=generated_date,
+    )
+
+    # Try to generate PDF if WeasyPrint is available
+    if WEASYPRINT_AVAILABLE:
+        try:
+            pdf_bytes = HTML(string=html_content).write_pdf()
+            return ("pdf", BytesIO(pdf_bytes))
+        except Exception as e:
+            print(f"Warning: PDF generation failed, returning HTML: {e}")
+            return ("html", html_content.encode('utf-8'))
+    else:
+        print("Warning: WeasyPrint not available, returning HTML for browser printing")
+        return ("html", html_content.encode('utf-8'))

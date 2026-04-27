@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Balance Sheet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            background: white;
+            padding: 40px;
+            line-height: 1.4;
+        }
+
+        .page {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .header .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .header .report-period {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* Section styling */
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 6px;
+        }
+
+        .subsection-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 20px;
+            margin-top: 12px;
+            margin-bottom: 8px;
+        }
+
+        /* Table styling */
+        .account-row {
+            display: flex;
+            margin-bottom: 4px;
+        }
+
+        .account-label {
+            flex: 1;
+            font-size: 11px;
+            padding-left: 0;
+        }
+
+        .account-label.indent-1 {
+            padding-left: 20px;
+        }
+
+        .account-label.indent-2 {
+            padding-left: 40px;
+        }
+
+        .account-label.indent-3 {
+            padding-left: 60px;
+        }
+
+        .account-amount {
+            width: 150px;
+            text-align: right;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            padding-right: 0;
+        }
+
+        .subtotal-row {
+            display: flex;
+            margin-bottom: 4px;
+            font-weight: bold;
+            border-top: 1px solid #ddd;
+            padding-top: 4px;
+        }
+
+        .subtotal-row .account-label {
+            flex: 1;
+            font-size: 11px;
+        }
+
+        .subtotal-row .account-amount {
+            width: 150px;
+            text-align: right;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .total-row {
+            display: flex;
+            margin-bottom: 4px;
+            font-weight: bold;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            padding-top: 6px;
+            padding-bottom: 6px;
+        }
+
+        .total-row .account-label {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .total-row .account-amount {
+            width: 150px;
+            text-align: right;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .grand-total-row {
+            display: flex;
+            margin-top: 20px;
+            font-weight: bold;
+            border-top: 3px double #000;
+            border-bottom: 3px double #000;
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        .grand-total-row .account-label {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .grand-total-row .account-amount {
+            width: 150px;
+            text-align: right;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+        }
+
+        /* Empty state */
+        .empty {
+            padding: 12px 0;
+            color: #999;
+            font-style: italic;
+            font-size: 11px;
+            margin-left: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Header -->
+        <div class="header">
+            <h1>Balance Sheet</h1>
+            <div class="company-name">{{ company_name }}</div>
+            <div class="report-period">As of {{ as_of }}</div>
+            <div class="report-period">Accrual Basis</div>
+        </div>
+
+        <!-- Assets Section -->
+        <div class="section">
+            <div class="section-title">Assets</div>
+
+            {% if total_assets > 0 %}
+                <div class="subsection-title indent-1">Current Assets</div>
+
+                <div class="subsection-title indent-2">Bank Accounts</div>
+                {% for item in assets %}
+                    {% if item.code in ['1000', '1010'] %}
+                        <div class="account-row">
+                            <span class="account-label indent-3">{{ item.name }}</span>
+                            <span class="account-amount">${{ "%.2f"|format(item.balance) }}</span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% set bank_total = assets|selectattr('code', 'in', ['1000', '1010'])|map(attribute='balance')|sum %}
+                <div class="subtotal-row">
+                    <span class="account-label indent-2">Total for Bank Accounts</span>
+                    <span class="account-amount">${{ "%.2f"|format(bank_total) }}</span>
+                </div>
+
+                <div class="subsection-title indent-2">Accounts Receivable</div>
+                {% for item in assets %}
+                    {% if item.code == '1200' %}
+                        <div class="account-row">
+                            <span class="account-label indent-3">{{ item.name }}</span>
+                            <span class="account-amount">${{ "%.2f"|format(item.balance) }}</span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                {% set ar_total = assets|selectattr('code', 'equalto', '1200')|map(attribute='balance')|sum %}
+                <div class="subtotal-row">
+                    <span class="account-label indent-2">Total for Accounts Receivable</span>
+                    <span class="account-amount">${{ "%.2f"|format(ar_total) }}</span>
+                </div>
+
+                <div class="subtotal-row">
+                    <span class="account-label indent-1">Total for Current Assets</span>
+                    <span class="account-amount">${{ "%.2f"|format(total_assets) }}</span>
+                </div>
+
+            {% else %}
+                <div class="empty">No asset accounts recorded.</div>
+            {% endif %}
+
+            <div class="total-row">
+                <span class="account-label">Total for Assets</span>
+                <span class="account-amount">${{ "%.2f"|format(total_assets) }}</span>
+            </div>
+        </div>
+
+        <!-- Liabilities and Equity Section -->
+        <div class="section">
+            <div class="section-title">Liabilities and Equity</div>
+
+            <!-- Liabilities -->
+            <div class="subsection-title indent-1">Liabilities</div>
+            <div class="subsection-title indent-2">Current Liabilities</div>
+            <div class="subsection-title indent-3">Other Current Liabilities</div>
+
+            {% if liabilities|length > 0 %}
+                {% for item in liabilities %}
+                    <div class="account-row">
+                        <span class="account-label indent-3">{{ item.name }}</span>
+                        <span class="account-amount">${{ "%.2f"|format(item.balance) }}</span>
+                    </div>
+                {% endfor %}
+                <div class="subtotal-row">
+                    <span class="account-label indent-3">Total for Other Current Liabilities</span>
+                    <span class="account-amount">${{ "%.2f"|format(total_liabilities) }}</span>
+                </div>
+            {% else %}
+                <div class="empty">No liability accounts recorded.</div>
+            {% endif %}
+
+            <div class="subtotal-row">
+                <span class="account-label indent-2">Total for Current Liabilities</span>
+                <span class="account-amount">${{ "%.2f"|format(total_liabilities) }}</span>
+            </div>
+
+            <div class="subtotal-row">
+                <span class="account-label indent-1">Total for Liabilities</span>
+                <span class="account-amount">${{ "%.2f"|format(total_liabilities) }}</span>
+            </div>
+
+            <!-- Equity -->
+            <div class="subsection-title indent-1">Equity</div>
+
+            {% if equity|length > 0 %}
+                {% for item in equity %}
+                    <div class="account-row">
+                        <span class="account-label indent-2">{{ item.name }}</span>
+                        <span class="account-amount">${{ "%.2f"|format(item.balance) }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty">No equity accounts recorded.</div>
+            {% endif %}
+
+            <div class="subtotal-row">
+                <span class="account-label indent-1">Total for Equity</span>
+                <span class="account-amount">${{ "%.2f"|format(total_equity) }}</span>
+            </div>
+
+            <div class="total-row">
+                <span class="account-label">Total for Liabilities and Equity</span>
+                <span class="account-amount">${{ "%.2f"|format(total_liabilities_and_equity) }}</span>
+            </div>
+        </div>
+
+        <!-- Balance Verification -->
+        {% set difference = (total_assets - total_liabilities_and_equity)|abs %}
+        {% if difference < 0.01 %}
+            <div style="margin-top: 20px; padding: 10px; background-color: #e8f5e9; border: 1px solid #4caf50; border-radius: 4px; text-align: center; font-size: 11px; color: #2e7d32;">
+                ✓ Balance Sheet is Balanced
+            </div>
+        {% else %}
+            <div style="margin-top: 20px; padding: 10px; background-color: #ffebee; border: 1px solid #f44336; border-radius: 4px; text-align: center; font-size: 11px; color: #c62828;">
+                ✗ Out of Balance by ${{ "%.2f"|format(difference) }}
+            </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>{{ generated_date }}</p>
+        </div>
+    </div>
+</body>
+</html>

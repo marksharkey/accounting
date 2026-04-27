@@ -16,6 +16,7 @@ export default function ReportsPage() {
   const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [drilldown, setDrilldown] = useState(null);
+  const [balanceSheetDate, setBalanceSheetDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Revenue by Period
   const { data: revenueData, isLoading: revenueLoading } = useQuery({
@@ -43,6 +44,17 @@ export default function ReportsPage() {
     queryFn: async () => {
       const response = await apiClient.get('/reports/profit-loss', {
         params: { from_date: fromDate, to_date: toDate },
+      });
+      return response.data;
+    },
+  });
+
+  // Balance Sheet
+  const { data: balanceSheetData, isLoading: balanceSheetLoading } = useQuery({
+    queryKey: ['reports', 'balance-sheet', balanceSheetDate],
+    queryFn: async () => {
+      const response = await apiClient.get('/reports/balance-sheet', {
+        params: { as_of: balanceSheetDate },
       });
       return response.data;
     },
@@ -117,6 +129,19 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">Income and expense summary by category</p>
+              <p className="text-sm text-gray-500 mt-2">Click to view report</p>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => setSelectedReport('balance-sheet')}
+          >
+            <CardHeader>
+              <CardTitle>Balance Sheet</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">Assets, liabilities, and equity snapshot</p>
               <p className="text-sm text-gray-500 mt-2">Click to view report</p>
             </CardContent>
           </Card>
@@ -427,6 +452,146 @@ export default function ReportsPage() {
                       ${Math.abs(plData?.net_income || 0).toFixed(2)}
                     </p>
                     {plData?.net_income < 0 && <p className="text-sm opacity-90 mt-1">(Loss)</p>}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : selectedReport === 'balance-sheet' ? (
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button size="sm" variant="ghost" onClick={closeDetail}>
+                ← Back
+              </Button>
+              <label className="text-sm font-medium">As of:</label>
+              <Input
+                type="date"
+                value={balanceSheetDate}
+                onChange={(e) => setBalanceSheetDate(e.target.value)}
+                className="w-40"
+              />
+            </div>
+            <Button
+              onClick={() => {
+                const params = new URLSearchParams({ as_of: balanceSheetDate });
+                window.open(`/api/reports/balance-sheet/pdf?${params.toString()}`, '_blank');
+              }}
+              disabled={balanceSheetLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              📥 Download PDF
+            </Button>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Balance Sheet</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {balanceSheetLoading ? (
+                <p>Loading...</p>
+              ) : (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Assets</h3>
+                  {balanceSheetData?.assets && balanceSheetData.assets.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Account</TableHead>
+                          <TableHead className="text-right">Balance</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {balanceSheetData.assets.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-mono text-sm">{item.code}</TableCell>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell className="text-right font-mono">${item.balance.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-gray-500 italic py-4">No asset accounts recorded.</p>
+                  )}
+
+                  <div className="bg-blue-50 p-4 rounded my-6">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-600">Total Assets</p>
+                      <p className="text-3xl font-bold text-blue-600">
+                        ${(balanceSheetData?.total_assets || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Liabilities</h3>
+                  {balanceSheetData?.liabilities && balanceSheetData.liabilities.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Account</TableHead>
+                          <TableHead className="text-right">Balance</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {balanceSheetData.liabilities.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-mono text-sm">{item.code}</TableCell>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell className="text-right font-mono">${item.balance.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-gray-500 italic py-4">No liability accounts recorded.</p>
+                  )}
+
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900">Equity</h3>
+                  {balanceSheetData?.equity && balanceSheetData.equity.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Code</TableHead>
+                          <TableHead>Account</TableHead>
+                          <TableHead className="text-right">Balance</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {balanceSheetData.equity.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-mono text-sm">{item.code}</TableCell>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell className="text-right font-mono">${item.balance.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-gray-500 italic py-4">No equity accounts recorded.</p>
+                  )}
+
+                  <div className="bg-gray-50 p-4 rounded my-6">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-600">Total Liabilities & Equity</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        ${(balanceSheetData?.total_liabilities_and_equity || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className={`p-6 rounded text-white text-center ${balanceSheetData?.balanced ? 'bg-green-600' : 'bg-red-600'}`}>
+                    <p className="text-sm opacity-90 mb-2">BALANCE CHECK</p>
+                    <p className="text-lg font-bold mb-2">
+                      Assets: ${(balanceSheetData?.total_assets || 0).toFixed(2)} = Liabilities + Equity: ${(balanceSheetData?.total_liabilities_and_equity || 0).toFixed(2)}
+                    </p>
+                    <p className="text-sm opacity-90">
+                      {balanceSheetData?.balanced ? '✓ Balance Sheet is Balanced' : '✗ Balance Sheet is NOT Balanced'}
+                    </p>
                   </div>
                 </div>
               )}
