@@ -253,6 +253,7 @@ def profit_loss(
             for item in items:
                 expense_data.append({
                     "type": "line",
+                    "code": item["code"],
                     "name": item["name"],
                     "amount": item["amount"]
                 })
@@ -361,6 +362,7 @@ def profit_loss_pdf(
             for item in items:
                 expense_data.append({
                     "type": "line",
+                    "code": item["code"],
                     "name": item["name"],
                     "amount": item["amount"]
                 })
@@ -386,6 +388,45 @@ def profit_loss_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=profit_loss.pdf"}
     )
+
+
+@router.get("/profit-loss/transactions")
+def profit_loss_transactions(
+    from_date: date,
+    to_date: date,
+    account_code: Optional[str] = None,
+    account_name_prefix: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Get journal entries for a specific account/category within a date range."""
+    query = db.query(models.JournalEntry).filter(
+        and_(
+            models.JournalEntry.transaction_date >= from_date,
+            models.JournalEntry.transaction_date <= to_date,
+        )
+    )
+
+    if account_code:
+        query = query.filter(models.JournalEntry.gl_account_code == account_code)
+    elif account_name_prefix:
+        query = query.filter(models.JournalEntry.gl_account_name.like(f"{account_name_prefix}:%"))
+
+    entries = query.order_by(models.JournalEntry.transaction_date.desc()).all()
+
+    return {
+        "entries": [
+            {
+                "date": e.transaction_date,
+                "gl_account_code": e.gl_account_code,
+                "gl_account_name": e.gl_account_name,
+                "description": e.description or "",
+                "reference_number": e.reference_number or "",
+                "debit": float(e.debit),
+                "credit": float(e.credit),
+            }
+            for e in entries
+        ]
+    }
 
 
 @router.get("/recurring-revenue")

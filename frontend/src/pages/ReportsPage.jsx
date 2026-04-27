@@ -15,6 +15,7 @@ export default function ReportsPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [fromDate, setFromDate] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
+  const [drilldown, setDrilldown] = useState(null);
 
   // Revenue by Period
   const { data: revenueData, isLoading: revenueLoading } = useQuery({
@@ -54,6 +55,25 @@ export default function ReportsPage() {
       const response = await apiClient.get('/collections/daily-queue');
       return response.data;
     },
+  });
+
+  // Profit & Loss Drilldown Transactions
+  const { data: drilldownData, isLoading: drilldownLoading } = useQuery({
+    queryKey: ['reports', 'profit-loss/transactions', fromDate, toDate, drilldown],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        from_date: fromDate,
+        to_date: toDate,
+      });
+      if (drilldown?.accountCode) {
+        params.append('account_code', drilldown.accountCode);
+      } else if (drilldown?.accountNamePrefix) {
+        params.append('account_name_prefix', drilldown.accountNamePrefix);
+      }
+      const response = await apiClient.get('/reports/profit-loss/transactions', { params });
+      return response.data;
+    },
+    enabled: !!drilldown,
   });
 
   const closeDetail = () => setSelectedReport(null);
@@ -257,6 +277,60 @@ export default function ReportsPage() {
               📥 Download PDF
             </Button>
           </div>
+
+          {/* Drilldown Modal */}
+          {drilldown && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg w-full max-w-5xl mx-4 max-h-[90vh] flex flex-col overflow-hidden">
+                <div className="flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0">
+                  <h2 className="text-lg font-bold">{drilldown.title}</h2>
+                  <button
+                    onClick={() => setDrilldown(null)}
+                    className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-6">
+                  {drilldownLoading ? (
+                    <p>Loading transactions...</p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Account</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Reference</TableHead>
+                          <TableHead className="text-right">Debit</TableHead>
+                          <TableHead className="text-right">Credit</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {drilldownData?.entries?.map((entry, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="whitespace-nowrap">{new Date(entry.date).toLocaleDateString()}</TableCell>
+                            <TableCell className="font-mono text-sm">{entry.gl_account_code}</TableCell>
+                            <TableCell>{entry.description}</TableCell>
+                            <TableCell className="font-mono text-sm">{entry.reference_number}</TableCell>
+                            <TableCell className="text-right font-mono">{entry.debit > 0 ? `$${entry.debit.toFixed(2)}` : '-'}</TableCell>
+                            <TableCell className="text-right font-mono">{entry.credit > 0 ? `$${entry.credit.toFixed(2)}` : '-'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+                <div className="border-t border-gray-200 p-6 bg-gray-50 flex-shrink-0">
+                  <div className="flex justify-end gap-4 font-semibold">
+                    <span>Total Debits: ${(drilldownData?.entries?.reduce((sum, e) => sum + e.debit, 0) || 0).toFixed(2)}</span>
+                    <span>Total Credits: ${(drilldownData?.entries?.reduce((sum, e) => sum + e.credit, 0) || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>Profit & Loss Report</CardTitle>
@@ -277,7 +351,7 @@ export default function ReportsPage() {
                       </TableHeader>
                       <TableBody>
                         {plData.income.map((item, idx) => (
-                          <TableRow key={idx}>
+                          <TableRow key={idx} className="cursor-pointer hover:bg-blue-50" onClick={() => setDrilldown({ title: item.name, accountCode: item.code })}>
                             <TableCell>{item.name}</TableCell>
                             <TableCell className="text-right font-mono">${item.amount.toFixed(2)}</TableCell>
                           </TableRow>
@@ -310,12 +384,12 @@ export default function ReportsPage() {
                         {plData.expenses.map((expense, idx) =>
                           expense.type === 'category' ? (
                             <React.Fragment key={idx}>
-                              <tr className="bg-gray-50 border-b border-gray-200">
+                              <tr className="bg-gray-50 border-b border-gray-200 cursor-pointer hover:bg-orange-50" onClick={() => setDrilldown({ title: expense.name, accountNamePrefix: expense.name })}>
                                 <td className="font-semibold text-gray-700 py-2 px-0">{expense.name}</td>
                                 <td className="text-right text-gray-600 py-2 px-0"></td>
                               </tr>
                               {expense.items.map((item, itemIdx) => (
-                                <tr key={`${idx}-${itemIdx}`} className="border-b border-gray-100">
+                                <tr key={`${idx}-${itemIdx}`} className="border-b border-gray-100 cursor-pointer hover:bg-blue-50" onClick={() => setDrilldown({ title: item.line_item || item.name, accountCode: item.code })}>
                                   <td className="text-gray-700 py-2 px-0 pl-6">{item.line_item || item.name}</td>
                                   <td className="text-right font-mono text-gray-700 py-2 px-0">${item.amount.toFixed(2)}</td>
                                 </tr>
@@ -326,7 +400,7 @@ export default function ReportsPage() {
                               </tr>
                             </React.Fragment>
                           ) : (
-                            <tr key={idx} className="border-b border-gray-100">
+                            <tr key={idx} className="border-b border-gray-100 cursor-pointer hover:bg-blue-50" onClick={() => setDrilldown({ title: expense.name, accountCode: expense.code })}>
                               <td className="text-gray-900 py-2 px-0">{expense.name}</td>
                               <td className="text-right font-mono text-gray-700 py-2 px-0">${expense.amount.toFixed(2)}</td>
                             </tr>
