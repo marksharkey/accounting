@@ -30,6 +30,8 @@ OVERPAYMENTS = [
     ("Whiteent", 25.00),
     ("L F Rothchild", 50.00),
     ("SteamworksAZ", 59.80),
+    ("Hawaii Health Guide", 1.00),
+    ("Sommer, Eric", 4.00),
 ]
 
 db = SessionLocal()
