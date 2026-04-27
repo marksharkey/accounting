@@ -48,9 +48,10 @@ def load_env(backend_dir):
 REQUIRED_CSV_FILES = {
     "Customers.csv": "Customer list export from QBO",
     "ProductServiceList__*.csv": "Product & Service list (filename has timestamp)",
-    "PrecisionPros_Network_Sales_by_Product_Service_Detail.csv": "Sales detail report",
+    "PrecisionPros_Network_Journal.csv": "Journal report (2023+)",
     "PrecisionPros_Network_A_R_Aging_Detail_Report.csv": "A/R Aging detail report",
     "PrecisionPros_Network_Transaction_Detail_by_Account.csv": "Transaction detail report",
+    "PrecisionPros_Network_Invoices_and_Received_Payments.csv": "Invoices and Received Payments report (for payment import)",
 }
 
 IMPORT_STEPS = [
@@ -80,7 +81,7 @@ IMPORT_STEPS = [
         "type": "script",
         "script": "import_invoices_from_journal.py",
         "required": True,
-        "description": "Import 4,000+ invoices from Journal (complete coverage + smart qty extraction from descriptions)",
+        "description": "Import 4,260+ invoices from Journal CSV",
     },
     {
         "name": "Expense Import",
@@ -97,6 +98,29 @@ IMPORT_STEPS = [
         "description": "Import 92 billing schedules from invoice history",
     },
     {
+        "name": "Journal Entries Import",
+        "type": "script",
+        "script": "import_qbo_journal_to_db.py",
+        "args": "PrecisionPros_Network_Journal.csv",
+        "required": False,
+        "description": "Import GL journal entries for accrual-basis P&L reporting",
+    },
+    {
+        "name": "Payment Import",
+        "type": "script",
+        "script": "import_payments_from_report.py",
+        "args": "PrecisionPros_Network_Invoices_and_Received_Payments.csv",
+        "required": False,
+        "description": "Import payment records from Invoices and Received Payments report",
+    },
+    {
+        "name": "Payment Reconciliation",
+        "type": "script",
+        "script": "reconcile_invoices_with_payments.py",
+        "required": False,
+        "description": "Reconcile invoice amounts and status based on payments",
+    },
+    {
         "name": "Data Cleanup",
         "type": "script",
         "script": "cleanup_data.py",
@@ -108,6 +132,20 @@ IMPORT_STEPS = [
         "type": "sql",
         "required": True,
         "description": "Apply known fixes (e.g., invoice #48958)",
+    },
+    {
+        "name": "Create Overpayment Credits",
+        "type": "script",
+        "script": "create_overpayment_credits.py",
+        "required": False,
+        "description": "Create credit memos for client overpayments from QB migration (zhost, Whiteent, L F Rothchild, SteamworksAZ)",
+    },
+    {
+        "name": "Exclude Discrepant Invoices",
+        "type": "script",
+        "script": "exclude_specific_invoices.py",
+        "required": False,
+        "description": "Mark specific invoices as excluded from AR aging (data quality fixes)",
     },
 ]
 
@@ -129,6 +167,7 @@ TRUNCATE TABLE billing_schedules;
 TRUNCATE TABLE clients;
 TRUNCATE TABLE expenses;
 TRUNCATE TABLE service_catalog;
+TRUNCATE TABLE journal_entries;
 SET FOREIGN_KEY_CHECKS = 1;
 """
 

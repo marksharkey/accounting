@@ -2,13 +2,27 @@
 """
 Create CreditMemo records for client overpayments from QB Desktop migration.
 These represent credits from clients that paid more than their invoices.
+
+Usage:
+    python3 create_overpayment_credits.py --dry-run
+    python3 create_overpayment_credits.py --commit
 """
 
 import sys
+import argparse
 sys.path.insert(0, '.')
 from database import SessionLocal
 import models
 from datetime import date
+
+# Parse arguments
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("--dry-run", action="store_true")
+group.add_argument("--commit", action="store_true")
+args = parser.parse_args()
+
+DRY_RUN = args.dry_run
 
 # Overpayments to create: (client_name, amount)
 OVERPAYMENTS = [
@@ -73,7 +87,8 @@ for client_name, amount in OVERPAYMENTS:
         sort_order=0
     )
     db.add(line_item)
-    db.commit()
+    if not DRY_RUN:
+        db.commit()
 
     print(f"\n✓ Created CreditMemo for {client.display_name}")
     print(f"  Memo #: {memo_number}")
@@ -81,7 +96,14 @@ for client_name, amount in OVERPAYMENTS:
     print(f"  Status: applied")
     created_count += 1
 
-print("\n" + "=" * 100)
+if DRY_RUN:
+    db.rollback()
+    print("\n" + "=" * 100)
+    print("📋 DRY RUN (no changes committed)")
+else:
+    print("\n" + "=" * 100)
+    print("✅ Credit memos created")
+
 print(f"RESULTS: Created {created_count} CreditMemo records")
 print("=" * 100)
 

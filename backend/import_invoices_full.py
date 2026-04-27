@@ -87,6 +87,7 @@ NAME_MAP = {
     "peoplesourceonline":            "Peoplesource LLC",
     "platypuscreative":              "Platypus Creative",
     "psgraphics":                    "PS Graphics, Inc.",
+    "sonoranspaces.com":             "SteamworksAZ",
     "zhost":                         "Ponder and Assoc",
 }
 
@@ -249,13 +250,19 @@ try:
     skipped_nm  = 0
     not_found   = set()
 
-    client_cache  = {c.company_name: c for c in db.query(Client).all()}
-    client_ilike  = {c.company_name.lower(): c for c in client_cache.values()}
+    all_clients = db.query(Client).all()
+    client_cache  = {c.company_name: c for c in all_clients}
+    client_ilike  = {c.company_name.lower(): c for c in all_clients}
+    client_display_ilike = {c.display_name.lower(): c for c in all_clients}
+    client_full_ilike = {c.full_name.lower(): c for c in all_clients if c.full_name}
     service_cache = {s.name.lower(): s for s in db.query(ServiceCatalog).all()}
 
     for r in records:
+        customer_lower = r["customer"].lower()
         client = client_cache.get(r["customer"]) or \
-                 client_ilike.get(r["customer"].lower())
+                 client_ilike.get(customer_lower) or \
+                 client_display_ilike.get(customer_lower) or \
+                 client_full_ilike.get(customer_lower)
 
         if not client:
             not_found.add(r["customer"])

@@ -2,16 +2,32 @@
 """
 Import QBO Journal data into journal_entries table for accrual-basis P&L reporting
 Maps QBO GL accounts to our Chart of Accounts and creates a journal entry ledger
+
+Usage:
+    python3 import_qbo_journal_to_db.py --dry-run <csv_path>
+    python3 import_qbo_journal_to_db.py --commit <csv_path>
 """
 
 import pandas as pd
 import sys
+import argparse
 from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import models
 from config import get_settings
+
+# Parse arguments
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("--dry-run", action="store_true")
+group.add_argument("--commit", action="store_true")
+parser.add_argument("csv_path", help="Path to Journal CSV export from QBO")
+args = parser.parse_args()
+
+DRY_RUN = args.dry_run
+CSV_PATH = args.csv_path
 
 settings = get_settings()
 
@@ -52,7 +68,7 @@ QBO_TO_GL_MAPPING = {
     'TA': '6060',  # Tax Allowance/Additional Tax (maps to Taxes)
 }
 
-def import_qbo_journal(csv_path):
+def import_qbo_journal(csv_path, dry_run=False):
     """Import QBO Journal and create GL journal entry ledger"""
 
     engine = create_engine(settings.database_url)
@@ -61,7 +77,11 @@ def import_qbo_journal(csv_path):
 
     try:
         # Read journal file
-        df = pd.read_csv(csv_path, skiprows=3)
+        try:
+            df = pd.read_csv(csv_path, skiprows=3)
+        except FileNotFoundError:
+            print(f"Error: CSV file not found: {csv_path}", file=sys.stderr)
+            sys.exit(1)
 
         # Clean up
         df = df[df['Transaction date'].notna()].copy()
@@ -123,9 +143,16 @@ def import_qbo_journal(csv_path):
             if imported <= 5 or imported % 1000 == 0:
                 print(f"✓ {transaction_date} | {qbo_account:40} | Debit: ${debit:10,.2f} | Credit: ${credit:10,.2f}")
 
-        session.commit()
+        if dry_run:
+            session.rollback()
+        else:
+            session.commit()
 
         print(f"\n{'='*70}")
+        if dry_run:
+            print(f"📋 DRY RUN (no changes committed)")
+        else:
+            print(f"✅ Import complete!")
         print(f"Imported:    {imported} journal entries")
         print(f"Skipped:     {skipped} entries (no mapping or no amount)")
         print(f"Total rows:  {len(df)}")
@@ -163,5 +190,4 @@ def import_qbo_journal(csv_path):
 
 
 if __name__ == "__main__":
-    csv_path = "/Users/marksharkey/Downloads/PrecisionPros Network_Journal.csv"
-    import_qbo_journal(csv_path)
+    import_qbo_journal(CSV_PATH, dry_run=DRY_RUN)

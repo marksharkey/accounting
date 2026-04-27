@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
 """
 Exclude specific invoices by client and amount.
+
+Usage:
+    python3 exclude_specific_invoices.py --dry-run
+    python3 exclude_specific_invoices.py --commit
 """
 
 import sys
+import argparse
 sys.path.insert(0, '.')
 from database import SessionLocal
 import models
 from decimal import Decimal
+
+# Parse arguments
+parser = argparse.ArgumentParser()
+group = parser.add_mutually_exclusive_group(required=True)
+group.add_argument("--dry-run", action="store_true")
+group.add_argument("--commit", action="store_true")
+args = parser.parse_args()
+
+DRY_RUN = args.dry_run
 
 # Invoices to exclude: (client_name, amount)
 INVOICES_TO_EXCLUDE = [
@@ -61,9 +75,15 @@ for client_name, amount in INVOICES_TO_EXCLUDE:
         print(f"  Amount: ${inv.balance_due:.2f}")
         excluded_count += 1
 
-db.commit()
+if DRY_RUN:
+    db.rollback()
+    print("\n" + "=" * 100)
+    print("📋 DRY RUN (no changes committed)")
+else:
+    db.commit()
+    print("\n" + "=" * 100)
+    print("✅ Exclusions applied")
 
-print("\n" + "=" * 100)
 print(f"RESULTS: Excluded {excluded_count} invoices")
 if not_found:
     print(f"Not found: {len(not_found)} invoices")

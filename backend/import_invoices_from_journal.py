@@ -363,9 +363,13 @@ try:
     ar_data = parse_ar_aging_csv(AR_CSV)
     print(f"Found {len(ar_data)} open invoices\n")
 
-    # Get all existing clients
-    clients = {c.company_name: c for c in db.query(Client).all()}
-    print(f"Loaded {len(clients)} clients from database\n")
+    # Get all existing clients with multiple lookup keys
+    all_clients = db.query(Client).all()
+    clients = {c.company_name: c for c in all_clients}
+    clients_by_display = {c.display_name: c for c in all_clients}
+    clients_by_display_lower = {c.display_name.lower(): c for c in all_clients}
+    clients_by_full_lower = {c.full_name.lower(): c for c in all_clients if c.full_name}
+    print(f"Loaded {len(all_clients)} clients from database\n")
 
     # Import invoices
     print("─" * 70)
@@ -381,13 +385,17 @@ try:
     for (inv_num, customer_name) in sorted(invoices.keys(), key=lambda x: (int(x[0]) if x[0].isdigit() else 0, x[1])):
         inv_data = invoices[(inv_num, customer_name)]
 
-        # Check if customer exists
-        if customer_name not in clients:
+        # Check if customer exists (try multiple lookup methods)
+        customer_lower = customer_name.lower()
+        client = (clients.get(customer_name) or
+                  clients_by_display.get(customer_name) or
+                  clients_by_display_lower.get(customer_lower) or
+                  clients_by_full_lower.get(customer_lower))
+
+        if not client:
             unmatched_customers.add(customer_name)
             skipped += 1
             continue
-
-        client = clients[customer_name]
 
         # Get due date: Primary source is Invoice List (has all invoices)
         # Fallback: AR Aging (only has open invoices), then default +12 days
