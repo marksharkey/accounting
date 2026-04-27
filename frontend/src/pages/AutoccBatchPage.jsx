@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import Layout from '../components/Layout';
 import { Card } from '../components/ui/Card';
@@ -138,8 +139,19 @@ export default function AutoccBatchPage() {
               {autoccClients && autoccClients.length > 0 ? (
                 autoccClients.map((client) => (
                   <TableRow key={client.id} className={!client.invoice_id ? 'opacity-60' : ''}>
-                    <TableCell className="font-medium">{client.display_name}</TableCell>
-                    <TableCell>{client.invoice_number || '—'}</TableCell>
+                    <TableCell className="font-medium">{client.company_name}</TableCell>
+                    <TableCell>
+                      {client.invoice_id ? (
+                        <Link
+                          to={`/invoices/${client.invoice_id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {client.invoice_number}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
                     <TableCell>{client.invoice_total ? `$${client.invoice_total.toFixed(2)}` : '—'}</TableCell>
                     <TableCell>
                       {client.invoice_status ? (
