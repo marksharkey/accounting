@@ -33,7 +33,7 @@ def ar_aging(
     client_data = {}
     for inv in invoices:
         days_overdue = (as_of - inv.due_date).days
-        client_name = inv.client.company_name
+        client_name = inv.client.display_name
         if client_name not in client_data:
             client_data[client_name] = {
                 "current": 0,
