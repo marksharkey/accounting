@@ -382,12 +382,21 @@ def profit_loss_pdf(
         "net_income": total_income - total_expenses,
     }
 
-    pdf_bytes = generate_pl_pdf(data, company)
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes),
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=profit_loss.pdf"}
-    )
+    output_type, output_bytes = generate_pl_pdf(data, company)
+
+    if output_type == "pdf":
+        return StreamingResponse(
+            io.BytesIO(output_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=profit_loss.pdf"}
+        )
+    else:
+        # HTML output - user can print to PDF from browser
+        return StreamingResponse(
+            io.BytesIO(output_bytes),
+            media_type="text/html; charset=utf-8",
+            headers={"Content-Disposition": "inline; filename=profit_loss.html"}
+        )
 
 
 @router.get("/profit-loss/transactions")
