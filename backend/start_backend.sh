@@ -2,11 +2,13 @@
 cd "$(dirname "$0")"
 source venv/bin/activate
 
-# Set up WeasyPrint dependencies
-export DYLD_LIBRARY_PATH="/opt/homebrew/lib"
-export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig"
-export LDFLAGS="-L/opt/homebrew/opt/libffi/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/libffi/include"
+# Set up WeasyPrint dependencies (macOS only)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  export DYLD_LIBRARY_PATH="/opt/homebrew/lib"
+  export PKG_CONFIG_PATH="/opt/homebrew/lib/pkgconfig"
+  export LDFLAGS="-L/opt/homebrew/opt/libffi/lib"
+  export CPPFLAGS="-I/opt/homebrew/opt/libffi/include"
+fi
 
 # Start uvicorn
 uvicorn main:app --port 8010 --reload

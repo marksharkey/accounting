@@ -308,7 +308,7 @@ def generate_credit_memo_pdf(memo, client, db: Session = None):
 
 
 def generate_pl_pdf(data, company_info=None):
-    """Generate PDF for a Profit & Loss statement using WeasyPrint or return HTML for browser printing"""
+    """Generate PDF for a Profit & Loss statement using WeasyPrint"""
     # Set default company info
     company_details = {
         'name': 'PrecisionPros',
@@ -357,14 +357,6 @@ def generate_pl_pdf(data, company_info=None):
         generated_date=generated_date,
     )
 
-    # Try to generate PDF if WeasyPrint is available
-    if WEASYPRINT_AVAILABLE:
-        try:
-            pdf_bytes = HTML(string=html_content).write_pdf()
-            return ("pdf", pdf_bytes)
-        except Exception as e:
-            print(f"Warning: PDF generation failed, returning HTML: {e}")
-            return ("html", html_content.encode('utf-8'))
-    else:
-        # Return HTML for browser printing to PDF
-        return ("html", html_content.encode('utf-8'))
+    # Convert HTML to PDF
+    pdf_bytes = HTML(string=html_content).write_pdf()
+    return BytesIO(pdf_bytes)

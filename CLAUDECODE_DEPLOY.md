@@ -237,7 +237,16 @@ su - accounting
    cd accounting_program
    ```
 
-2. Create a dedicated Python venv — do NOT use the shared env at
+2. Install system libraries required for WeasyPrint (PDF generation).
+   **Run this as root** before creating the venv:
+   ```bash
+   exit  # Return to root
+   apt-get update
+   apt-get install -y libffi-dev libcairo2-dev libpango-1.0-0 libpango-cairo-1.0-0 libgdk-pixbuf2.0-0 libffi8 libcairo2 libjpeg-turbo-progs libpng-tools
+   su - accounting  # Switch back to accounting user
+   ```
+
+3. Create a dedicated Python venv — do NOT use the shared env at
    `/home/accounting/accounting_program/env`:
    ```bash
    cd /home/accounting/accounting_program/backend
@@ -249,7 +258,7 @@ su - accounting
    pip install -r requirements.txt
    ```
 
-3. Create the production `.env` file. Start from the dev `.env` contents
+4. Create the production `.env` file. Start from the dev `.env` contents
    retrieved in pre-flight step 3, then modify only the fields listed below:
    ```bash
    cat > /home/accounting/accounting_program/backend/.env <<'ENVEOF'
@@ -281,7 +290,7 @@ su - accounting
    cat /home/accounting/accounting_program/backend/.env
    ```
 
-4. Run Alembic migrations to ensure the schema matches the current codebase
+5. Run Alembic migrations to ensure the schema matches the current codebase
    (even though the dump was imported, migrations ensure any schema additions
    in the codebase are applied):
    ```bash
@@ -292,7 +301,7 @@ su - accounting
    If this errors with "already at head" or "no new migrations", that's fine —
    it means the dump already has the latest schema. Any other error: stop and report.
 
-5. Test that the backend starts cleanly:
+6. Test that the backend starts cleanly:
    ```bash
    cd /home/accounting/accounting_program/backend
    source venv/bin/activate
