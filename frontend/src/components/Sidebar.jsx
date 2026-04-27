@@ -17,6 +17,7 @@ import {
   Globe,
   CreditCard,
   CheckSquare,
+  BookOpen,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -110,6 +111,7 @@ export default function Sidebar() {
 
   const accountingItems = [
     { label: 'Check Register', href: '/check-register', icon: CheckSquare },
+    { label: 'Journal Entries', href: '/journal-entries', icon: BookOpen },
   ];
 
   const accountItems = [
@@ -208,6 +210,7 @@ export default function Sidebar() {
           <NavSection items={clientsItems} isCollapsed={false} isDrawer />
           <NavSection items={businessItems} isCollapsed={false} isDrawer />
           <NavSection items={insightsItems} isCollapsed={false} isDrawer />
+          <NavSection items={accountingItems} isCollapsed={false} isDrawer />
           <NavSection items={accountItems} isCollapsed={false} isDrawer />
         </nav>
         <div className="border-t p-4">

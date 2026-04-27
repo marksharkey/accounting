@@ -17,6 +17,7 @@ import CreditMemoDetailPage from './pages/CreditMemoDetailPage';
 import CreditMemoListPage from './pages/CreditMemoListPage';
 import ServiceCatalogPage from './pages/ServiceCatalogPage';
 import ExpensesPage from './pages/ExpensesPage';
+import JournalEntriesPage from './pages/JournalEntriesPage';
 import ReportsPage from './pages/ReportsPage';
 import CompanySettingsPage from './pages/CompanySettingsPage';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
@@ -151,6 +152,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ExpensesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/journal-entries"
+            element={
+              <ProtectedRoute>
+                <JournalEntriesPage />
               </ProtectedRoute>
             }
           />

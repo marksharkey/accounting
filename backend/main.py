@@ -10,7 +10,7 @@ from config import get_settings
 from database import get_db, engine
 import models
 from auth import authenticate_user, create_access_token, get_current_user, get_password_hash
-from routers import clients, services, invoices, payments, expenses, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions, users, auth_recovery
+from routers import clients, services, invoices, payments, expenses, journal_entries, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions, users, auth_recovery
 
 settings = get_settings()
 
@@ -77,6 +77,7 @@ app.include_router(invoices.router,       prefix="/api/invoices",       tags=["I
 app.include_router(credit_memos.router,   prefix="/api/credit-memos",   tags=["Credit Memos"])
 app.include_router(payments.router,       prefix="/api/payments",       tags=["Payments"])
 app.include_router(expenses.router,       prefix="/api/expenses",       tags=["Expenses"])
+app.include_router(journal_entries.router, prefix="/api/journal-entries", tags=["Journal Entries"])
 app.include_router(reports.router,        prefix="/api/reports",        tags=["Reports"])
 app.include_router(collections.router,    prefix="/api/collections",    tags=["Collections"])
 app.include_router(company_info.router,   prefix="/api/company-info",   tags=["Company Info"])
