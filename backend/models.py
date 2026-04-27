@@ -284,6 +284,7 @@ class Invoice(Base):
     notes = Column(Text, nullable=True)
     internal_notes = Column(Text, nullable=True)
     voided_reason = Column(Text, nullable=True)
+    exclude_from_ar_aging = Column(Boolean, default=False)
 
     created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

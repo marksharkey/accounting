@@ -26,7 +26,8 @@ def ar_aging(
         models.Invoice.status.in_([
             models.InvoiceStatus.sent,
             models.InvoiceStatus.partially_paid
-        ])
+        ]),
+        ~models.Invoice.exclude_from_ar_aging
     ).all()
 
     # Group by client

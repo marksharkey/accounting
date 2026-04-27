@@ -1206,6 +1206,56 @@ def delete_invoice(
     return {"deleted": True, "invoice_number": invoice_number}
 
 
+@router.post("/{invoice_id}/exclude-from-ar-aging")
+def exclude_from_ar_aging(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    invoice.exclude_from_ar_aging = True
+    db.commit()
+
+    log = models.ActivityLog(
+        entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
+        action="excluded_from_ar_aging", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes=f"Invoice {invoice.invoice_number} excluded from AR aging report"
+    )
+    db.add(log)
+    db.commit()
+
+    return {"excluded": True, "invoice_number": invoice.invoice_number}
+
+
+@router.post("/{invoice_id}/include-in-ar-aging")
+def include_in_ar_aging(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    invoice = db.query(models.Invoice).filter_by(id=invoice_id).first()
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    invoice.exclude_from_ar_aging = False
+    db.commit()
+
+    log = models.ActivityLog(
+        entity_type="invoice", entity_id=invoice_id, client_id=invoice.client_id,
+        action="included_in_ar_aging", performed_by_id=current_user.id,
+        performed_by_name=current_user.full_name,
+        notes=f"Invoice {invoice.invoice_number} included in AR aging report"
+    )
+    db.add(log)
+    db.commit()
+
+    return {"included": True, "invoice_number": invoice.invoice_number}
+
+
 @router.get("/{invoice_id}/pdf")
 def download_invoice_pdf(
     invoice_id: int,
