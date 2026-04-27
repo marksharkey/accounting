@@ -1,0 +1,1205 @@
+
+======================================================================
+  PrecisionPros Master Import Runner
+======================================================================
+  Start Time:  2026-04-26T22:15:49.536372
+  Mode:        *** LIVE COMMIT ***
+  Backend Dir: /Users/marksharkey/accounting/backend
+  DB:          ppros@localhost:3306/precisionpros
+  Log File:    /Users/marksharkey/accounting/backend/import_log_20260426_221549.txt
+======================================================================
+
+
+[STEP 0] Checking for required CSV files...
+✓ All required CSV files found
+
+======================================================================
+IMPORT PROCEDURE
+======================================================================
+
+[STEP 1] Database Reset
+  Truncate all data tables (preserves users, COA, company_info)
+✓ Database reset
+
+[STEP 2] Service Catalog Import
+  Import 40 services from ProductServiceList CSV
+
+============================================================
+  QBO Service Catalog Import — *** LIVE COMMIT ***
+============================================================
+
+Services to import: 40
+Skipped:            7
+
+── Skipped ──────────────────────────────────────────────
+  (placeholder) credit
+  (placeholder) migration
+  (internal)  PmntDiscount_Bad Debt
+  (internal)  PmntDiscount_Server Management Fees
+  (internal)  PmntDiscount_Uncategorized Expenses
+  (internal)  PmntDiscount_Uncategorized Income {23}
+  (placeholder) Services
+
+── Services to import ───────────────────────────────────
+  Additional IP                                 $    2.00   [Web Hosting]
+  Additional RAM (1GB)                          $   25.00   [Web Hosting]
+  Backups/Snapshots                             $   10.00   [Managed Servers]
+  Business Email (up to 5 users)                $   15.00   [Email Hosting]
+  Dedicated Server A                            $  249.95   [Managed Servers]
+  Dedicated Server B                            $  349.95   [Managed Servers]
+  Dedicated Server C                            $  549.95   [Managed Servers]
+  DNS                                           $   10.00   [Web Hosting]
+  DNS Management/Rapid Domain                   $   75.00   [Web Hosting]
+  Domain Name Registration                      $   25.00   [Domain Registrations]
+  Exchange Premium                              $   21.65   [Email Hosting]
+  Extra Disc Space 10 GB                        $   10.00   [Web Hosting]
+  Hosted Exchange Server                        $    8.95   [Email Hosting]
+  HTML programming                              $    0.00   [Programming]
+  Late Fee                                      $   25.00   [Web Hosting]
+  Phone Line                                    $    5.00   [General]
+  Plesk 10 Domain License                       $   20.00   [Managed Servers]
+  Plesk 100 Domain License                      $   19.95   [Web Hosting]
+  Plesk 3 Domain License - FREE                 $    0.00   [Web Hosting]
+  Plesk 30 Domain License                       $   33.00   [Managed Servers]
+  Plesk Unlimited Domain License                $   70.00   [Web Hosting]
+  pointer                                       $    2.00   [Web Hosting]
+  POP Accts                                     $    2.00   [Web Hosting]
+  Programming                                   $    0.00   [Programming]
+  Remote Cloud Backups                          $   20.00   [Web Hosting]
+  script installation                           $   75.00   [Programming]
+  SEO Hosting                                   $  199.95   [Web Hosting]
+  SET UP                                        $   25.00   [Web Hosting]
+  Shared Cloud Server                           $   75.00   [Web Hosting]
+  Shared Server A                               $   14.95   [Web Hosting]
+  Shared Server B                               $   24.95   [Web Hosting]
+  Shared Server C                               $   34.95   [Web Hosting]
+  SSL Certification                             $  249.95   [Web Hosting]
+  SSL Installation and Support                  $   99.00   [Web Hosting]
+  Virtuozzo 10 Container License                $  144.00   [Managed Servers]
+  VPS A                                         $   49.95   [Managed Servers]
+  VPS B                                         $   74.95   [Managed Servers]
+  VPS C                                         $  149.95   [Managed Servers]
+  Web Application Firewall                      $   29.95   [Managed Servers]
+  windows server                                $   24.42   [Managed Servers]
+
+── Connecting to database ────────────────────────────────
+
+✅ Import complete!
+   Inserted: 40
+   Skipped (duplicates): 0
+
+
+
+[STEP 3] Customer/Client Import
+  Import 202 clients
+
+============================================================
+  QBO Customer Import — *** LIVE COMMIT ***
+============================================================
+
+Loaded 202 rows from Customers.csv
+Columns: ['Name', 'Company name', 'Street Address', 'City', 'State', 'Country', 'Zip', 'Phone', 'Email', 'Attachments', 'Open balance']
+
+Records to import: 202
+Warnings:          40
+
+── Warnings ─────────────────────────────────────────────
+  💰 Row 12: 'Alan Hoffberg' has open balance $9.95 — will import as account_balance
+  💰 Row 22: 'Atlantis Travel Agency, Athens' has open balance $178.00 — will import as account_balance
+  💰 Row 24: 'AZ Tech Engineers, Inc.' has open balance $240.00 — will import as account_balance
+  💰 Row 30: 'BJSA' has open balance $45.00 — will import as account_balance
+  💰 Row 41: 'Contractors Crance Co. Inc.' has open balance $275.00 — will import as account_balance
+  💰 Row 51: 'Digital Essentials' has open balance $50.00 — will import as account_balance
+  💰 Row 52: 'Distrelca' has open balance $30.00 — will import as account_balance
+  💰 Row 53: 'Don Adair' has open balance $15.00 — will import as account_balance
+  ⚠  Row 56: 'Dr. Adams:psychological' has no email address
+  💰 Row 62: 'edgepowersolutions.net' has open balance $205.00 — will import as account_balance
+  💰 Row 63: 'Timus, Inc.' has open balance $345.00 — will import as account_balance
+  💰 Row 64: 'Emerge Inc.' has open balance $1149.99 — will import as account_balance
+  ⚠  Row 66: 'Enterprise Communications:echost.com' has no email address
+  ⚠  Row 68: 'ERC:erc programming' has no email address
+  💰 Row 70: 'eWareness Inc.' has open balance $653.09 — will import as account_balance
+  💰 Row 73: 'Fish and Game' has open balance $179.95 — will import as account_balance
+  ⚠  Row 78: 'Frick, Mike:onlearn' has no email address
+  💰 Row 81: 'Get Green Earth(2)' has open balance $75.00 — will import as account_balance
+  💰 Row 86: 'Hawaii Health Guide' has open balance $504.00 — will import as account_balance
+  💰 Row 87: 'hawthornepp' has open balance $97.00 — will import as account_balance
+  💰 Row 92: 'Paymerang, LLC' has open balance $419.97 — will import as account_balance
+  💰 Row 96: 'interfaithmarriages.com' has open balance $120.00 — will import as account_balance
+  💰 Row 108: 'Lombard Architectural Precast Products' has open balance $79.95 — will import as account_balance
+  💰 Row 111: 'M&R & Sons' has open balance $49.95 — will import as account_balance
+  💰 Row 112: 'Mahon Ranch' has open balance $115.50 — will import as account_balance
+  ⚠  Row 115: 'mark sharkey' has no email address
+  💰 Row 118: 'Meryl Deutsch & Associates' has open balance $0.10 — will import as account_balance
+  💰 Row 126: 'Net-Flow Corporation' has open balance $704.45 — will import as account_balance
+  💰 Row 130: 'Olivado USA' has open balance $0.30 — will import as account_balance
+  💰 Row 139: 'Private Jet Trading' has open balance $159.66 — will import as account_balance
+  💰 Row 142: 'R.F. Hagearty & Associates' has open balance $210.00 — will import as account_balance
+  💰 Row 144: 'ravenmoonbooks.com' has open balance $100.00 — will import as account_balance
+  💰 Row 159: 'Rus Berrett' has open balance $0.50 — will import as account_balance
+  💰 Row 160: 'sancarlosproperty.com' has open balance $269.95 — will import as account_balance
+  💰 Row 170: 'Arkadia Konsulting' has open balance $86.00 — will import as account_balance
+  ⚠  Row 171: 'Sommer, Eric:icapture.com' has no email address
+  💰 Row 177: 'SteamworksAZ' has open balance $54.90 — will import as account_balance
+  ⚠  Row 183: 'Svestka, Lura:jta' has no email address
+  ⚠  Row 184: 'Svestka, Lura:programming' has no email address
+  💰 Row 194: 'Walsh Appraisal' has open balance $75.00 — will import as account_balance
+
+── Sample records (first 5) ─────────────────────────────
+  4EComm                                   email=jboyd@4ecomm.com                    balance=$0.00
+  A Beautiful Question                     email=abeautifulquestion@gmail.com        balance=$0.00
+  AC Capital Leasing                       email=judith@accapitalleasing.com         balance=$0.00
+  Castevens Technologies LLC               email=philip@awpse.com                    balance=$0.00
+  Advanced Media Technologies              email=GLanzillo@amt.com                   balance=$0.00
+  ...
+
+── Connecting to database ────────────────────────────────
+
+✅ Import complete!
+   Inserted: 202
+   Skipped (already exist): 0
+
+
+
+[STEP 4] Invoice + Line Items Import
+  Import 4,260+ invoices from Journal CSV
+
+======================================================================
+  QBO Journal-Based Invoice Import
+  *** LIVE COMMIT ***
+======================================================================
+
+Loading Journal CSV: PrecisionPros_Network_Journal.csv
+Found 4261 invoices
+
+Loading Invoice List CSV for due dates...
+Using: PrecisionPros_Network_Invoice_List_by_Date.csv
+Found 4260 invoices with due dates
+
+Loading AR Aging CSV: PrecisionPros_Network_A_R_Aging_Detail_Report.csv
+Found 58 open invoices
+
+Loaded 202 clients from database
+
+──────────────────────────────────────────────────────────────────────
+IMPORTING INVOICES
+──────────────────────────────────────────────────────────────────────
+
+  Imported 200 invoices...
+  Imported 400 invoices...
+  Imported 600 invoices...
+  Imported 800 invoices...
+  Imported 1000 invoices...
+  Imported 1200 invoices...
+  Imported 1400 invoices...
+  Imported 1600 invoices...
+  Imported 1800 invoices...
+  Imported 2000 invoices...
+  Imported 2200 invoices...
+  Imported 2400 invoices...
+  Imported 2600 invoices...
+  Imported 2800 invoices...
+  Imported 3000 invoices...
+  Imported 3200 invoices...
+  Imported 3400 invoices...
+  Imported 3600 invoices...
+  Imported 3800 invoices...
+  Imported 4000 invoices...
+
+✓ Imported 4024 invoices
+✓ Skipped 237 invoices (customer not found)
+
+⚠ Duplicate invoice numbers detected (QB Desktop + QBO):
+  #49151: Emerge Inc. → Fish and Game
+
+Clients not matched (34):
+  - Arlington Web Services, Inc.
+  - Atlas Embr & Screen Printing
+  - BC Parenting Coordinators Roster Society
+  - BPoodles
+  - Bearing Service and Supply
+  - Blackthorn
+  - Bryan Hanson
+  - ConceptCycleWorks
+  - CoventryCTCares.com
+  - Deco Truss
+  - Falcon Eye Pixie Bob
+  - Fred C. Gloeckner Foundation Inc C/o Jose
+  - Greenskeeper Lawn Care
+  - Hawke
+  - Healthy Vida Coaching
+  - Hodges Realators
+  - KC Laughlin Realtor
+  - Mystikal
+  - Newington Veterinary Clinic
+  - Savol Pools
+  ... and 14 more
+
+======================================================================
+
+
+
+[STEP 5] Expense Import
+  Import 879 expense transactions
+
+============================================================
+  QBO Expense Import — *** LIVE COMMIT ***
+============================================================
+
+Found 879 expense transactions
+
+── By account ───────────────────────────────────────────
+  Bad Debt                               2 transactions   $    387.02
+  Bank Fees                             15 transactions   $     58.08
+  Dial Up                               41 transactions   $  2,098.32
+  Email Hosting                         67 transactions   $ 49,216.85
+  Marketing                            170 transactions   $103,728.96
+  Meals                                 70 transactions   $ 29,111.01
+  Postage                                9 transactions   $    160.53
+  Purchased Services                    32 transactions   $ 30,993.90
+  Reconciliation Discrepancies          11 transactions   $     25.48
+  Supplies                              52 transactions   $  7,844.66
+  TA                                     2 transactions   $  4,101.00
+  TAXES-2025                             1 transactions   $  1,959.00
+  Taxes 2022                             1 transactions   $  8,180.00
+  Telephone                             48 transactions   $ 10,124.14
+  Web Hosting Expenses                   1 transactions   $  5,000.00
+  credit card Fees                     121 transactions   $ 21,291.55
+  domain registrations                  52 transactions   $  9,125.34
+  dues and subcriptions                 46 transactions   $  7,174.53
+  servers                              130 transactions   $125,441.86
+  taxes 2024                             3 transactions   $ 16,437.00
+  taxex2023                              5 transactions   $ 21,535.00
+
+  TOTAL EXPENSES: $453,994.23
+
+── Sample transactions (first 10) ──────────────────────
+  2023-05-31   Reconciliation Discrepancies   Balance Adjustment             $    0.20
+  2023-09-30   Reconciliation Discrepancies   Balance Adjustment             $    0.10
+  2023-12-31   Reconciliation Discrepancies   Balance Adjustment             $    0.01
+  2024-01-31   Reconciliation Discrepancies   Balance Adjustment             $    0.01
+  2024-02-29   Reconciliation Discrepancies   Balance Adjustment             $    0.40
+  2024-03-05   Reconciliation Discrepancies   Balance Adjustment             $    0.22
+  2024-06-30   Reconciliation Discrepancies   Balance Adjustment             $    2.99
+  2024-11-30   Reconciliation Discrepancies   Balance Adjustment             $    0.30
+  2025-05-31   Reconciliation Discrepancies   Balance Adjustment             $   19.95
+  2025-09-30   Reconciliation Discrepancies   Balance Adjustment             $    0.90
+  ...
+
+── Connecting to database ────────────────────────────────
+
+✅ Import complete!
+   Inserted: 879
+   Skipped:  0
+
+
+
+[STEP 6] Billing Schedules Import
+  Import 92 billing schedules from invoice history
+
+============================================================
+  Billing Schedule Import — *** LIVE COMMIT ***
+============================================================
+
+Parsing Sales Detail for invoice line items...
+  Loaded line items for 95 invoices
+
+Schedules to create: 92
+
+  monthly       78 clients   $ 12,300.92
+  quarterly      9 clients   $  2,273.55
+  annual         5 clients   $    529.40
+
+  MRR: $12,300.92/month
+  ARR estimate: $147,611.04/year
+
+── Full schedule preview ────────────────────────────────
+
+  AMECO                                         monthly      $   30.00  next=2026-05-01
+    Shared Server C                     qty=1.00  $30.00
+
+  Advanced Media Technologies                   monthly      $   80.00  next=2026-05-01
+    Backups/Snapshots                   qty=1  $10.00
+    Plesk 10 Domain License             qty=1  $20.00
+    VPS A                               qty=1  $50.00
+
+  Agro Resources                                monthly      $   15.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+
+  Alan Hoffberg                                 monthly      $    0.00  next=2026-04-10
+
+  Amir Garrison                                 monthly      $   20.95  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $6.00
+    Shared Server A                     qty=1.00  $14.95
+
+  Architectural Visual, Inc.                    monthly      $   35.00  next=2026-05-01
+    Shared Server C                     qty=1.00  $35.00
+
+  Astrella and Rice                             monthly      $   20.00  next=2026-05-01
+    Shared Server B                     qty=1.00  $20.00
+
+  Atlantis Travel Agency, Athens                monthly      $  178.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1  $60.00
+    Plesk 30 Domain License             qty=1  $33.00
+    VPS A                               qty=1  $85.00
+
+  Beach House Management LLC                    monthly      $   15.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+
+  Bernadette/eyre                               monthly      $  120.00  next=2026-03-10
+    Domain Name Registration            qty=1.00  $25.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS B                               qty=1.00  $75.00
+
+  Brad Stone                                    monthly      $   35.00  next=2026-05-01
+    Shared Server C                     qty=1.00  $35.00
+
+  C Young Consulting LLC                        monthly      $   30.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $30.00
+    Web Application Firewall            qty=0  $0.00
+
+  CTdiveCenter.com                              quarterly    $    0.00  next=2026-06-01
+
+  Castevens Technologies LLC                    monthly      $  125.00  next=2026-05-01
+    Extra Disc Space 10 GB              qty=1  $10.00
+    Plesk 10 Domain License             qty=2  $40.00
+    VPS B                               qty=1  $75.00
+
+  Coin Finders                                  monthly      $   34.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+    Shared Server B                     qty=1.00  $19.00
+
+  CreativeStartsHere.com                        monthly      $   24.95  next=2026-05-01
+    Shared Server B                     qty=1.00  $24.95
+
+  Darbster Foundation                           monthly      $  169.95  next=2026-05-01
+    Remote Cloud Backups                qty=1.00  $20.00
+    VPS C                               qty=1.00  $149.95
+
+  David Toledo                                  quarterly    $   30.00  next=2026-07-01
+    Shared Server A                     qty=3.00  $30.00
+
+  DesignGate pte Ltd.                           monthly      $   19.00  next=2026-05-01
+    Shared Server B                     qty=1.00  $19.00
+
+  Emerge Inc.                                   monthly      $ 1113.99  next=2026-03-10
+    Dedicated Server A                  qty=1  $185.00
+    Dedicated Server C                  qty=1  $758.99
+    Plesk 10 Domain License             qty=1  $20.00
+    Plesk Unlimited Domain License      qty=2  $140.00
+    Remote Cloud Backups                qty=1  $10.00
+
+  Fine Design Interiors, Inc.                   monthly      $   30.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $30.00
+
+  Fish and Game                                 monthly      $  189.95  next=2026-04-10
+    Plesk 10 Domain License             qty=1  $20.00
+    Remote Cloud Backups                qty=1  $20.00
+    VPS C                               qty=1  $149.95
+
+  Foxit Software                                monthly      $ 1649.85  next=2026-05-01
+    Dedicated Server C                  qty=3  $1649.85
+
+  Foxy Construction                             monthly      $   15.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+
+  Galaxy Photography                            monthly      $   10.00  next=2026-05-01
+    Shared Server A                     qty=1.00  $10.00
+
+  Get Green Earth(2)                            monthly      $    0.00  next=2026-05-01
+
+  Global Tax and Accounting                     monthly      $   10.00  next=2026-05-01
+    DNS                                 qty=1.00  $10.00
+
+  Great Strides                                 monthly      $   75.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS A                               qty=1.00  $45.00
+
+  Guardian Republic                             monthly      $   76.45  next=2026-05-01
+    Plesk 10 Domain License             qty=1.00  $26.50
+    VPS A                               qty=1.00  $49.95
+
+  Harms Historical Percussion                   monthly      $   25.00  next=2026-05-01
+    Shared Server A                     qty=1.00  $25.00
+
+  Hawaii Health Guide                           monthly      $  245.00  next=2026-05-10
+    Business Email (up to 5 users)      qty=1  $30.00
+    Plesk 10 Domain License             qty=1  $20.00
+    VPS C                               qty=1  $125.00
+    Remote Cloud Backups                qty=1  $70.00
+
+  Heet Sound Products                           quarterly    $  315.00  next=2026-07-01
+    Plesk 10 Domain License             qty=3.00  $60.00
+    Remote Cloud Backups                qty=3.00  $30.00
+    VPS B                               qty=3.00  $225.00
+    Web Application Firewall            qty=0  $0.00
+
+  Historical Enterprises                        monthly      $  128.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    Extra Disc Space 10 GB              qty=1.00  $10.00
+    Plesk 30 Domain License             qty=1.00  $33.00
+    VPS B                               qty=1.00  $75.00
+
+  Hostage Records                               monthly      $   29.00  next=2026-05-01
+    Shared Server C                     qty=1.00  $29.00
+
+  Integrated Test Corporation                   monthly      $  570.81  next=2026-05-01
+    Hosted Exchange Server              qty=49  $474.81
+    Plesk 10 Domain License             qty=1  $20.00
+    Remote Cloud Backups                qty=1  $20.00
+    VPS A                               qty=1  $56.00
+
+  International Fishing Devices, Inc.           monthly      $   20.00  next=2026-05-01
+    Shared Server B                     qty=1.00  $20.00
+
+  JC Pacific Trading Co.                        monthly      $  105.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS B                               qty=1.00  $75.00
+
+  JTA, Inc.                                     monthly      $  165.00  next=2026-05-01
+    Backups/Snapshots                   qty=1  $10.00
+    Business Email (up to 5 users)      qty=2  $60.00
+    Plesk 10 Domain License             qty=1  $20.00
+    VPS B                               qty=1  $75.00
+
+  James Rahfaldt                                quarterly    $    0.00  next=2026-06-01
+
+  Jog A Dog                                     monthly      $   78.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    Business Email (up to 5 users)      qty=1.00  $3.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS A                               qty=1.00  $45.00
+
+  Key Real Estate Investments, LLC              annual       $    0.00  next=2026-03-10
+
+  Koolit Truck Sales, Inc                       quarterly    $    0.00  next=2026-03-10
+
+  Linda's Gourmet Latkes                        monthly      $   39.95  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+    Shared Server B                     qty=1.00  $24.95
+
+  Lombard Architectural Precast Products        monthly      $    0.00  next=2026-03-10
+
+  Louisiana, LLC                                monthly      $   39.95  next=2026-05-01
+    Shared Server B                     qty=1  $24.95
+    Business Email (up to 5 users)      qty=1  $15.00
+
+  M&R & Sons                                    monthly      $    0.00  next=2026-05-01
+
+  MEDAxiom, LLC.                                quarterly    $ 1859.70  next=2026-06-01
+    Backups/Snapshots                   qty=6  $60.00
+    Dedicated Server A                  qty=3  $749.85
+    Dedicated Server B                  qty=3  $1049.85
+
+  Marsha Henkin                                 monthly      $   75.00  next=2026-03-10
+    Plesk 10 Domain License             qty=1.00  $20.00
+    Remote Cloud Backups                qty=1.00  $10.00
+    VPS A                               qty=1.00  $45.00
+
+  Meryl Deutsch & Associates                    monthly      $   15.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+
+  Michael Ahner                                 monthly      $   35.00  next=2026-05-01
+    Shared Server C                     qty=1.00  $35.00
+
+  Michael Armstrong                             monthly      $   38.00  next=2026-05-01
+    Shared Server C                     qty=2  $38.00
+
+  Michael Legeros                               monthly      $  110.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=2  $15.00
+    Extra Disc Space 10 GB              qty=2  $20.00
+    VPS B                               qty=2  $75.00
+
+  Mike Lorts                                    monthly      $  790.95  next=2026-03-10
+    Additional IP                       qty=1  $2.00
+    Dedicated Server C                  qty=1  $549.95
+    Plesk Unlimited Domain License      qty=1  $70.00
+    Remote Cloud Backups                qty=1  $20.00
+    Shared Server A                     qty=1  $5.00
+    Virtuozzo 10 Container License      qty=1  $144.00
+
+  Net-Flow Corporation                          monthly      $  782.95  next=2026-03-10
+    Dedicated Server C                  qty=1  $549.95
+    Plesk 10 Domain License             qty=2  $53.00
+    Plesk Unlimited Domain License      qty=2  $140.00
+    Remote Cloud Backups                qty=2  $40.00
+
+  Outer Banks Internet, Inc.                    monthly      $   60.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    VPS A                               qty=1.00  $50.00
+
+  PS Graphics, Inc.                             monthly      $  336.00  next=2026-05-01
+    Plesk 30 Domain License             qty=2  $66.00
+    Remote Cloud Backups                qty=2  $20.00
+    VPS C                               qty=2  $250.00
+
+  Ponder and Assoc                              monthly      $  310.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+    Dedicated Server A                  qty=1.00  $249.95
+    Dedicated Server A                  qty=1.00  $-24.95
+    Plesk Unlimited Domain License      qty=1.00  $70.00
+
+  Purrfurdots Ocicats                           monthly      $   14.95  next=2026-03-10
+    Shared Server A                     qty=1.00  $14.95
+
+  RE/MAX Advance Realty, Inc.                   quarterly    $   68.85  next=2026-07-01
+    Business Email (up to 5 users)      qty=3.00  $9.00
+    Shared Server B                     qty=3.00  $59.85
+
+  REMAX First Choice Realty                     monthly      $  204.95  next=2026-05-10
+    Business Email (up to 5 users)      qty=1.00  $30.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    Remote Cloud Backups                qty=1.00  $15.00
+    Shared Cloud Server                 qty=1.00  $110.00
+    Web Application Firewall            qty=1.00  $29.95
+
+  Real Time Solutions of America Inc.           monthly      $  143.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS B                               qty=1.00  $113.00
+
+  Relevant Arts                                 monthly      $  105.00  next=2026-05-01
+    Backups/Snapshots                   qty=1.00  $10.00
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS B                               qty=1.00  $75.00
+
+  Rich King Info. Corp. Ltd.                    monthly      $   65.00  next=2026-05-01
+    Plesk 10 Domain License             qty=1.00  $20.00
+    VPS A                               qty=1.00  $45.00
+
+  Rich Masterson                                monthly      $   16.25  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $16.25
+
+  Rick Long - RFS Corporation                   monthly      $   24.95  next=2026-05-01
+    Shared Server B                     qty=1.00  $24.95
+
+  Rocky Mountain                                quarterly    $    0.00  next=2026-06-01
+
+  Rodrigue and Sons Company                     monthly      $   76.45  next=2026-05-01
+    Plesk 10 Domain License             qty=1.00  $26.50
+    VPS A                               qty=1.00  $49.95
+
+  Rus Berrett                                   monthly      $   85.50  next=2026-05-01
+    Plesk 30 Domain License             qty=1.00  $33.00
+    VPS B                               qty=1.00  $52.50
+
+  Service Ware Inc                              monthly      $  113.97  next=2026-05-01
+    Exchange Premium                    qty=3.00  $64.95
+    Hosted Exchange Server              qty=3.00  $29.07
+    Shared Server B                     qty=1.00  $19.95
+
+  Shearson Financial                            quarterly    $    0.00  next=2026-03-10
+
+  Skiboards Superstore                          monthly      $  344.90  next=2026-05-01
+    Backups/Snapshots                   qty=1  $10.00
+    Business Email (up to 5 users)      qty=1  $15.00
+    Plesk 10 Domain License             qty=1  $20.00
+    VPS C                               qty=2  $299.90
+
+  Southern Maryland Dental Society              monthly      $   10.00  next=2026-05-01
+    Shared Server A                     qty=1.00  $10.00
+
+  Sparkle n Dazzle                              monthly      $  300.00  next=2026-05-01
+    Backups/Snapshots                   qty=2  $20.00
+    Business Email (up to 5 users)      qty=1  $15.00
+    Plesk 10 Domain License             qty=2  $40.00
+    VPS B                               qty=1  $75.00
+    VPS C                               qty=1  $150.00
+
+  SteamworksAZ                                  monthly      $    0.00  next=2026-05-01
+
+  Summitt, Dave                                 monthly      $   61.50  next=2026-05-01
+    Plesk 10 Domain License             qty=1.00  $26.50
+    VPS A                               qty=1.00  $35.00
+
+  Sun Belt Steel & Aluminum, Inc                monthly      $    0.00  next=2026-05-01
+
+  Suntrans International                        monthly      $  124.95  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $105.00
+    Shared Server B                     qty=1.00  $19.95
+
+  Target Coding                                 monthly      $   35.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+    Shared Server B                     qty=1.00  $20.00
+
+  The Safety Expert                             monthly      $    0.00  next=2026-05-01
+
+  Timus, Inc.                                   monthly      $  160.00  next=2026-04-10
+    Business Email (up to 5 users)      qty=1  $30.00
+    Business Email (up to 5 users)      qty=1  $15.00
+    Plesk 10 Domain License             qty=1  $20.00
+    VPS B                               qty=1  $95.00
+
+  Windsor Woodworking                           annual       $    0.00  next=2027-03-01
+
+  advantage-autorepair.com                      monthly      $   14.95  next=2026-05-01
+    Shared Server A                     qty=1.00  $14.95
+
+  aemi.org                                      monthly      $  390.00  next=2026-05-01
+    Backups/Snapshots                   qty=3  $30.00
+    Business Email (up to 5 users)      qty=5  $75.00
+    Extra Disc Space 10 GB              qty=1  $25.00
+    Plesk 10 Domain License             qty=3  $60.00
+    VPS A                               qty=1  $50.00
+    VPS B                               qty=2  $150.00
+
+  antecessor.org                                monthly      $   30.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=2  $30.00
+
+  calpreps.com                                  monthly      $  886.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+    Dedicated Server C                  qty=1.00  $799.00
+    Remote Cloud Backups                qty=1.00  $72.00
+
+  criminaljusticeclub.net                       annual       $    0.00  next=2026-03-10
+
+  dott communications llc.                      monthly      $   30.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $30.00
+
+  eWareness Inc.                                monthly      $  688.95  next=2026-03-10
+    Dedicated Server C                  qty=1  $549.95
+    Plesk 10 Domain License             qty=2  $53.00
+    Plesk 30 Domain License             qty=2  $66.00
+    Remote Cloud Backups                qty=1  $20.00
+
+  edgepowersolutions.net                        annual       $  180.00  next=2026-03-10
+    Business Email (up to 5 users)      qty=12  $180.00
+
+  sancarlosproperty.com                         monthly      $  238.95  next=2026-03-10
+    Business Email (up to 5 users)      qty=1  $24.00
+    Plesk 10 Domain License             qty=2  $40.00
+    Remote Cloud Backups                qty=2  $20.00
+    VPS A                               qty=1  $50.00
+    VPS B                               qty=1  $75.00
+    Web Application Firewall            qty=1  $29.95
+
+  sonoranspaces.com                             monthly      $   15.00  next=2026-05-01
+    Business Email (up to 5 users)      qty=1.00  $15.00
+
+  unionparkfresno                               annual       $  349.40  next=2027-04-01
+    Domain Name Registration            qty=2.00  $50.00
+    Shared Server B                     qty=12.00  $299.40
+
+── Connecting to database ────────────────────────────────
+
+✅ Import complete!
+   Inserted:  92
+   Skipped:   0
+
+
+
+[STEP 7] Journal Entries Import
+  Import GL journal entries for accrual-basis P&L reporting
+Imported 29705 journal entries from PrecisionPros_Network_Journal.csv
+Date range: 2023-01-01 to 2026-04-14
+
+======================================================================
+Importing Journal Entries to Database
+======================================================================
+✓ 2023-01-01 | Managed Servers                          | Debit: $      0.00 | Credit: $     50.00
+✓ 2023-01-01 | Email Hosting                            | Debit: $      0.00 | Credit: $     22.00
+✓ 2023-01-01 | Web Hosting                              | Debit: $      0.00 | Credit: $     19.95
+✓ 2023-01-01 | Email Hosting                            | Debit: $      0.00 | Credit: $     43.30
+✓ 2023-01-01 | Email Hosting                            | Debit: $      0.00 | Credit: $     38.76
+✓ 2023-04-01 | Managed Servers                          | Debit: $      0.00 | Credit: $     29.95
+✓ 2023-07-26 | Web Programming                          | Debit: $      0.00 | Credit: $  2,375.00
+✓ 2023-11-06 | Marketing                                | Debit: $    128.00 | Credit: $      0.00
+✓ 2024-03-01 | Managed Servers                          | Debit: $      0.00 | Credit: $    749.85
+✓ 2024-06-11 | Email Hosting                            | Debit: $      0.00 | Credit: $     12.00
+✓ 2024-10-01 | Email Hosting                            | Debit: $      0.00 | Credit: $     24.00
+✓ 2025-01-08 | Managed Servers                          | Debit: $      0.00 | Credit: $    149.95
+✓ 2025-04-12 | Email Hosting                            | Debit: $      0.00 | Credit: $     24.00
+✓ 2025-08-01 | Email Hosting                            | Debit: $      0.00 | Credit: $     24.00
+✓ 2025-11-12 | Managed Servers                          | Debit: $      0.00 | Credit: $     29.95
+✓ 2026-02-24 | Services                                 | Debit: $      0.00 | Credit: $      0.75
+
+======================================================================
+✅ Import complete!
+Imported:    11547 journal entries
+Skipped:     18158 entries (no mapping or no amount)
+Total rows:  29705
+
+======================================================================
+Summary by GL Account
+======================================================================
+4010: Domain Name Registrations                | Debit: $      235.00 | Credit: $   21,011.00
+4020: Email Hosting                            | Debit: $    1,528.03 | Credit: $  120,542.33
+4030: Services                                 | Debit: $        0.00 | Credit: $       27.37
+4040: Uncategorized Income {23}                | Debit: $       29.94 | Credit: $      306.00
+4100: Web Hosting                              | Debit: $    4,327.73 | Credit: $  143,708.29
+4200: Managed Servers                          | Debit: $   17,443.29 | Credit: $  444,224.56
+4300: Web Programming                          | Debit: $        0.00 | Credit: $   55,210.55
+5010: A&G:Bank Fees                            | Debit: $       58.08 | Credit: $        0.00
+5020: A&G:credit card Fees                     | Debit: $   21,291.55 | Credit: $        0.00
+5030: A&G:Dial Up                              | Debit: $    2,098.32 | Credit: $        0.00
+5040: A&G:dues and subcriptions                | Debit: $    7,174.53 | Credit: $        0.00
+5050: A&G:Postage                              | Debit: $   10,284.67 | Credit: $        0.00
+5050: A&G:Telephone                            | Debit: $   10,284.67 | Credit: $        0.00
+6010: Server Management Fees:domain registrations | Debit: $    9,125.34 | Credit: $        0.00
+6020: Server Management Fees:Email Hosting     | Debit: $   49,216.85 | Credit: $        0.00
+6030: Server Management Fees:servers           | Debit: $  125,441.86 | Credit: $        0.00
+6040: Supplies                                 | Debit: $    7,844.66 | Credit: $        0.00
+6060: TA                                       | Debit: $   66,510.00 | Credit: $        0.00
+6060: TAXES - 2004                             | Debit: $   66,510.00 | Credit: $        0.00
+6060: Taxes 2022                               | Debit: $   66,510.00 | Credit: $        0.00
+6060: taxes 2024                               | Debit: $   66,510.00 | Credit: $        0.00
+6060: taxex2023                                | Debit: $   66,510.00 | Credit: $        0.00
+6100: Meals                                    | Debit: $   60,104.91 | Credit: $        0.00
+6100: Purchased Services                       | Debit: $   60,104.91 | Credit: $        0.00
+6300: Marketing                                | Debit: $  103,728.96 | Credit: $        0.00
+
+✅ Journal import complete!
+
+
+[STEP 8] Payment Import
+  Import payment records from Invoices and Received Payments report
+
+Parsing Invoices and Received Payments report: PrecisionPros_Network_Invoices_and_Received_Payments.csv...
+Found 241 payments
+
+  ... 50 payments processed
+  ... 100 payments processed
+  ... 150 payments processed
+
+✅ Import complete!
+   Inserted: 196
+   Skipped: 45
+
+   ⚠  Payments not matched (43):
+     AZ Tech Engineers, Inc. / : $100.00
+     Alturas Seguridad Industrial SAC / : $555.45
+     Arlington Web Services, Inc. (deleted) / : $125.85
+     Atlantis Travel Agency / : $65.00
+     Atlas Embr & Screen Printing (deleted) / : $150.00
+     BC Parenting Coordinators Roster Society (deleted) / : $225.00
+     BPoodles (deleted) / : $299.40
+     Bearing Service and Supply (deleted) / : $4178.84
+     Bearing Service and Supply (deleted) / 234726: $5675.65
+     Bryan Hanson (deleted) / : $180.00
+     Connecticut Valley Rubber, Inc / : $44.85
+     CoventryCTCares.com (deleted) / : $96.00
+     CoventryCTCares.com (deleted) / 224: $96.00
+     Deco Truss (deleted) / : $61.20
+     Drive & Shine / : $285.00
+     Eternallygreen.com / : $44.00
+     Falcon Eye Pixie Bob (deleted) / : $164.45
+     Get Green Earth (deleted) / : $50.00
+     Greenskeeper Lawn Care (deleted) / : $290.00
+     Hawaii Health Guide / : $304.00
+     Hawke (deleted) / : $274.45
+     Healthy Vida Coaching (deleted) / : $12.00
+     Hodges Realators (deleted) / : $11.00
+     Just HP / : $1944.40
+     KC Laughlin Realtor (deleted) / : $94.00
+     Mike Lorts / : $870.37
+     Mystikal (deleted) / : $100.00
+     Newington Veterinary Clinic (deleted) / : $130.00
+     Savol Pools (deleted) / : $264.00
+     Savvy Panda (deleted) / : $105.00
+     Sommer, Eric / : $150.00
+     Steven Kutner Law (deleted) / 11457: $130.00
+     Stine (deleted) / : $124.95
+     SuperTech (deleted) / : $24.95
+     Total Concierge (deleted) / : $20.00
+     Tran Tracks, Inc. (deleted) / : $25.00
+     Underground Art Gallery (deleted) / : $100.00
+     Walnut Ridge Kennels (deleted) / : $164.45
+     Walsh Appraisal / : $42.50
+     Warpzone Web Services (deleted) / : $85.00
+     William Herr (deleted) / : $24.95
+     cyberabbi.com / : $348.24
+     hjgraphicdesigns.com (deleted) / : $60.00
+     sonoranspaces.com / : $50.95
+     www.worldses.org (deleted) / : $45.00
+
+
+
+[STEP 9] Payment Reconciliation
+  Reconcile invoice amounts and status based on payments
+Updated 45009: $144.00 → $72.00 (paid)
+Updated 45010: $33.02 → $16.51 (paid)
+Updated 45011: $259.80 → $129.90 (paid)
+Updated 45012: $565.00 → $282.50 (paid)
+Updated 45013: $327.80 → $163.90 (paid)
+Updated 45014: $182.90 → $91.45 (paid)
+Updated 45015: $212.00 → $106.00 (paid)
+Updated 45016: $300.00 → $150.00 (paid)
+Updated 45017: $399.90 → $199.95 (paid)
+Updated 45018: $120.00 → $60.00 (paid)
+Updated 45019: $170.00 → $85.00 (paid)
+Updated 45020: $100.00 → $50.00 (paid)
+Updated 45021: $29.90 → $14.95 (paid)
+Updated 45022: $20.00 → $10.00 (paid)
+Updated 45023: $258.00 → $129.00 (paid)
+Updated 45024: $871.90 → $435.95 (paid)
+Updated 45025: $124.00 → $62.00 (paid)
+Updated 45027: $91.00 → $45.50 (paid)
+Updated 45031: $328.90 → $164.45 (paid)
+Updated 45033: $29.90 → $14.95 (paid)
+Updated 45034: $70.00 → $35.00 (paid)
+Updated 45035: $294.00 → $147.00 (paid)
+Updated 45036: $396.00 → $198.00 (paid)
+Updated 45037: $1259.60 → $629.80 (paid)
+Updated 45039: $58.00 → $29.00 (paid)
+Updated 45040: $2699.70 → $1349.85 (paid)
+Updated 45041: $39.90 → $19.95 (paid)
+Updated 45042: $577.50 → $288.75 (paid)
+Updated 45043: $230.00 → $115.00 (paid)
+Updated 45044: $38.00 → $19.00 (paid)
+Updated 45045: $49.90 → $24.95 (paid)
+Updated 45046: $1680.00 → $840.00 (paid)
+Updated 45048: $90.00 → $45.00 (paid)
+Updated 45049: $90.00 → $45.00 (paid)
+Updated 45050: $70.00 → $35.00 (paid)
+Updated 45051: $90.00 → $45.00 (paid)
+Updated 45052: $20.00 → $10.00 (paid)
+Updated 45053: $90.00 → $45.00 (paid)
+Updated 45054: $1319.90 → $659.95 (paid)
+Updated 45055: $22.00 → $11.00 (paid)
+Updated 45056: $49.90 → $24.95 (paid)
+Updated 45057: $22.00 → $11.00 (paid)
+Updated 45058: $49.90 → $24.95 (paid)
+Updated 45059: $28.50 → $14.25 (paid)
+Updated 45060: $62.00 → $31.00 (paid)
+Updated 45061: $266.00 → $133.00 (paid)
+Updated 45062: $319.80 → $159.90 (paid)
+Updated 45063: $265.80 → $132.90 (paid)
+Updated 45064: $29.90 → $14.95 (paid)
+Updated 45065: $391.90 → $195.95 (paid)
+Updated 45067: $44.00 → $22.00 (paid)
+Updated 45068: $29.90 → $14.95 (paid)
+Updated 45069: $71.90 → $35.95 (paid)
+Updated 45070: $180.00 → $90.00 (paid)
+Updated 45071: $328.90 → $164.45 (paid)
+Updated 45073: $105.00 → $52.50 (paid)
+Updated 45074: $38.70 → $19.35 (paid)
+Updated 45075: $60.00 → $30.00 (paid)
+Updated 45076: $40.00 → $20.00 (paid)
+Updated 45077: $49.90 → $24.95 (paid)
+Updated 45079: $70.00 → $35.00 (paid)
+Updated 45080: $29.90 → $14.95 (paid)
+Updated 45081: $20.00 → $10.00 (paid)
+Updated 45082: $510.00 → $255.00 (paid)
+Updated 45084: $88.00 → $44.00 (paid)
+Updated 45087: $150.00 → $75.00 (paid)
+Updated 45088: $61.90 → $30.95 (paid)
+Updated 45089: $76.00 → $38.00 (paid)
+Updated 45090: $121.90 → $60.95 (paid)
+Updated 45093: $190.00 → $95.00 (paid)
+Updated 45094: $99.90 → $49.95 (paid)
+Updated 45095: $99.90 → $49.95 (paid)
+Updated 45096: $321.90 → $160.95 (paid)
+Updated 45097: $22.00 → $11.00 (paid)
+Updated 45100: $150.00 → $75.00 (paid)
+Updated 45102: $524.80 → $262.40 (paid)
+Updated 45103: $253.90 → $126.95 (paid)
+Updated 45104: $9839.00 → $4919.50 (paid)
+Updated 45107: $248.00 → $124.00 (paid)
+Updated 45110: $75.00 → $37.50 (paid)
+Updated 45111: $29.85 → $19.90 (paid)
+Updated 45112: $140.00 → $120.00 (paid)
+Updated 45114: $1080.00 → $540.00 (paid)
+Updated 45115: $190.00 → $95.00 (paid)
+Updated 45116: $1509.80 → $754.90 (paid)
+Updated 45117: $1179.80 → $589.90 (paid)
+Updated 45118: $1199.60 → $899.70 (paid)
+Updated 45119: $659.94 → $329.97 (paid)
+Updated 45120: $100.00 → $50.00 (paid)
+Updated 45121: $316.80 → $158.40 (paid)
+Updated 45122: $1126.80 → $563.40 (paid)
+Updated 45123: $90.00 → $45.00 (paid)
+Updated 45124: $1239.80 → $619.90 (paid)
+Updated 45127: $319.60 → $279.65 (paid)
+Updated 45129: $830.90 → $415.45 (paid)
+Updated 45135: $930.00 → $620.00 (paid)
+Updated 45136: $182.00 → $91.00 (paid)
+Updated 45137: $198.00 → $132.00 (paid)
+Updated 45138: $240.00 → $120.00 (paid)
+Updated 45141: $50.00 → $25.00 (paid)
+Updated 45144: $165.00 → $150.00 (paid)
+Updated 45146: $468.00 → $234.00 (paid)
+Updated 45148: $550.00 → $275.00 (paid)
+Updated 45158: $240.00 → $120.00 (paid)
+Updated 45167: $200.00 → $100.00 (paid)
+Updated 45169: $1800.00 → $900.00 (paid)
+Updated 45172: $29.90 → $14.95 (paid)
+Updated 45179: $120.00 → $60.00 (paid)
+Updated 45180: $60.00 → $30.00 (paid)
+Updated 45197: $149.70 → $74.85 (paid)
+Updated 45214: $66.00 → $33.00 (paid)
+Updated 45215: $180.00 → $90.00 (paid)
+Updated 45216: $89.70 → $44.85 (paid)
+Updated 45234: $75.00 → $37.50 (paid)
+Updated 45244: $102.80 → $51.40 (paid)
+Updated 45246: $394.20 → $262.80 (paid)
+Updated 45253: $246.00 → $123.00 (paid)
+Updated 45254: $89.70 → $44.85 (paid)
+Updated 45260: $675.00 → $450.00 (paid)
+Updated 45262: $1823.97 → $1215.98 (paid)
+Updated 45263: $1286.50 → $643.25 (paid)
+Updated 45264: $1036.74 → $518.37 (paid)
+Updated 45266: $150.00 → $100.00 (paid)
+Updated 45270: $3599.40 → $1799.70 (paid)
+Updated 45271: $1038.60 → $519.30 (paid)
+Updated 45301: $240.00 → $120.00 (paid)
+Updated 45302: $330.00 → $165.00 (paid)
+Updated 45304: $329.40 → $164.70 (paid)
+Updated 45306: $408.80 → $204.40 (paid)
+Updated 45355: $649.80 → $324.90 (paid)
+Updated 45359: $648.90 → $324.45 (paid)
+Updated 45360: $176.00 → $88.00 (paid)
+Updated 45361: $249.70 → $124.85 (paid)
+Updated 45381: $79.20 → $52.80 (paid)
+Updated 45386: $526.35 → $350.90 (paid)
+Updated 45387: $548.00 → $274.00 (paid)
+Updated 45388: $50.00 → $25.00 (paid)
+Updated 45492: $198.00 → $132.00 (paid)
+Updated 45505: $200.00 → $100.00 (paid)
+Updated 45506: $150.00 → $75.00 (paid)
+Updated 45602: $299.90 → $149.95 (paid)
+Updated 45633: $478.80 → $239.40 (paid)
+Updated 45710: $306.40 → $153.20 (paid)
+Updated 45733: $132.00 → $66.00 (paid)
+Updated 45737: $100.00 → $50.00 (paid)
+Updated 45738: $100.00 → $50.00 (paid)
+Updated 45739: $36.00 → $18.00 (paid)
+Updated 45741: $213.60 → $106.80 (paid)
+Updated 45783: $924.40 → $462.20 (paid)
+Updated 45846: $240.00 → $120.00 (paid)
+Updated 45849: $1620.00 → $810.00 (paid)
+Updated 45851: $198.00 → $99.00 (paid)
+Updated 45954: $1286.80 → $643.40 (paid)
+Updated 45975: $800.00 → $400.00 (paid)
+Updated 46079: $958.80 → $479.40 (paid)
+Updated 46085: $39.90 → $19.95 (paid)
+Updated 46184: $662.80 → $331.40 (paid)
+Updated 46291: $398.80 → $199.40 (paid)
+Updated 46296: $252.00 → $126.00 (paid)
+Updated 46299: $526.80 → $263.40 (paid)
+Updated 46314: $860.00 → $430.00 (paid)
+Updated 46414: $358.80 → $179.40 (paid)
+Updated 46423: $598.80 → $299.40 (paid)
+Updated 46430: $204.00 → $102.00 (paid)
+Updated 46672: $845.85 → $729.10 (paid)
+Updated 46758: $110.00 → $55.00 (paid)
+Updated 46800: $262.80 → $131.40 (paid)
+Updated 47720: $480.00 → $240.00 (paid)
+Updated 47881: $50.00 → $25.00 (paid)
+Updated 48362: $155.60 → $77.80 (paid)
+Updated 48369: $928.50 → $464.25 (paid)
+Updated 48451: $238.80 → $119.40 (paid)
+Updated 48928: $408.00 → $204.00 (paid)
+
+✅ Reconciled 173 invoices
+
+
+[STEP 10] Data Cleanup
+  Fix unit prices, subtotals, and balance issues
+
+============================================================
+  Data Cleanup — *** LIVE COMMIT ***
+============================================================
+
+── Fix 1: Invoice line item unit prices ─────────────────
+  Line items to fix: 7
+  #45114 — Business Email - contractorscraneco.co qty=4.0000 amt=$165.00  unit_price: $55.00 → $41.25
+  #45122 — Business Email (marinedocklift.com) -  qty=12.0000 amt=$264.00  unit_price: $20.00 → $22.00
+  #46880 — Business Email (hagearty.com) - up to  qty=3.0000 amt=$72.00  unit_price: $22.00 → $24.00
+  #46970 — Business email afpaaa.org (up to 5 ema qty=12.0000 amt=$132.00  unit_price: $12.00 → $11.00
+  #47610 — Business Email - rescatesc.com (up to  qty=1.0000 amt=$72.00  unit_price: $12.00 → $72.00
+  ... and 2 more
+
+── Fix 2: Invoice subtotals vs line item sums ───────────
+  Invoices to fix: 0
+
+── Fix 3: Billing schedule line item unit prices ────────
+  Billing schedule line items to fix: 0
+
+── Fix 4: Billing schedule totals ───────────────────────
+  Billing schedules to fix: 0
+
+────────────────────────────────────────────────────────────
+  Total fixes: 7
+
+✅ Cleanup complete — all fixes committed.
+
+
+
+[STEP 11] Manual Fixes
+  Apply known fixes (e.g., invoice #48958)
+✓ Manual fixes (invoice #48958)
+
+[STEP 12] Create Overpayment Credits
+  Create credit memos for client overpayments from QB migration (zhost, Whiteent, L F Rothchild, SteamworksAZ)
+====================================================================================================
+CREATING CREDIT MEMO RECORDS FOR OVERPAYMENTS
+====================================================================================================
+
+✓ Created CreditMemo for zhost
+  Memo #: CM-201-001
+  Amount: $45.20
+  Status: applied
+
+✓ Created CreditMemo for Whiteent
+  Memo #: CM-195-001
+  Amount: $25.00
+  Status: applied
+
+✓ Created CreditMemo for L F Rothchild
+  Memo #: CM-102-001
+  Amount: $50.00
+  Status: applied
+
+✓ Created CreditMemo for SteamworksAZ
+  Memo #: CM-176-001
+  Amount: $59.80
+  Status: applied
+
+====================================================================================================
+✅ Credit memos created
+RESULTS: Created 4 CreditMemo records
+====================================================================================================
+
+
+[STEP 13] Exclude Discrepant Invoices
+  Mark specific invoices as excluded from AR aging (data quality fixes)
+====================================================================================================
+EXCLUDING SPECIFIC INVOICES BY AMOUNT
+====================================================================================================
+
+✓ Excluded invoice #45318 (ID: 264)
+  Client: cyberabbi.com
+  Amount: $50.61
+
+✓ Excluded invoice #46592 (ID: 1393)
+  Client: Get Green Earth(2)
+  Amount: $50.00
+
+✓ Excluded invoice #47260 (ID: 2013)
+  Client: Get Green Earth(2)
+  Amount: $50.00
+
+✓ Excluded invoice #48971 (ID: 3655)
+  Client: Get Green Earth(2)
+  Amount: $50.00
+
+✓ Excluded invoice #49116 (ID: 3794)
+  Client: Get Green Earth(2)
+  Amount: $50.00
+
+⚠️  No invoice found for Get Green Earth(2) with balance $200.00
+
+⚠️  No invoice found for KATZ with balance $0.40
+
+✓ Excluded invoice #46281 (ID: 1117)
+  Client: Rescate de San Carlos A.C.
+  Amount: $9.27
+
+⚠️  No invoice found for Sommer, Eric with balance $664.05
+
+⚠️  No invoice found for Terriann Muller with balance $135.00
+
+====================================================================================================
+✅ Exclusions applied
+RESULTS: Excluded 6 invoices
+Not found: 4 invoices
+  Get Green Earth(2): $200.00
+  KATZ: $0.40
+  Sommer, Eric: $664.05
+  Terriann Muller: $135.00
+====================================================================================================
+
+
+======================================================================
+POST-IMPORT VALIDATION
+======================================================================
+
+======================================================================
+  PrecisionPros Import Validator
+  2026-04-26 22:17:09
+======================================================================
+
+── Customer Validation ──────────────────────────────────
+  QBO: 202 customers   DB: 202 clients
+  ✓ All QBO customers are in the database
+
+── Invoice Validation ───────────────────────────────────
+  QBO: 95 invoices   DB: 4023 invoices
+  ✓ All QBO invoices are in the database
+  DB line items: 10,110
+
+── Open Balance Validation ──────────────────────────────
+  QBO open invoices: 58   Mismatches: 1
+  ❌ [ERROR] 19 open invoices from AR Aging not in DB
+    #7857
+    #11522
+    #11837
+    #12188
+    #12928
+  ❌ [ERROR] 1 invoices have wrong balance_due
+    #45144: QBO=$135.00  DB=$0.00
+
+── Line Item Math Validation ────────────────────────────
+  ❌ [ERROR] 2 line items where qty×unit_price ≠ amount
+    #45102: Business Email (remaxsancarlosmexic — 10.0000×$4.11=$41.10 (stored $41.14)
+    #48040: Hosted Exchange Server (added 2 use — 2.0000×$50.09=$100.18 (stored $100.17)
+  → Run: python3 cleanup_data.py --commit
+
+── Invoice Subtotal Validation ──────────────────────────
+  ✓ All invoice subtotals are consistent
+
+── Billing Schedule Validation ──────────────────────────
+  Active schedules: 92
+  ⚠ [WARNING] 15 billing schedules have no line items
+    Alan Hoffberg
+    CTdiveCenter.com
+    Get Green Earth(2)
+    James Rahfaldt
+    Key Real Estate Investments, LLC
+
+======================================================================
+VALIDATION SUMMARY
+======================================================================
+  Customers:         202 in QBO  →  202 in DB
+  Invoices:          95 in QBO  →  4023 in DB
+  Line Items:        10110 in DB
+  Billing Schedules: 92 active
+
+  Errors:   3
+  Warnings: 1
+
+  ❌ Issues found — see above
+======================================================================
+
+
+
+⚠ Validation found issues — see report above
+
+======================================================================
+IMPORT SUMMARY
+======================================================================
+Timestamp: 2026-04-26T22:15:49.536292
+Mode:      LIVE COMMIT
+Passed:    13 / 13
+Failed:    0 / 13
+
+Steps:
+  ✓ Database Reset [REQUIRED]
+  ✓ Service Catalog Import [REQUIRED]
+  ✓ Customer/Client Import [REQUIRED]
+  ✓ Invoice + Line Items Import [REQUIRED]
+  ✓ Expense Import [REQUIRED]
+  ✓ Billing Schedules Import [REQUIRED]
+  ✓ Journal Entries Import
+  ✓ Payment Import
+  ✓ Payment Reconciliation
+  ✓ Data Cleanup [REQUIRED]
+  ✓ Manual Fixes [REQUIRED]
+  ✓ Create Overpayment Credits
+  ✓ Exclude Discrepant Invoices
+
+Log file: /Users/marksharkey/accounting/backend/import_log_20260426_221549.txt
+======================================================================
+
