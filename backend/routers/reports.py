@@ -57,6 +57,24 @@ def ar_aging(
         else:
             client_data[client_name]["over_90"] += balance
 
+    # Add credit balances from applied credit memos (show as negative in over_90)
+    applied_credits = db.query(models.CreditMemo).filter(
+        models.CreditMemo.status == models.CreditMemoStatus.applied
+    ).all()
+
+    for cm in applied_credits:
+        client_name = cm.client.display_name
+        if client_name not in client_data:
+            client_data[client_name] = {
+                "current": 0,
+                "1_30": 0,
+                "31_60": 0,
+                "61_90": 0,
+                "over_90": 0,
+            }
+        # Show credits as negative in over_90 bucket
+        client_data[client_name]["over_90"] -= float(cm.total)
+
     # Build client rows
     clients = []
     totals = {"current": 0, "1_30": 0, "31_60": 0, "61_90": 0, "over_90": 0}
