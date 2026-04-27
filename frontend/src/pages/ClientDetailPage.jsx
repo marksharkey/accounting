@@ -7,7 +7,7 @@ import Button from '../components/ui/Button';
 import Toggle from '../components/ui/Toggle';
 import AddBillingScheduleModal from '../components/AddBillingScheduleModal';
 import EditClientModal from '../components/EditClientModal';
-import { Plus, Eye, Search, X } from 'lucide-react';
+import { Plus, Eye, Search, X, Trash2 } from 'lucide-react';
 
 export default function ClientDetailPage() {
   const { id } = useParams();
@@ -20,6 +20,7 @@ export default function ClientDetailPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deactivateConfirm, setDeactivateConfirm] = useState(false);
   const searchInputRef = useRef(null);
 
   const { data: client, isLoading: clientLoading } = useQuery({
@@ -108,8 +109,29 @@ export default function ClientDetailPage() {
     },
   });
 
+  const deactivateMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.delete(`/clients/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      navigate('/clients');
+    },
+    onError: (error) => {
+      console.error('Failed to deactivate client:', error);
+    },
+  });
+
   const handleToggleAutocc = async () => {
     toggleAutoccMutation.mutate(!client.autocc_recurring);
+  };
+
+  const handleDeactivate = async () => {
+    if (!deactivateConfirm) {
+      setDeactivateConfirm(true);
+      return;
+    }
+    deactivateMutation.mutate();
   };
 
   const isLoading = clientLoading || schedulesLoading || invoicesLoading || activityLoading;
@@ -261,22 +283,59 @@ export default function ClientDetailPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-1 border-l border-gray-300 pl-3 ml-auto">
-              <Button
-                size="sm"
-                onClick={() => setIsEditClientOpen(true)}
-                className="!px-2 !py-0.5 !text-[12px]"
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => navigate(`/invoices/new?client_id=${id}`)}
-                className="!px-2 !py-0.5 !text-[12px]"
-              >
-                <Plus className="w-3 h-3 mr-0.5" />
-                Invoice
-              </Button>
+            <div className="flex gap-1 border-l border-gray-300 pl-3 ml-auto items-center">
+              {deactivateConfirm && (
+                <div className="flex items-center gap-2 px-2 py-1 bg-red-50 border border-red-200 rounded text-[12px]">
+                  <span className="text-red-700">Make inactive?</span>
+                  <Button
+                    size="sm"
+                    onClick={handleDeactivate}
+                    disabled={deactivateMutation.isPending}
+                    className="!px-2 !py-0.5 !text-[11px] bg-red-600 hover:bg-red-700"
+                  >
+                    Confirm
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setDeactivateConfirm(false)}
+                    disabled={deactivateMutation.isPending}
+                    className="!px-2 !py-0.5 !text-[11px]"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+              {!deactivateConfirm && (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsEditClientOpen(true)}
+                    className="!px-2 !py-0.5 !text-[12px]"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/invoices/new?client_id=${id}`)}
+                    className="!px-2 !py-0.5 !text-[12px]"
+                  >
+                    <Plus className="w-3 h-3 mr-0.5" />
+                    Invoice
+                  </Button>
+                  {!client.is_active ? (
+                    <span className="text-[11px] text-gray-500 px-2">Inactive</span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={handleDeactivate}
+                      disabled={deactivateMutation.isPending}
+                      className="!px-2 !py-0.5 !text-[12px] bg-gray-300 hover:bg-gray-400 text-gray-700"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
