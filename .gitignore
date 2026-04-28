@@ -37,3 +37,7 @@ frontend/dist/
 
 # Uploads (Phase 2)
 uploads/
+
+# QBO OAuth tokens (contain secrets)
+backend/qbo_tokens.json
+backend/qbo_last_sync.json

@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     cloudflare_api_email: str = ""
     cloudflare_account_id: str = ""
 
+    # QuickBooks Online
+    qbo_client_id: str = ""
+    qbo_client_secret: str = ""
+
     @property
     def database_url(self) -> str:
         return (
