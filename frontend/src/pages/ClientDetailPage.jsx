@@ -540,62 +540,131 @@ export default function ClientDetailPage() {
               View All
             </Button>
           </div>
-          {invoices && invoices.length > 0 ? (
-            <div className="overflow-y-auto max-h-96">
-              <table className="w-full text-[13px] table-fixed">
-                <colgroup>
-                  <col style={{ width: '12%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
-                  <col style={{ width: '13%' }} />
-                </colgroup>
-                <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Invoice #</th>
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Date</th>
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Due</th>
-                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
-                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Paid</th>
-                    <th className="text-right px-3 py-1 font-semibold text-[12px]">Balance</th>
-                    <th className="text-left px-3 py-1 font-semibold text-[12px]">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((invoice) => (
-                    <tr key={invoice.id} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-1 truncate">
-                        <Link
-                          to={`/invoices/${invoice.id}`}
-                          className="text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          {invoice.invoice_number || invoice.number}
-                        </Link>
-                      </td>
-                      <td className="px-3 py-1 text-gray-600 text-left">{new Date(invoice.created_date).toLocaleDateString()}</td>
-                      <td className="px-3 py-1 text-gray-600 text-left">{new Date(invoice.due_date).toLocaleDateString()}</td>
-                      <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.total).toFixed(2)}</td>
-                      <td className="text-right px-3 py-1 font-mono text-green-700">${parseFloat(invoice.amount_paid).toFixed(2)}</td>
-                      <td className="text-right px-3 py-1 font-mono">${parseFloat(invoice.balance_due).toFixed(2)}</td>
-                      <td className="px-3 py-1">
-                        <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
-                          invoice.status === 'paid' ? 'bg-green-50 text-green-700' :
-                          invoice.status === 'sent' ? 'bg-blue-50 text-blue-700' :
-                          invoice.status === 'draft' ? 'bg-gray-50 text-gray-700' :
-                          invoice.status === 'partially_paid' ? 'bg-yellow-50 text-yellow-700' :
-                          'bg-gray-50 text-gray-700'
-                        }`}>
-                          {invoice.status}
-                        </span>
-                      </td>
+          {invoices && invoices.length > 0 ? (() => {
+            // Build transaction list: invoices + their payments, sorted by date
+            const transactions = [];
+
+            // Collect all invoices and payments
+            invoices.forEach((invoice) => {
+              transactions.push({
+                type: 'invoice',
+                date: invoice.created_date,
+                invoice_number: invoice.invoice_number,
+                invoice_id: invoice.id,
+                due_date: invoice.due_date,
+                amount: invoice.total,
+                status: invoice.status,
+              });
+
+              // Add payments for this invoice
+              if (invoice.payments && invoice.payments.length > 0) {
+                invoice.payments.forEach((payment) => {
+                  transactions.push({
+                    type: 'payment',
+                    date: payment.payment_date,
+                    amount: payment.amount,
+                    payment_method: payment.method,
+                    reference_number: payment.reference_number,
+                  });
+                });
+              }
+            });
+
+            // Sort by date ascending, calculate running balance, then reverse for display
+            const sorted = transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            let runningBalance = 0;
+            const withBalance = sorted.map((txn) => {
+              if (txn.type === 'invoice') {
+                runningBalance += parseFloat(txn.amount);
+              } else {
+                runningBalance -= parseFloat(txn.amount);
+              }
+              return { ...txn, balance: runningBalance };
+            });
+
+            // Display newest first
+            const displayed = withBalance.reverse();
+
+            return (
+              <div className="overflow-y-auto max-h-96">
+                <table className="w-full text-[13px] table-fixed">
+                  <colgroup>
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '10%' }} />
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '11%' }} />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50 sticky top-0">
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Date</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Type</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Invoice #</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Due Date</th>
+                      <th className="text-right px-3 py-1 font-semibold text-[12px]">Amount</th>
+                      <th className="text-right px-3 py-1 font-semibold text-[12px]">Balance</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Status</th>
+                      <th className="text-left px-3 py-1 font-semibold text-[12px]">Method</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
+                  </thead>
+                  <tbody>
+                    {displayed.map((txn, idx) => (
+                      <tr key={`${txn.type}-${txn.date}-${idx}`} className={`border-b border-gray-200 hover:bg-gray-50 ${txn.type === 'payment' ? 'bg-gray-50' : ''}`}>
+                        <td className="px-3 py-1 text-gray-600 text-left">{new Date(txn.date).toLocaleDateString()}</td>
+                        <td className="px-3 py-1 text-gray-700 font-medium">{txn.type === 'invoice' ? 'Invoice' : 'Payment'}</td>
+                        <td className="px-3 py-1 truncate">
+                          {txn.type === 'invoice' ? (
+                            <Link
+                              to={`/invoices/${txn.invoice_id}`}
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              {txn.invoice_number}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-500">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-1 text-gray-600 text-left">
+                          {txn.type === 'invoice' ? new Date(txn.due_date).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="text-right px-3 py-1 font-mono">
+                          {txn.type === 'invoice' ? (
+                            `$${parseFloat(txn.amount).toFixed(2)}`
+                          ) : (
+                            <span className="text-green-700">-$${parseFloat(txn.amount).toFixed(2)}</span>
+                          )}
+                        </td>
+                        <td className="text-right px-3 py-1 font-mono font-medium">
+                          ${parseFloat(txn.balance).toFixed(2)}
+                        </td>
+                        <td className="px-3 py-1">
+                          {txn.type === 'invoice' ? (
+                            <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-medium ${
+                              txn.status === 'paid' ? 'bg-green-50 text-green-700' :
+                              txn.status === 'sent' ? 'bg-blue-50 text-blue-700' :
+                              txn.status === 'draft' ? 'bg-gray-50 text-gray-700' :
+                              txn.status === 'partially_paid' ? 'bg-yellow-50 text-yellow-700' :
+                              'bg-gray-50 text-gray-700'
+                            }`}>
+                              {txn.status}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500 text-[11px]">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-1 text-gray-600 text-left">
+                          {txn.type === 'payment' ? (txn.payment_method || txn.reference_number || '—') : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })() : (
             <div className="px-3 py-2 text-gray-500 text-[13px]">No invoices</div>
           )}
         </div>

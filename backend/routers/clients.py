@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from typing import Optional, List
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ from decimal import Decimal
 import models
 from database import get_db
 from auth import get_current_user
+from routers.invoices import InvoiceOut
 
 router = APIRouter()
 
@@ -350,14 +351,19 @@ def delete_billing_schedule(
     return {"message": "Billing schedule deactivated"}
 
 
-@router.get("/{client_id}/invoices")
+@router.get("/{client_id}/invoices", response_model=List[InvoiceOut])
 def get_client_invoices(
     client_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    return db.query(models.Invoice).filter_by(client_id=client_id)\
-        .order_by(models.Invoice.created_date.desc()).all()
+    return (
+        db.query(models.Invoice)
+        .options(joinedload(models.Invoice.payments), joinedload(models.Invoice.line_items))
+        .filter_by(client_id=client_id)
+        .order_by(models.Invoice.created_date.desc())
+        .all()
+    )
 
 
 @router.get("/{client_id}/activity")
