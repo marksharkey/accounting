@@ -10,7 +10,7 @@ from config import get_settings
 from database import get_db, engine
 import models
 from auth import authenticate_user, create_access_token, get_current_user, get_password_hash
-from routers import clients, services, invoices, payments, expenses, journal_entries, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions, users, auth_recovery
+from routers import clients, services, invoices, payments, expenses, journal_entries, reports, collections, credit_memos, company_info, email_templates, domains, bank_transactions, users, auth_recovery, qbo_auth
 
 settings = get_settings()
 
@@ -86,6 +86,7 @@ app.include_router(email_templates.router, tags=["Email Templates"])
 app.include_router(bank_transactions.router, prefix="/api/bank", tags=["Bank Transactions"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(auth_recovery.router, prefix="/api/auth", tags=["Auth Recovery"])
+app.include_router(qbo_auth.router)
 
 # Mount static files for uploads
 uploads_dir = Path("uploads")
