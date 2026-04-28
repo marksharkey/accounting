@@ -377,10 +377,12 @@ try:
     print("─" * 70 + "\n")
 
     imported = 0
+    updated = 0
     skipped = 0
     errors = 0
     unmatched_customers = set()
     duplicate_invoices = []  # Track duplicate invoice numbers for logging
+    revised_invoices = []    # Track invoice revisions
 
     for (inv_num, customer_name) in sorted(invoices.keys(), key=lambda x: (int(x[0]) if x[0].isdigit() else 0, x[1])):
         inv_data = invoices[(inv_num, customer_name)]
@@ -420,7 +422,67 @@ try:
 
         amount_paid = inv_data["amount"] - open_balance
 
-        # Create invoice
+        # ── HANDLE INVOICE REVISIONS ──────────────────────────────────────────
+        # Check if this invoice already exists for this customer
+        existing = db.query(Invoice).filter(
+            Invoice.invoice_number == inv_num,
+            Invoice.client_id == client.id
+        ).first()
+
+        if existing:
+            # Invoice exists for this customer - could be duplicate or revision
+            if abs(existing.total - inv_data["amount"]) > Decimal("0.01"):
+                # Different amount = REVISION (update existing)
+                old_amount = existing.total
+                existing.subtotal = inv_data["amount"]
+                existing.total = inv_data["amount"]
+                existing.amount_paid = max(Decimal("0"), amount_paid)
+                existing.balance_due = open_balance
+                existing.created_date = inv_data["date"] or existing.created_date
+                existing.due_date = due_date or existing.due_date
+                existing.status = status
+
+                # Clear old line items and add new ones
+                for old_item in existing.line_items:
+                    db.delete(old_item)
+                db.flush()
+
+                for line in inv_data["line_items"]:
+                    qty, unit_amt = extract_quantity_from_description(line["description"], line["amount"])
+                    line_item = InvoiceLineItem(
+                        invoice=existing,
+                        description=line["description"][:255],
+                        quantity=qty,
+                        unit_amount=unit_amt,
+                        amount=line["amount"],
+                    )
+                    existing.line_items.append(line_item)
+
+                if not DRY_RUN:
+                    db.commit()
+                    log = ActivityLog(
+                        entity_type="invoice",
+                        entity_id=existing.id,
+                        client_id=client.id,
+                        action="updated",
+                        performed_by_id=None,
+                        performed_by_name="QBO Import",
+                        timestamp=datetime.now(),
+                        notes=f"Revision detected: amount updated from ${old_amount:.2f} to ${inv_data['amount']:.2f}"
+                    )
+                    db.add(log)
+                    db.commit()
+
+                revised_invoices.append(f"  #{inv_num}: ${old_amount:.2f} → ${inv_data['amount']:.2f}")
+                updated += 1
+            else:
+                # Same amount = TRUE DUPLICATE (skip)
+                duplicate_invoices.append(f"  #{inv_num}: {existing.client.company_name} (duplicate, skipped)")
+                skipped += 1
+            continue
+
+        # ── CREATE NEW INVOICE ────────────────────────────────────────────────
+        # No existing invoice - create new one
         invoice = Invoice(
             invoice_number=inv_num,
             client_id=client.id,
@@ -432,11 +494,6 @@ try:
             balance_due=open_balance,
             status=status,
         )
-
-        # Track if this is a duplicate invoice number (different customer)
-        existing = db.query(Invoice).filter(Invoice.invoice_number == inv_num).first()
-        if existing:
-            duplicate_invoices.append(f"  #{inv_num}: {existing.client.company_name} → {customer_name}")
 
         # Add line items
         for line in inv_data["line_items"]:
@@ -473,14 +530,22 @@ try:
         imported += 1
 
         # Batch commit every 200 invoices
-        if imported % 200 == 0:
-            print(f"  Imported {imported} invoices...")
+        if (imported + updated) % 200 == 0:
+            print(f"  Processed {imported + updated} invoices...")
 
-    print(f"\n✓ Imported {imported} invoices")
-    print(f"✓ Skipped {skipped} invoices (customer not found)")
+    print(f"\n✓ Imported {imported} new invoices")
+    print(f"✓ Updated {updated} invoice revisions")
+    print(f"✓ Skipped {skipped} invoices (customer not found or duplicate)")
+
+    if revised_invoices:
+        print(f"\n📝 Invoice revisions detected and updated:")
+        for info in revised_invoices[:10]:
+            print(info)
+        if len(revised_invoices) > 10:
+            print(f"  ... and {len(revised_invoices) - 10} more")
 
     if duplicate_invoices:
-        print(f"\n⚠ Duplicate invoice numbers detected (QB Desktop + QBO):")
+        print(f"\n⚠ Duplicate invoice numbers detected:")
         for info in duplicate_invoices[:10]:
             print(info)
         if len(duplicate_invoices) > 10:

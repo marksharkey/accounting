@@ -14,6 +14,7 @@ export default function InvoiceBuilderPage() {
   const [selectedClient, setSelectedClient] = useState('');
   const [lineItems, setLineItems] = useState([]);
   const [isAuthNetVerified, setIsAuthNetVerified] = useState(false);
+  const [createdDate, setCreatedDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
   const [notesToClient, setNotesToClient] = useState('');
   const [internalNotes, setInternalNotes] = useState('');
@@ -99,6 +100,14 @@ export default function InvoiceBuilderPage() {
     enabled: !!selectedClient && !!dueDate,
   });
 
+  const { data: nextNumberData } = useQuery({
+    queryKey: ['invoices', 'next-number'],
+    queryFn: async () => {
+      const response = await apiClient.get('/invoices/next-number');
+      return response.data;
+    },
+  });
+
   // Populate previousBalance when prefilled data arrives or client changes
   useEffect(() => {
     if (selectedClient && prefilled?.client) {
@@ -134,6 +143,7 @@ export default function InvoiceBuilderPage() {
     setSelectedClient('');
     setLineItems([]);
     setIsAuthNetVerified(false);
+    setCreatedDate(new Date().toISOString().split('T')[0]);
     setDueDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString().split('T')[0]);
     setNotesToClient('');
     setInternalNotes('');
@@ -232,7 +242,7 @@ export default function InvoiceBuilderPage() {
 
     const invoiceData = {
       client_id: parseInt(selectedClient),
-      created_date: new Date().toISOString().split('T')[0],
+      created_date: createdDate,
       due_date: dueDate,
       line_items: formattedItems,
       previous_balance: previousBalance,
@@ -281,7 +291,7 @@ export default function InvoiceBuilderPage() {
 
     const invoiceData = {
       client_id: parseInt(selectedClient),
-      created_date: new Date().toISOString().split('T')[0],
+      created_date: createdDate,
       due_date: dueDate,
       line_items: formattedItems,
       previous_balance: previousBalance,
@@ -317,13 +327,18 @@ export default function InvoiceBuilderPage() {
     }
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  // Removed - now using createdDate state instead
 
   return (
     <Layout onBack={() => navigate(-1)}>
       {/* Sticky Toolbar */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 -mx-4 sm:-mx-6 lg:-mx-8 mb-6">
         <div className="flex flex-wrap gap-3 items-center">
+          {/* Next Invoice Number Display */}
+          <div className="text-sm font-mono text-gray-600 bg-gray-50 px-3 py-2 rounded border border-gray-200 whitespace-nowrap">
+            Invoice #{nextNumberData?.next_invoice_number || '—'}
+          </div>
+
           {/* Client Dropdown */}
           <div className="w-full sm:flex-1 min-w-0">
             <select
@@ -338,16 +353,6 @@ export default function InvoiceBuilderPage() {
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Due Date */}
-          <div className="w-full sm:w-40 min-w-0">
-            <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="text-sm"
-            />
           </div>
 
           {/* AutoCC Checkbox */}
@@ -428,11 +433,31 @@ export default function InvoiceBuilderPage() {
             </div>
 
             {/* Invoice Meta */}
-            <div className="space-y-1 text-right md:text-right text-left">
+            <div className="space-y-2 text-right md:text-right text-left">
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Invoice</p>
-              <p className="text-xs font-semibold text-gray-900">Draft</p>
-              <p className="text-xs text-gray-600">Created: {today}</p>
-              <p className="text-xs text-gray-600">Due: {dueDate}</p>
+              <p className="text-lg font-bold text-gray-900 font-mono">{nextNumberData?.next_invoice_number || '—'}</p>
+
+              {/* Created Date Input */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Created:</label>
+                <input
+                  type="date"
+                  value={createdDate}
+                  onChange={(e) => setCreatedDate(e.target.value)}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Due Date Input */}
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Due:</label>
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
             </div>
           </div>
 

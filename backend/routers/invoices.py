@@ -798,6 +798,15 @@ def duplicate_previous_invoice(
     }
 
 
+@router.get("/next-number")
+def get_next_invoice_number(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Get the next invoice number that will be assigned when an invoice is created."""
+    return {"next_invoice_number": next_invoice_number(db)}
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_invoice(
     data: InvoiceCreate,
